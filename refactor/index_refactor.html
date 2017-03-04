@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/5.0.0/normalize.min.css">
+    <link href="https://fonts.googleapis.com/css?family=Lato" rel="stylesheet">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css" integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ" crossorigin="anonymous">
+  <style>
+      body {
+        background-color: white;
+        overflow-x: hidden;
+        font-family: 'Lato', sans-serif;
+      }
+
+      .main,
+      .slide-out,
+      .spinner-holder,
+      .error {
+        height: 100vh;
+        width: 100vw;
+      }
+
+      #logo--top {
+        width: 50px;
+        height: 50px;
+      }
+
+      #logo--bottom {
+        width: 100px;
+        height: 35px;
+      }
+
+      header h5 {
+        font-size: 18px;
+      }
+
+      button {
+        margin: 2.5px;
+      }
+
+
+      /*auth screen styles*/
+        .slide-out {
+          position: relative;
+          background-color: white;
+          z-index: 100;
+          right: -520px;
+        }
+
+        .slide-out p {
+          font-size: 14px;
+        }
+
+        .checkbox {
+          margin-left: 25%;
+        }
+
+        footer button {
+          float: right;
+        }
+
+        .open{
+            right: 0px !important;
+        }
+
+        .transition {
+          -webkit-transition: right 0.3s ease-out;  /* Chrome 1-25, Safari 3.2+ */
+             -moz-transition: right 0.3s ease-out;  /* Firefox 4-15 */
+               -o-transition: right 0.3s ease-out;  /* Opera 10.50–12.00 */
+                  transition: right 0.3s ease-out;  /* Chrome 26, Firefox 16+, IE 10+, Opera 12.10+ */
+        }
+
+      /*main screen styles*/
+        .main {
+          position: absolute;
+          top: 0;
+        }
+
+        .select-section {
+          margin-top: 50px;
+          margin-bottom: 50px;
+        }
+
+       /*Error screen styles*/
+         .error {
+           top: 0;
+           position: absolute;
+         }
+
+        /*loading screen styles*/
+          .spinner-holder{
+            background-color: rgba(191, 191, 191, 0.4);
+            z-index: 1000;
+            position: absolute;
+            top: 0;
+          }
+          .loader {
+            position: absolute;
+            left: 65%;
+            top: 50%;
+            margin: -75px 0 0 -75px;
+            border: 4px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 4px solid #000;
+            border-bottom: 4px solid #000;
+            width: 50px;
+            height: 50px;
+            -webkit-animation: spin 2s linear infinite;
+            animation: spin 2s linear infinite;
+          }
+
+          @-webkit-keyframes spin {
+            0% { -webkit-transform: rotate(0deg); }
+            100% { -webkit-transform: rotate(360deg); }
+          }
+
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+
+          .hidden {
+            display: none;
+           }
+
+
+
+  </style>
+
+  </head>
+
+  <body>
+    <!--auth page-->
+    <div class="container js--auth slide-out transition open">
+      <header class="row py-3">
+        <h5 class="col-9">SpiraTeam | Sheets Importer</h5>
+        <img src="http://placehold.it/50x50" id="logo--top" class="col-3">
+      </header>
+      <p>Please enter the information used to access your server</p>
+      <div class="">
+        <label class="">Spira URL: <input type="text" name="URL" placeholder="SpiraTeam URL" class="ml-2" id="js--url" /></label>
+        <label class="">User Name: <input type="text" name="user-name" placeholder="User Name" class="ml-2" id="js--userName" /></label>
+        <label class="">Password:  <input type="password" name="password" placeholder="Password" class="ml-2" id="js--password" /></label>
+        <label class="checkbox"><input type="checkbox" name="remember" class="mr-2" id="js--remember" /><small>Remember Me</small></label>
+      </div>
+      <footer class="row mt-3">
+        <img src="http://placehold.it/100x35" id="logo--bottom" class="col-4">
+        <div class="col-8">
+          <button class="btn btn-sm" id="js--cancel">Cancel</button>
+          <button class="btn btn-sm" id="js--logIn">Log In</button>
+        </div>
+      </footer>
+    </div>
+
+    <!--spinner-->
+    <div id='js--loader' class='spinner-holder hidden'>
+      <div class="loader"></div>
+    </div>
+
+    <!--main screen-->
+    <div class="main container">
+      <header class="row py-3">
+        <h5 class="col-9">SpiraTeam | Sheets Importer</h5>
+        <img src="http://placehold.it/50x50" id="logo--top" class="col-3">
+      </header>
+      <div class="row justify-content-around" id="buttons-top">
+        <button id="js--connect" class="btn btn-sm col-3">Connect</button>
+        <button id="js--disconnect" class="btn btn-sm col-4">Disconnect</button>
+        <button id="js--options" class="btn btn-sm col-3">Options</button>
+      </div>
+      <div class="select-section">
+        <label class="">Projects:
+          <select class="" id="js--project">
+             <!--aysnc populated -->
+          </select>
+        </label>
+      </div>
+      <div class="select-section">
+        <label class="">Artifact:
+          <select class="" id="js--artifact">
+             <option value="requirements">Requirements</option>
+             <option value="test_cases">Test Cases</option>
+          </select>
+        </label>
+        <button id="js--template" class="btn btn-sm">Load Template</button>
+      </div>
+      <div class="row justify-content-around" id="buttons-bottom">
+        <button class="btn btn-sm col-3" id="js--import">Import</button>
+        <button class="btn btn-sm col-3" id="js--export">Export</button>
+        <button class="btn btn-sm col-3" id="js--clear">Clear</button>
+      </div>
+    </div>
+
+    <!--error screen-->
+    <div class='container slide-out transition error' id='js--error'>
+      <div id='js--errorText'></div>
+      <button id='js--errorToggle'>Clear</button>
+    </div>
+    <!--Jquery-->
+    <script src="https://code.jquery.com/jquery-3.1.1.slim.min.js" integrity="sha256-/SIrNqv8h6QGKDuNoLGA4iret+kyesCkHGzVUUV0shc=" crossorigin="anonymous"></script>
+    <!--Bootstrap-->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tether/1.4.0/js/tether.min.js" integrity="sha384-DztdAPBWPRXSA/3eYEEUWrWCy7G5KFbe8fFjk5JAIxUYHKkDx6Qin1DkWx51bBrb" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/js/bootstrap.min.js" integrity="sha384-vBWWzlZJ8ea9aCX4pEW3rVHjgjt7zpkNpZk+02D9phzyeVkE+jo0ieGizqPLForn" crossorigin="anonymous"></script>
+    <?!= getContent("main") ?>
+
+
+
+
+
+    <!--user agent-->
+    <script>
+      (function(){
+        var model = {
+          currentUser: '',
+          userList: [],
+          projectList: [],
+          requirements: {
+            headings: ['Requirement Id', 'Requirement Name', 'Requirement Description', 'Release Version', 'Type', 'Importance','Status', 'Estimate', 'Author', 'Owner', 'Component', 'Linked Requirements', 'Comment', 'CUS-01', 'CUS-02','CUS-03', 'CUS-04', 'CUS-05', 'CUS-06', 'CUS-07', 'CUS-08', 'CUS-09', 'CUS-10', 'CUS-11', 'CUS-12', 'CUS-13','CUS-14','US-15', 'CUS-16', 'CUS-17', 'CUS-18', 'CUS-19', 'CUS-20', 'CUS-21', 'CUS-22', 'CUS-23', 'CUS-24','CUS-25', 'CUS-26','CUS-27', 'CUS-28', 'CUS-29', 'CUS-30'
+            ],
+            JSON_headings: ["ProjectName","IndentLevel","RequirementId","Name","Description","ReleaseVersionNumber","RequirementTypeId","ImportanceName","StatusId","EstimatePoints","AuthorName","OwnerName","ComponentId"
+            ],
+            sizes: [ [2, 250], [3, 250], [4, 100], [11, 200], [13, 400] ],
+            dropdowns: [
+              //type
+              { 'e': ['Package', 'Design Element','Feature','Need','Quality','Use Case','User Story'] },
+              //Importance
+              { 'f': ['--None--','1 - Critical', '2 - High', '3 - Medium', '4 - Low'] },
+              //Status
+              {'g': ['Requested','Under Review','Rejected','Accepted','Planned','In Progress','Developed','Tested','Completed','Obsolete']}
+            ]
+           }
+        }
+
+        function spinner (x){
+          x === 'on' ? $('#js--loader').addClass('hidden') : $('#js--loader').removeClass('hidden');
+        }
+
+        function logIn(){
+         //user ident variables
+         var url = $('#js--url').val();
+         var userName = $('#js--userName').val();
+         var password = $('#js--password').val();
+         var remember = $('#js--remember').prop('checked');
+
+         //User information
+         //passed to the verification function
+         model.currentUser = { 'url': url, 'userName': userName, 'password':password, 'remember': remember }
+
+         //toggle on spinner
+         spinner('on');
+
+         //verification function
+         //calls appropriate function for verified or not verified
+         //pass in user info object
+         google.script.run.withSuccessHandler(getUsers)
+                          .withFailureHandler(error)
+                          .getUsers(model.currentUser);
+
+          function getUsers(users){
+            for(var i = 0; i < users.length; i++){
+              model.userList.push(users[i].UserName);
+            }
+              spinner('off')
+              console.log(model.userList)
+          }
+
+        }
+
+        function error(err){
+          if( !( $('#js--loader').hasClass('hidden') ) ) {
+            $('#js--loader').toggleClass('hidden')
+          }
+
+          $('#js--error').toggleClass('open');
+          $('#js--errorText').text(err);
+        }
+
+
+
+        $('#js--logIn').click(logIn);
+
+      })();
+    </script>
+
+  </body>
+</html>
+
+
+
+
+
+
+      //boolean for template verification
+      var isTemplateLoaded = false;
+      var projectList = [];
+      var userList = [];
+
+      function userVerified(projects){
+         projectList = projects
+         //creates DOM nodes for projects <select> drop down menu
+         for(var i = 0; i < projects.length; i++){
+           var option = $('<option></option>');
+           option.attr('value', projects[i]);
+           option.text(projects[i]);
+           $('#js--project').append(option);
+         }
+
+         google.script.run.withSuccessHandler(setUsers)
+                          .getUsers();
+         function setUsers(users){
+           userList = users;
+         }
+
+         //toggle off spinner
+         $('#js--loader').toggleClass('hidden');
+
+         //if just loading artifacts and projects don't open auth window
+         if( $('.js--auth').hasClass('open')){
+           //open auth pane on successful log in
+           $('.js--auth').removeClass('open');
+         }
+      }
+
+      function logger(obj) { console.log(obj) }
+
+      function userNotVerified(error){
+        //toggle off spinner
+        if( !( $('#js--loader').hasClass('hidden') ) ) {
+          $('#js--loader').toggleClass('hidden')
+         }
+
+        $('#js--error').toggleClass('open');
+        $('#js--errorText').text(error);
+      }
+
+      // Jquery click handlers
+      // All click handlers must be initialized here and they all refer to a function in the `.gs` file
+
+
+
+
+      $('#js--disconnect' ).click(function(){
+          google.script.run.withSuccessHandler( userChoice )
+                           .warn()
+          function userChoice(v){
+            if(v){
+                google.script.run.clearAll();
+                $('.js--auth').toggleClass('open');
+                isTemplateLoaded = false;
+              }
+           }
+      })
+
+      $('#js--template').click(function(){
+         google.script.run.clearAll();
+         isTemplateLoaded = false;
+         $('#js--loader').toggleClass('hidden')
+         google.script.run.withSuccessHandler( templateLoaded )
+                          .withFailureHandler( userNotVerified )
+                          .loadTemplate( $('#js--artifact option:selected').text(), userList );
+         function templateLoaded (){
+           $('#js--loader').toggleClass('hidden'),
+           //set template boolean
+           isTemplateLoaded = true;
+         }
+
+      })
+
+      $('#js--import').click(function(){
+        if (isTemplateLoaded === true){
+          //start loading spinner
+          $('#js--loader').toggleClass('hidden')
+          //Import from SpiraTeam
+          //on success clear loading spinner
+          google.script.run.withSuccessHandler( $('#js--loader').toggleClass('hidden') )
+                           .withFailureHandler( userNotVerified )
+                           .importer();
+        } else {
+          google.script.run.noTemplate();
+        }
+      })
+
+      $('#js--export').click(function(){
+
+        if (isTemplateLoaded){
+          google.script.run.withSuccessHandler( logger ).exporter($('#js--project option:selected').text(), projectList);
+        } else {
+          google.script.run.noTemplate();
+        }
+      })
+
+      $('#js--clear').click(function(){
+        google.script.run.withSuccessHandler( userChoice )
+                         .warn()
+          function userChoice(v){
+            if(v){
+              google.script.run.clearAll();
+              isTemplateLoaded = false;
+            }
+          }
+      })
+
+      $('#js--errorToggle').click(function(){
+        //toggles error window closed
+        $('#js--error').toggleClass('open');
+      })
+
+
+
+
+
+
