@@ -201,7 +201,6 @@
     <!--Bootstrap-->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tether/1.4.0/js/tether.min.js" integrity="sha384-DztdAPBWPRXSA/3eYEEUWrWCy7G5KFbe8fFjk5JAIxUYHKkDx6Qin1DkWx51bBrb" crossorigin="anonymous"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/js/bootstrap.min.js" integrity="sha384-vBWWzlZJ8ea9aCX4pEW3rVHjgjt7zpkNpZk+02D9phzyeVkE+jo0ieGizqPLForn" crossorigin="anonymous"></script>
-    <?!= getContent("main") ?>
 
 
 
@@ -231,9 +230,6 @@
            }
         }
 
-        function spinner (x){
-          x === 'on' ? $('#js--loader').addClass('hidden') : $('#js--loader').removeClass('hidden');
-        }
 
         function logIn(){
          //user ident variables
@@ -247,7 +243,9 @@
          model.currentUser = { 'url': url, 'userName': userName, 'password':password, 'remember': remember }
 
          //toggle on spinner
-         spinner('on');
+         $('#js--loader').toggleClass('hidden');
+
+         var done = 0;
 
          //verification function
          //calls appropriate function for verified or not verified
@@ -260,8 +258,20 @@
             for(var i = 0; i < users.length; i++){
               model.userList.push(users[i].UserName);
             }
-              spinner('off')
-              console.log(model.userList)
+              done++
+              done == 2 ? $('#js--loader').toggleClass('hidden') : null
+          }
+
+          google.script.run.withSuccessHandler(getProjects)
+                          .withFailureHandler(error)
+                          .getUsers(model.currentUser);
+
+          function getProjects(proj){
+            for(var i = 0; i < proj.length; i++){
+              model.projectList.push(proj[i].Name);
+            }
+              done++
+              done == 2 ? $('#js--loader').toggleClass('hidden') : null
           }
 
         }
