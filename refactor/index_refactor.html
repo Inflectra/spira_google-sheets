@@ -10,6 +10,18 @@
         background-color: white;
         overflow-x: hidden;
         font-family: 'Lato', sans-serif;
+      }<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/5.0.0/normalize.min.css">
+    <link href="https://fonts.googleapis.com/css?family=Lato" rel="stylesheet">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css" integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ" crossorigin="anonymous">
+  <style>
+      body {
+        background-color: white;
+        overflow-x: hidden;
+        font-family: 'Lato', sans-serif;
       }
 
       .main,
@@ -131,7 +143,7 @@
 
   <body>
     <!--auth page-->
-    <div class="container js--auth slide-out transition open">
+    <div class="container slide-out transition open" id="js--auth">
       <header class="row py-3">
         <h5 class="col-9">SpiraTeam | Sheets Importer</h5>
         <img src="http://placehold.it/50x50" id="logo--top" class="col-3">
@@ -206,217 +218,135 @@
 
 
 
+
     <!--user agent-->
     <script>
-      (function(){
-        var model = {
-          currentUser: '',
-          userList: [],
-          projectList: [],
+      let model = {
+        userData : {
+          currentUser : {
+            url: '',
+            userName: '',
+            password: ''
+          },
+          projects: [],
+          projUsers: []
+        },
+        templateData : {
+          currentArtifact: '';
+          isTemplateLoaded: false,
           requirements: {
-            headings: ['Requirement Id', 'Requirement Name', 'Requirement Description', 'Release Version', 'Type', 'Importance','Status', 'Estimate', 'Author', 'Owner', 'Component', 'Linked Requirements', 'Comment', 'CUS-01', 'CUS-02','CUS-03', 'CUS-04', 'CUS-05', 'CUS-06', 'CUS-07', 'CUS-08', 'CUS-09', 'CUS-10', 'CUS-11', 'CUS-12', 'CUS-13','CUS-14','US-15', 'CUS-16', 'CUS-17', 'CUS-18', 'CUS-19', 'CUS-20', 'CUS-21', 'CUS-22', 'CUS-23', 'CUS-24','CUS-25', 'CUS-26','CUS-27', 'CUS-28', 'CUS-29', 'CUS-30'
-            ],
-            JSON_headings: ["ProjectName","IndentLevel","RequirementId","Name","Description","ReleaseVersionNumber","RequirementTypeId","ImportanceName","StatusId","EstimatePoints","AuthorName","OwnerName","ComponentId"
-            ],
-            sizes: [ [2, 250], [3, 250], [4, 100], [11, 200], [13, 400] ],
-            dropdowns: [
-              //type
-              { 'e': ['Package', 'Design Element','Feature','Need','Quality','Use Case','User Story'] },
-              //Importance
-              { 'f': ['--None--','1 - Critical', '2 - High', '3 - Medium', '4 - Low'] },
-              //Status
-              {'g': ['Requested','Under Review','Rejected','Accepted','Planned','In Progress','Developed','Tested','Completed','Obsolete']}
-            ]
-           }
-        }
-
-
-        function logIn(){
-         //user ident variables
-         var url = $('#js--url').val();
-         var userName = $('#js--userName').val();
-         var password = $('#js--password').val();
-         var remember = $('#js--remember').prop('checked');
-
-         //User information
-         //passed to the verification function
-         model.currentUser = { 'url': url, 'userName': userName, 'password':password, 'remember': remember }
-
-         //toggle on spinner
-         $('#js--loader').toggleClass('hidden');
-
-         var done = 0;
-
-         //verification function
-         //calls appropriate function for verified or not verified
-         //pass in user info object
-         google.script.run.withSuccessHandler(getUsers)
-                          .withFailureHandler(error)
-                          .getUsers(model.currentUser);
-
-          function getUsers(users){
-            for(var i = 0; i < users.length; i++){
-              model.userList.push(users[i].UserName);
-            }
-              done++
-              done == 2 ? $('#js--loader').toggleClass('hidden') : null
+            headings: [],
+            JSON_headings: [],
+            sizes: [],
+            dropdowns: {
+              'type': ['Package', 'Design Element','Feature','Need','Quality','Use Case','User Story'],
+              'importance': ['--None--','1 - Critical', '2 - High', '3 - Medium', '4 - Low'],
+              'status' : ['Requested','Under Review','Rejected','Accepted','Planned','In Progress','Developed','Tested','Completed','Obsolete']
+            },
+            customFields: []
           }
-
-          google.script.run.withSuccessHandler(getProjects)
-                          .withFailureHandler(error)
-                          .getUsers(model.currentUser);
-
-          function getProjects(proj){
-            for(var i = 0; i < proj.length; i++){
-              model.projectList.push(proj[i].Name);
-            }
-              done++
-              done == 2 ? $('#js--loader').toggleClass('hidden') : null
-          }
-
         }
+      }
 
-        function error(err){
-          if( !( $('#js--loader').hasClass('hidden') ) ) {
+      let populateFields = () => {
+        //clear project drop down in case of reload
+        $('#js--project').html('');
+        //populate projects drop down
+        model.userData.projects.map( proj => {
+          let option = $('<option></option>');
+          option.attr('value', proj);
+          option.text(proj);
+          $('#js--project').append(option);
+        })
+
+        //populate user dropdowns
+        model.templateData.requirements.dropdowns['ownerName'] = model.userData.projUsers;
+        model.templateData.requirements.dropdowns['authorName'] = model.userData.projUsers;
+      }
+
+      $('#js--logIn').click( () => {
+        //get user data from input fields and store in user data object
+        model.userData.currentUser.url = $('#js--url').val();
+        model.userData.currentUser.userName = $('#js--userName').val();
+        model.userData.currentUser.API_KEY = encodeURIComponent( $('#js--password').val() )
+
+        //turn on ajax spinner
+        $('#js--loader').toggleClass('hidden');
+
+        //call google function to load data
+        google.script.run.withSuccessHandler(projectSuccess).withFailureHandler().getProjects(model.userData.currentUser)
+
+        function projectSuccess (projects){
+            //store project data
+            projects.map( project => model.userData.projects.push(project.Name) );
+            //call user data function
+            getUsers();
+            }
+
+        //call google function to load user data
+        let getUsers = () => {
+          google.script.run.withSuccessHandler(userSuccess).withFailureHandler().getUsers(model.userData.currentUser)
+
+          function userSuccess (users){
+            //map through user obj and assign names
+            users.map( user => {
+              let first = user.FirstName;
+              let last = user.LastName;
+              let full = ''
+              //check to see if middle names exist
+              if (user.MiddleInitial){
+                let middle = user.MiddleInitial
+                full = `${first} ${middle} ${last}`
+              } else {
+                full = `${first} ${last}`
+              }
+              model.userData.projUsers.push(full)
+            })
+            //turn off ajax spinner
             $('#js--loader').toggleClass('hidden')
+            //close auth window
+            $('#js--auth').removeClass('open')
+            //populate fields
+            populateFields();
           }
+        }
+      });
 
-          $('#js--error').toggleClass('open');
-          $('#js--errorText').text(err);
+      $('#js--cancel').click( () => console.log('test') );
+
+      $('#js--connect').click( () => console.log('test') );
+
+      $('#js--disconnect').click( () => console.log('test') );
+
+      $('#js--options').click( () => console.log('test') );
+
+      $('#js--template').click( () => {
+        //get selected artifact
+        let artifactName = $('js--project option:selected').text()
+        let artifactNum = model.userData.projects.map(project => project === artifactName)
+        model.templateData.currentArtifact = artifactNum;
+
+        google.script.run.withSuccessHandler(userchoice).warn();
+
+        function userchoice(bool){
+          bool ? google.script.run.withSuccessHandler().withFailureHandler().templateLoader(model.templateData) : null
         }
 
 
+      });
 
-        $('#js--logIn').click(logIn);
+      $('#js--import').click( () => console.log('test') );
 
-      })();
+      $('#js--export').click( () => console.log('test') );
+
+      $('#js--clear').click( () => {
+        google.script.run.withSuccessHandler().withFailureHandler().warn()
+      });
+
+      $('#js--errorToggle').click( () => console.log('test') );
+
     </script>
 
   </body>
 </html>
-
-
-
-
-
-
-      //boolean for template verification
-      var isTemplateLoaded = false;
-      var projectList = [];
-      var userList = [];
-
-      function userVerified(projects){
-         projectList = projects
-         //creates DOM nodes for projects <select> drop down menu
-         for(var i = 0; i < projects.length; i++){
-           var option = $('<option></option>');
-           option.attr('value', projects[i]);
-           option.text(projects[i]);
-           $('#js--project').append(option);
-         }
-
-         google.script.run.withSuccessHandler(setUsers)
-                          .getUsers();
-         function setUsers(users){
-           userList = users;
-         }
-
-         //toggle off spinner
-         $('#js--loader').toggleClass('hidden');
-
-         //if just loading artifacts and projects don't open auth window
-         if( $('.js--auth').hasClass('open')){
-           //open auth pane on successful log in
-           $('.js--auth').removeClass('open');
-         }
-      }
-
-      function logger(obj) { console.log(obj) }
-
-      function userNotVerified(error){
-        //toggle off spinner
-        if( !( $('#js--loader').hasClass('hidden') ) ) {
-          $('#js--loader').toggleClass('hidden')
-         }
-
-        $('#js--error').toggleClass('open');
-        $('#js--errorText').text(error);
-      }
-
-      // Jquery click handlers
-      // All click handlers must be initialized here and they all refer to a function in the `.gs` file
-
-
-
-
-      $('#js--disconnect' ).click(function(){
-          google.script.run.withSuccessHandler( userChoice )
-                           .warn()
-          function userChoice(v){
-            if(v){
-                google.script.run.clearAll();
-                $('.js--auth').toggleClass('open');
-                isTemplateLoaded = false;
-              }
-           }
-      })
-
-      $('#js--template').click(function(){
-         google.script.run.clearAll();
-         isTemplateLoaded = false;
-         $('#js--loader').toggleClass('hidden')
-         google.script.run.withSuccessHandler( templateLoaded )
-                          .withFailureHandler( userNotVerified )
-                          .loadTemplate( $('#js--artifact option:selected').text(), userList );
-         function templateLoaded (){
-           $('#js--loader').toggleClass('hidden'),
-           //set template boolean
-           isTemplateLoaded = true;
-         }
-
-      })
-
-      $('#js--import').click(function(){
-        if (isTemplateLoaded === true){
-          //start loading spinner
-          $('#js--loader').toggleClass('hidden')
-          //Import from SpiraTeam
-          //on success clear loading spinner
-          google.script.run.withSuccessHandler( $('#js--loader').toggleClass('hidden') )
-                           .withFailureHandler( userNotVerified )
-                           .importer();
-        } else {
-          google.script.run.noTemplate();
-        }
-      })
-
-      $('#js--export').click(function(){
-
-        if (isTemplateLoaded){
-          google.script.run.withSuccessHandler( logger ).exporter($('#js--project option:selected').text(), projectList);
-        } else {
-          google.script.run.noTemplate();
-        }
-      })
-
-      $('#js--clear').click(function(){
-        google.script.run.withSuccessHandler( userChoice )
-                         .warn()
-          function userChoice(v){
-            if(v){
-              google.script.run.clearAll();
-              isTemplateLoaded = false;
-            }
-          }
-      })
-
-      $('#js--errorToggle').click(function(){
-        //toggles error window closed
-        $('#js--error').toggleClass('open');
-      })
-
-
-
-
-
 
