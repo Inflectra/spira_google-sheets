@@ -64,7 +64,33 @@ function warn(){
 }
 
 function templateLoader(data){
-  Logger.log(data);
+  clearAll();
+
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = ss.getSheets()[0];
+
+  //set sheet name to model name
+  sheet.setName(data.currentProjectName + ' - ' + data.currentArtifactName);
+
+  //color heading cells
+  var stdColorRange = sheet.getRange('A1:M2');
+  stdColorRange.setBackground('#ffbf80');
+  var cusColorRange = sheet.getRange('N1:AQ2');
+  cusColorRange.setBackground('#70db70');
+  var reqIdRange = sheet.getRange('A3:A100');
+  reqIdRange.setBackground('#a6a6a6')
+
+  sheet.getRange('A1:M1').merge().setValue("Requirements Standard Fields").setHorizontalAlignment("center");
+  sheet.getRange('N1:AQ1').merge().setValue("Custom Fields").setHorizontalAlignment("center");
+
+  //append headings to sheet
+  sheet.appendRow(data.requirements.headings)
+
+  //loop through model sizes data and set columns to correct width
+  for(var i = 0; i < data.requirements.sizes.length; i++){
+    sheet.setColumnWidth(data.requirements.sizes[i][0],data.requirements.sizes[i][1]);
+  }
+
 }
 
 
