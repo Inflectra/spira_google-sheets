@@ -237,18 +237,19 @@
           currentArtifactName:'',
           isTemplateLoaded: false,
           requirements: {
-          headings: ['Requirement Id','Requirement Name','Requirement Description', 'Release Version', 'Type', 'Importance','Status', 'Estimate', 'Author', 'Owner', 'Component', 'Linked Requirements', 'Comment', 'CUS-01', 'CUS-02','CUS-03', 'CUS-04', 'CUS-05', 'CUS-06', 'CUS-07', 'CUS-08', 'CUS-09', 'CUS-10', 'CUS-11', 'CUS-12', 'CUS-13','CUS-14', 'CUS-15', 'CUS-16', 'CUS-17', 'CUS-18', 'CUS-19', 'CUS-20', 'CUS-21', 'CUS-22', 'CUS-23', 'CUS-24','CUS-25', 'CUS-26', 'CUS-27', 'CUS-28', 'CUS-29', 'CUS-30'],
-            JSON_headings: [],
-            sizes: [ [2, 350], [3, 250], [4, 100], [5, 100], [6, 100], [7, 100], [9, 100], [11, 200], [13, 400] ],
-            dropdowns: {
-              'type': ['Package', 'Design Element','Feature','Need','Quality','Use Case','User Story'],
-              'importance': ['--None--','1 - Critical', '2 - High', '3 - Medium', '4 - Low'],
-              'status' : ['Requested','Under Review','Rejected','Accepted','Planned','In Progress','Developed','Tested','Completed','Obsolete']
-            },
-            customFields: []
+            headings: ['Requirement Id','Requirement Name','Requirement Description', 'Release Version', 'Type', 'Importance','Status', 'Estimate', 'Author', 'Owner', 'Component', 'Linked Requirements', 'Comment', 'CUS-01', 'CUS-02','CUS-03', 'CUS-04', 'CUS-05', 'CUS-06', 'CUS-07', 'CUS-08', 'CUS-09', 'CUS-10', 'CUS-11', 'CUS-12', 'CUS-13','CUS-14', 'CUS-15', 'CUS-16', 'CUS-17', 'CUS-18', 'CUS-19', 'CUS-20', 'CUS-21', 'CUS-22', 'CUS-23', 'CUS-24','CUS-25', 'CUS-26', 'CUS-27', 'CUS-28', 'CUS-29', 'CUS-30'],
+              JSON_headings: ["RequirementId","Name","Description","ReleaseVersionNumber","RequirementTypeId","ImportanceName","StatusName","EstimatePoints","AuthorName","OwnerName","ComponentId"],
+              sizes: [ [1, 100], [2, 250], [3, 350], [4, 100], [5, 100], [6, 100], [7, 100], [8, 100], [9, 100], [11, 200], [12, 200], [13, 400] ],
+              dropdowns: {
+                'Type': ['Package', 'Design Element','Feature','Need','Quality','Use Case','User Story'],
+                'Importance': ['--None--','1 - Critical', '2 - High', '3 - Medium', '4 - Low'],
+                'Status' : ['Requested','Under Review','Rejected','Accepted','Planned','In Progress','Developed','Tested','Completed','Obsolete']
+              },
+              customFields: []
           }
         }
       }
+      // "ProjectName","IndentLevel",
 
       let populateFields = () => {
         //clear project drop down in case of reload
@@ -262,8 +263,8 @@
         })
 
         //populate user dropdowns
-        model.templateData.requirements.dropdowns['ownerName'] = model.userData.projUsers;
-        model.templateData.requirements.dropdowns['authorName'] = model.userData.projUsers;
+        model.templateData.requirements.dropdowns['Owner'] = model.userData.projUsers;
+        model.templateData.requirements.dropdowns['Author'] = model.userData.projUsers;
       }
 
       $('#js--logIn').click( () => {
@@ -318,7 +319,17 @@
 
       $('#js--connect').click( () => console.log('test') );
 
-      $('#js--disconnect').click( () => console.log('test') );
+      $('#js--disconnect').click( () => {
+        google.script.run.withSuccessHandler(userChoice).warn();
+
+        function userChoice(bool){
+          if (bool){
+            google.script.run.clearAll();
+            $('#js--auth').toggleClass('open');
+            isTemplateLoaded = false;
+          }
+        }
+      });
 
       $('#js--options').click( () => console.log('test') );
 
@@ -338,26 +349,48 @@
         model.templateData.currentProjectName = projName;
 
         //warn the user data will be erased
-        google.script.run.withSuccessHandler(userchoice).warn();
+        google.script.run.withSuccessHandler(userChoice).warn();
 
         //if yes run template loader script
-        function userchoice(bool){
-          bool ? google.script.run.withSuccessHandler(templatePaint).withFailureHandler().templateLoader(model.templateData) : null
+        function userChoice(bool){
+          bool ? google.script.run.withSuccessHandler(templatePainted).withFailureHandler().templateLoader(model.templateData) : null
         }
 
-        function templatePaint(){
-
+        function templatePainted(){
+          isTemplateLoaded = true;
         }
+      });
 
+      $('#js--import').click( () =>{
+
+        if (isTemplateLoaded){
+          google.script.run.withSuccessHandler().importer(model.userData.currentUser)
+        } else {
+          google.script.run.noTemplate()
+        }
 
       });
 
-      $('#js--import').click( () => console.log('test') );
+      $('#js--export').click( () => {
+        if (isTemplateLoaded){
+          google.script.run.withSuccessHandler(exportLogger).exporter(model)
+        } else {
+          google.script.run.noTemplate()
+        }
 
-      $('#js--export').click( () => console.log('test') );
+        function exportLogger(data){
+          console.log(data);
+        }
+      });
 
       $('#js--clear').click( () => {
-        google.script.run.withSuccessHandler().withFailureHandler().warn()
+        //warn that data will be erased
+        google.script.run.withSuccessHandler(userChoice).warn();
+
+        function userChoice(bool){
+          bool ? google.script.run.clearAll() : null;
+        }
+
       });
 
       $('#js--errorToggle').click( () => console.log('test') );

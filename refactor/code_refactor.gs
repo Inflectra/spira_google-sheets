@@ -29,21 +29,21 @@ function showSidebar() {
 
 function getProjects(currentUser){
   var params = '/services/v5_0/RestService.svc/projects?username='
-  var res = getFetch(currentUser, params);
+  var res = fetcher(currentUser, params);
 
   return res;
 }
 
 function getUsers(currentUser){
   var params = '/services/v5_0/RestService.svc/users/all?username='
-  var res = getFetch(currentUser, params);
+  var res = fetcher(currentUser, params);
 
   return res;
 }
 
-function getFetch (currentUser, params){
+function fetcher (currentUser, params, init){
   var URL = stubUser.url + params + stubUser.userName + stubUser.api_key;
-  var init = {'content-type' : 'application/json'}
+  init ? null : init = {'content-type' : 'application/json'}
 
   var response = UrlFetchApp.fetch(URL, init)
 
@@ -68,6 +68,9 @@ function templateLoader(data){
 
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheets()[0];
+  var dropdownColumnAssignments = [
+        ['Type', 'e'],['Importance', 'f'], ['Status', 'g'], ['Author', 'i'], ['Owner', 'j']
+      ]
 
   //set sheet name to model name
   sheet.setName(data.currentProjectName + ' - ' + data.currentArtifactName);
@@ -91,6 +94,225 @@ function templateLoader(data){
     sheet.setColumnWidth(data.requirements.sizes[i][0],data.requirements.sizes[i][1]);
   }
 
+  //loop through dropdowns model data
+  for(var i = 0; i < dropdownColumnAssignments.length; i++){
+    var letter = dropdownColumnAssignments[i][1];
+    var name = dropdownColumnAssignments[i][0];
+    var list = data.requirements.dropdowns[name]
+
+
+    //set range to entire column excluding top two rows
+    var cell = SpreadsheetApp.getActive().getRange(letter + ':' + letter).offset(2, 0);
+    //require list of values as dropdown and entered values
+    //require value in list: list variable is from the model, true shows dropdown arrow
+    //allow invalid set to false does not allow invalid entries
+    var rule = SpreadsheetApp.newDataValidation().requireValueInList(list, true).setAllowInvalid(false).build();
+    cell.setDataValidation(rule);
+  }
+}
+
+//import function, basic for now
+//stretch goal is to have this as a useful import
+function importer(currentUser){
+  //get spreadsheet and active first sheet
+  var ss = SpreadsheetApp.getActiveSpreadsheet()
+  var sheet = ss.getSheets()[0];
+
+  // needed for eventual actual importer
+  // var paramsCount = '/services/v5_0/RestService.svc/projects/1/requirements/count?username=';
+  // var count = getFetch(currentUser, paramsCount )
+
+  //call defined fetch function
+  //current params has count set to 35, this can be set/changed programmatically with the count call listed above (stretch goal)
+  var params = '/services/v5_0/RestService.svc/projects/1/requirements?starting_row=1&number_of_rows=35&username=';
+  var data = fetcher(currentUser, params)
+
+  //get first row range
+  var range = sheet.getRange("A3:AQ3");
+
+  //loop through cells in range
+  for(var i = 0; i < data.length; i++){
+    var ss_i = i + 1
+    range.getCell(ss_i, 1).setValue(data[i].RequirementId);
+    range.getCell(ss_i, 2).setValue(data[i].Name);
+    range.getCell(ss_i, 3).setValue(data[i].Description);
+    range.getCell(ss_i, 4).setValue(data[i].ReleaseVersionNumber);
+    range.getCell(ss_i, 5).setValue(data[i].RequirementTypeName);
+    range.getCell(ss_i, 6).setValue(data[i].ImportanceName);
+    range.getCell(ss_i, 7).setValue(data[i].StatusName);
+    range.getCell(ss_i, 8).setValue(data[i].EstimatePoints);
+    range.getCell(ss_i, 9).setValue(data[i].AuthorName);
+    range.getCell(ss_i, 10).setValue(data[i].OwnerName);
+    range.getCell(ss_i, 11).setValue(data[i].ComponentId);
+    //moves the range down one row
+    range = range.offset(1, 0, 43);
+ }
+}
+
+function exporter(data){
+  var ss = SpreadsheetApp.getActiveSpreadsheet()
+  var sheet = ss.getSheets()[0];
+
+  var range = sheet.getRange("A3:AQ3")
+  var isRangeEmpty = false;
+  var numberOfRows = 0;
+  var count = 0;
+  var bodyArr = [];
+
+  //loop through and collect number of rows that contain data
+  //TODO skip two lines before changing isRangeEmpty var
+  while (isRangeEmpty === false){
+    var newRange = range.offset(count, 0, 43);
+    if ( newRange.isBlank() ){
+      isRangeEmpty = true
+    } else {
+      //move to next row
+      count++;
+      //add to number of rows
+      numberOfRows++;
+    }
+  }
+
+    //loop through rows
+  for (var j = 0; j < numberOfRows + 1; j++){
+
+    //initialize/clear new object for row values
+    var xObj = {}
+    //shorten variable
+    var reqs = data.templateData.requirements;
+
+    //loop through cells in row
+    for (var i = 0; i < reqs.JSON_headings.length; i++){
+
+      //get cell value
+      var cell = range.offset(j, i).getValue();
+
+      //change the requirement type name into a number (this is required for the API for some reason)
+      if(i === 4.0){
+        switch (cell){
+          case 'Package':
+            cell = 0;
+            break;
+          case 'Design Element':
+            cell = 1;
+            break;
+          case 'Feature':
+            cell = 2;
+            break;
+          case 'Need':
+            cell = 3;
+            break;
+          case 'Quality':
+            cell = 4;
+            break;
+          case 'Use Case':
+            cell = 5;
+            break;
+          case 'User Story':
+            cell = 6;
+            break;
+          default:
+            cell = 0;
+            break;
+        }
+      }
+      //shorten variable
+      var users = data.userData.projUsers
+
+      if (i === 9.0){
+        for(var k = 1; k < users.length; k ++){
+          if(cell == users[k]){
+            xObj['AuthorId'] = k
+          }
+        }
+      }
+      if (i === 10.0){
+        for(var k = 1; k < users.length; k ++){
+          if(cell == users[i]){
+            xObj['OwnerId'] = k
+          }
+        }
+      }
+
+
+
+      //get indent amount
+      var indentCount = 0;
+      //check for indent character '>'
+      if(cell && cell[0] === '>'){
+        //increment indent counter while there are '>'s present
+        while (cell[0] === '>'){
+          //get entry length for slice
+          var len = cell.length;
+          //slice the first character off of the entry
+          cell = cell.slice(1, len);
+          indentCount++;
+        }
+        xObj['IndentLevel'] = 'AAB';
+      }
+
+      //get cell font weight
+      var cellBold = range.offset(j, i).getFontWeight();
+      //check to see if the cell is bold
+      //if true wrap in bold tags
+      cellBold === 'bold' ? cell = '<b>' + cell + '</b>' : null
+
+      //get cell font style
+      var cellItalic = range.offset(j, i).getFontStyle();
+      //check to see if the cell is italic
+      //if true wrap in em tags
+      cellItalic === 'italic' ? cell = '<em>' + cell + '</em>' : null
+      Logger.log(cell ? true : false)
+      //if empty add null otherwise add the cell
+      // ...to the object under the proper key relative to its location on the template
+      //Offset by 2 for proj name and indent level
+      if (cell === ""){
+        xObj[reqs.JSON_headings[i]] = null;
+      } else {
+        xObj[reqs.JSON_headings[i]] = cell;
+      }
+
+    }
+
+    //if not empty add object or a generated placeholder (no name)
+    if ( xObj.Name ) {
+      xObj['ProjectName'] = data.templateData.currentProjectName;
+      bodyArr.push(xObj)
+    }
+
+  }
+
+  // set up to individually add each requirement to spirateam
+  // maybe there's a way to bulk add them instead of individual calls?
+
+ var responses = []
+ for(var i = 0; i < bodyArr.length; i++){
+   var JSON_body = JSON.stringify( bodyArr[i] );
+   var response = exportCall( JSON_body, data.templateData.currentProjectNumber, data.userData.currentUser )
+   responses.push(response)
+ }
+
+
+
+
+  return responses
+  // return JSON.stringify( bodyArr )
+  //return JSON_body;
+}
+
+function exportCall(body, projNum, currentUser){
+
+  var params = '/services/v5_0/RestService.svc/projects/' + projNum + '/requirements?username=';
+
+  var init = {
+   'method' : 'post',
+   'contentType': 'application/json',
+   'payload' : body
+  };
+
+  var res = fetcher(currentUser, params, init);
+
+  return res;
 }
 
 
