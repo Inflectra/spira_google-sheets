@@ -272,12 +272,14 @@ function exporter(data){
 
   // set up to individually add each requirement to spirateam
   // maybe there's a way to bulk add them instead of individual calls?
-
  var responses = []
  for(var i = 0; i < bodyArr.length; i++){
-   var JSON_body = JSON.stringify( bodyArr[i] );
-   var response = exportCall( JSON_body, data.templateData.currentProjectNumber, data.userData.currentUser )
-   responses.push(response)
+  //stringify
+  var JSON_body = JSON.stringify( bodyArr[i] );
+  //send JSON to export function
+  var response = requirementExportCall( JSON_body, data.templateData.currentProjectNumber, data.userData.currentUser )
+  //push API approval into array
+  responses.push(response)
  }
 
 
@@ -288,16 +290,16 @@ function exporter(data){
   //return JSON_body;
 }
 
-function exportCall(body, projNum, currentUser){
-
+function requirementExportCall(body, projNum, currentUser){
+  //unique url for requirement POST
   var params = '/services/v5_0/RestService.svc/projects/' + projNum + '/requirements?username=';
-
+  //POST headers
   var init = {
    'method' : 'post',
    'contentType': 'application/json',
    'payload' : body
   };
-
+  //call fetch with POST request
   var res = fetcher(currentUser, params, init);
 
   return res;

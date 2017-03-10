@@ -325,9 +325,13 @@
 
         function userChoice(bool){
           if (bool){
+            //clear spreadsheet
             google.script.run.clearAll();
             $('#js--auth').toggleClass('open');
             isTemplateLoaded = false;
+            model.userData.currentUser.url = '';
+            model.userData.currentUser.userName = '';
+            model.userData.currentUser.API_KEY = '';
           }
         }
       });
