@@ -50,18 +50,6 @@ function fetcher (currentUser, params, init){
   return JSON.parse(response);
 }
 
-//Alert pop up for data clear warning
-function warn(){
-  var ui = SpreadsheetApp.getUi();
-  var response = ui.alert('This will erase all unsaved changes. Continue?', ui.ButtonSet.YES_NO);
-
-  //returns with user choice
-  if (response == ui.Button.YES) {
-    return true;
-  } else {
-    return false;
-  }
-}
 
 function templateLoader(data){
   clearAll();
@@ -315,13 +303,43 @@ function exportCall(body, projNum, currentUser){
   return res;
 }
 
+//Alert pop up for data clear warning
+function warn(){
+  var ui = SpreadsheetApp.getUi();
+  var response = ui.alert('This will erase all unsaved changes. Continue?', ui.ButtonSet.YES_NO);
 
+  //returns with user choice
+  if (response == ui.Button.YES) {
+    return true;
+  } else {
+    return false;
+  }
+}
 
 
 //Alert pop up for no template present
 function noTemplate() {
   var ui = SpreadsheetApp.getUi();
   var response = ui.alert('Please load a template to continue.', ui.ButtonSet.OK);
+}
+
+//save function
+function save(){
+  //pop up telling the user that their data will be saved
+  var ui = SpreadsheetApp.getUi();
+  var response = ui.alert('This will save the current sheet in a new tab. Continue?', ui.ButtonSet.YES_NO_SAVE);
+
+  //returns with user choice
+  if (response == ui.Button.YES) {
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = ss.getSheets()[0];
+    //get entire spreadsheet id
+    var id = ss.getId()
+    //set as destination
+    var destination = SpreadsheetApp.openById(id);
+    //copy to destination
+    sheet.copyTo(destination);
+  }
 }
 
 //clear function

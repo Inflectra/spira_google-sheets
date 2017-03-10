@@ -195,6 +195,7 @@
           </select>
         </label>
         <button id="js--template" class="btn btn-sm">Load Template</button>
+        <button id="js--save" class="btn btn-sm">Save</button>
       </div>
       <div class="row justify-content-around" id="buttons-bottom">
         <button class="btn btn-sm col-3" id="js--import">Import</button>
@@ -353,17 +354,17 @@
 
         //if yes run template loader script
         function userChoice(bool){
-          bool ? google.script.run.withSuccessHandler(templatePainted).withFailureHandler().templateLoader(model.templateData) : null
+          bool ? google.script.run.withSuccessHandler(templateSuccess).withFailureHandler().templateLoader(model.templateData) : null
         }
 
-        function templatePainted(){
-          isTemplateLoaded = true;
+        function templateSuccess(){
+          model.templateData.isTemplateLoaded = true;
         }
       });
 
       $('#js--import').click( () =>{
 
-        if (isTemplateLoaded){
+        if (model.templateData.isTemplateLoaded){
           google.script.run.withSuccessHandler().importer(model.userData.currentUser)
         } else {
           google.script.run.noTemplate()
@@ -372,14 +373,33 @@
       });
 
       $('#js--export').click( () => {
-        if (isTemplateLoaded){
-          google.script.run.withSuccessHandler(exportLogger).exporter(model)
+        if (model.templateData.isTemplateLoaded){
+          // toggle on spinner
+          $('#js--loader').toggleClass('hidden');
+          google.script.run.withSuccessHandler(exportSuccess).exporter(model)
         } else {
           google.script.run.noTemplate()
         }
 
-        function exportLogger(data){
+        function exportSuccess(data){
+          //toggle off spinner
+          $('#js--loader').toggleClass('hidden');
           console.log(data);
+        }
+      });
+
+      $('#js--save').click(() => {
+        if (model.templateData.isTemplateLoaded){
+          //toggle spinner on
+          $('#js--loader').toggleClass('hidden');
+          google.script.run.withSuccessHandler(saveSuccess).save();
+        } else {
+          google.script.run.noTemplate();
+        }
+
+        function saveSuccess(){
+          // toggle spinner off
+          $('#js--loader').toggleClass('hidden');
         }
       });
 
