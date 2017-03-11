@@ -139,10 +139,16 @@ function importer(currentUser){
  }
 }
 
-function mapper(item, list){
-  var val = 0;
-  for (var i = 1; i < list.length; i++){
-    if (item == list[i]){ val = i }
+function mapper(item, list, objNums){
+  var val = 1;
+  if(objNums){
+    for (var i = 1; i < list.length; i++){
+      if (item == list[i][0]) {val = list[i][1]}
+    }
+  } else {
+    for (var i = 1; i < list.length; i++){
+      if (item == list[i]){ val = i }
+    }
   }
   //Logger.log(list)
   Logger.log(item)
@@ -150,7 +156,15 @@ function mapper(item, list){
 }
 
 function richData(data){
-  //Logger.log(data);
+  var textArr = data.split(' ');
+
+  for (var i = 0; i < textArr.length; i++){
+
+    var bold = textArr[i].getFontWeight()
+    var italic = textArr[i].getFontStyle()
+    var underline = textArr[i].getFOntLines()
+
+  }
   return data;
 }
 
@@ -213,7 +227,7 @@ function exporter(data){
       if(i === 2.0){ cell = richData(cell) }
 
       //shorten variables
-      var users = data.userData.projUsers;
+      var users = data.userData.projUserWNum;
       var dataReqs = data.templateData.requirements;
 
       //pass values to mapper function
@@ -224,9 +238,9 @@ function exporter(data){
 
       if(i === 6.0){ xObj['StatusId'] = mapper(cell, dataReqs.dropdowns['Status']) }
 
-      if (i === 8.0){ xObj['AuthorId'] = mapper(cell, users) }
+      if (i === 8.0){ xObj['AuthorId'] = mapper(cell, users, true) }
 
-      if (i === 9.0){ xObj['OwnerId'] = mapper(cell, users) }
+      if (i === 9.0){ xObj['OwnerId'] = mapper(cell, users, true) }
 
 
 
@@ -267,9 +281,9 @@ for(var i = 0; i < bodyArr.length; i++){
 
 
 
-  //return responses
+  return responses
   //return bodyArr
-  return JSON.stringify( bodyArr )
+  //return JSON.stringify( bodyArr )
   //return JSON_body;
 }
 

@@ -218,7 +218,8 @@
             password: ''
           },
           projects: [],
-          projUsers: []
+          projUsers: [],
+          projUserWNum: []
         },
         templateData : {
           currentProjectName: '',
@@ -232,7 +233,7 @@
               dropdowns: {
                 'Type': ['Package', 'Design Element','Feature','Need','Quality','Use Case','User Story'],
                 'Importance': ['1 - Critical', '2 - High', '3 - Medium', '4 - Low'],
-                'Status' : ['Requested','Under Review','Rejected','Accepted','Planned','In Progress','Developed','Tested','Completed','Obsolete']
+                'Status' : ['Requested','Planned','In Progress', 'Developed', 'Accepted','Rejected','Under Review', 'Obsolete', 'Completed', 'Tested']
               },
               customFields: []
           }
@@ -282,6 +283,7 @@
           function userSuccess (users){
             //map through user obj and assign names
             users.map( user => {
+              let num = user.UserId;
               let first = user.FirstName;
               let last = user.LastName;
               let full = ''
@@ -293,6 +295,7 @@
                 full = `${first} ${last}`
               }
               model.userData.projUsers.push(full)
+              model.userData.projUserWNum.push([full, num])
             })
             //turn off ajax spinner
             $('#js--loader').toggleClass('hidden')
