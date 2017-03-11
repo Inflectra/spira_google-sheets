@@ -45,7 +45,6 @@ function fetcher (currentUser, params, init){
   var URL = stubUser.url + params + stubUser.userName + stubUser.api_key;
   init ? null : init = {'content-type' : 'application/json'}
 
-  Logger.log(URL)
 
   var response = UrlFetchApp.fetch(URL, init)
 
@@ -134,7 +133,7 @@ function importer(currentUser){
     range.getCell(ss_i, 9).setValue(data[i].AuthorName);
     range.getCell(ss_i, 10).setValue(data[i].OwnerName);
     range.getCell(ss_i, 11).setValue(data[i].ComponentId);
-    Logger.log(data[i].IndentLevel)
+
     //moves the range down one row
     range = range.offset(1, 0, 43);
  }
@@ -142,11 +141,34 @@ function importer(currentUser){
 
 function mapper(item, list){
   var val = 0;
-  for (var i = 0; i < list.length; i++){
+  for (var i = 1; i < list.length; i++){
     if (item == list[i]){ val = i }
   }
-  Logger.log(val)
+  //Logger.log(list)
+  Logger.log(item)
   return val;
+}
+
+function richData(data){
+  //Logger.log(data);
+  return data;
+}
+
+function indender(cell){
+  // var indentCount = 0;
+  // //check for indent character '>'
+  // if(cell && cell[0] === '>'){
+  // //increment indent counter while there are '>'s present
+  //   while (cell[0] === '>'){
+  //     //get entry length for slice
+  //     var len = cell.length;
+  //     //slice the first character off of the entry
+  //     cell = cell.slice(1, len);
+  //     indentCount++;
+  //   }
+  //   xObj['IndentLevel'] = 'AAB';
+  // }
+  return 'AAA'
 }
 
 function exporter(data){
@@ -173,7 +195,7 @@ function exporter(data){
     }
   }
 
-    //loop through rows
+  //loop through rows
   for (var j = 0; j < numberOfRows + 1; j++){
 
     //initialize/clear new object for row values
@@ -187,51 +209,29 @@ function exporter(data){
       //get cell value
       var cell = range.offset(j, i).getValue();
 
-      //change the requirement type name into a number (this is required for the API for some reason)
-      if(i === 4.0){ cell = mapper(cell, data.templateData.requirements.dropdowns['Type']) }
+      //passes description data to richData function to attach HTML tags for spirateam
+      if(i === 2.0){ cell = richData(cell) }
 
-      if(i === 5.0){ xObj['ImportanceId'] = mapper(cell, data.templateData.requirements.dropdowns['Importance']) }
+      //shorten variables
+      var users = data.userData.projUsers;
+      var dataReqs = data.templateData.requirements;
 
-      if(i === 4.0){ xObj['StatusId'] = mapper(cell, data.templateData.requirements.dropdowns['Status']) }
+      //pass values to mapper function
+      //mapper iterates and assigns the values number based on the list order
+      if(i === 4.0){ cell = mapper(cell, dataReqs.dropdowns['Type']) }
 
-      //shorten variable
-      var users = data.userData.projUsers
+      if(i === 5.0){ xObj['ImportanceId'] = mapper(cell, dataReqs.dropdowns['Importance']) }
 
-      //if cell 8 pass list to be sorted by number and assigned to AuthorId
+      if(i === 6.0){ xObj['StatusId'] = mapper(cell, dataReqs.dropdowns['Status']) }
+
       if (i === 8.0){ xObj['AuthorId'] = mapper(cell, users) }
 
-      //if cell 9 pass list to be sorted by number and assigned to OwnerId
       if (i === 9.0){ xObj['OwnerId'] = mapper(cell, users) }
 
 
 
-      //get indent amount
-      var indentCount = 0;
-      xObj['IndentLevel'] = 'AAA';
-//      //check for indent character '>'
-//      if(cell && cell[0] === '>'){
-//        //increment indent counter while there are '>'s present
-//        while (cell[0] === '>'){
-//          //get entry length for slice
-//          var len = cell.length;
-//          //slice the first character off of the entry
-//          cell = cell.slice(1, len);
-//          indentCount++;
-//        }
-//        xObj['IndentLevel'] = 'AAB';
-//      }
-
-      //get cell font weight
-      var cellBold = range.offset(j, i).getFontWeight();
-      //check to see if the cell is bold
-      //if true wrap in bold tags
-      cellBold === 'bold' ? cell = '<b>' + cell + '</b>' : null
-
-      //get cell font style
-      var cellItalic = range.offset(j, i).getFontStyle();
-      //check to see if the cell is italic
-      //if true wrap in em tags
-      cellItalic === 'italic' ? cell = '<em>' + cell + '</em>' : null
+      //call indent checker and set indent amount
+      xObj['IndentLevel'] = indender();
 
       //if empty add null otherwise add the cell
       // ...to the object under the proper key relative to its location on the template
@@ -254,21 +254,22 @@ function exporter(data){
 
   // set up to individually add each requirement to spirateam
   // maybe there's a way to bulk add them instead of individual calls?
-// var responses = []
-// for(var i = 0; i < bodyArr.length; i++){
-//  //stringify
-//  var JSON_body = JSON.stringify( bodyArr[i] );
-//  //send JSON to export function
-//  var response = requirementExportCall( JSON_body, data.templateData.currentProjectNumber, data.userData.currentUser )
-//  //push API approval into array
-//  responses.push(response.RequirementId)
-// }
+var responses = []
+for(var i = 0; i < bodyArr.length; i++){
+ //stringify
+ var JSON_body = JSON.stringify( bodyArr[i] );
+ //send JSON to export function
+ var response = requirementExportCall( JSON_body, data.templateData.currentProjectNumber, data.userData.currentUser )
+ //push API approval into array
+ responses.push(response.RequirementId)
+}
 
 
 
 
   //return responses
-   return JSON.stringify( bodyArr )
+  //return bodyArr
+  return JSON.stringify( bodyArr )
   //return JSON_body;
 }
 
@@ -276,7 +277,7 @@ function requirementExportCall(body, projNum, currentUser){
   //unique url for requirement POST
   var params = '/services/v5_0/RestService.svc/projects/' + projNum + '/requirements?username=';
   //POST headers
-  Logger.log(body)
+
   var init = {
    'method' : 'post',
    'contentType': 'application/json',
