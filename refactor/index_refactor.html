@@ -301,6 +301,16 @@
             $('#js--loader').toggleClass('hidden')
             //close auth window
             $('#js--auth').removeClass('open')
+            getCustomFields();
+          }
+        }
+
+        function getCustomFields(){
+          google.script.run.withSuccessHandler(customSuccess).withFailureHandler().getCustoms(model.userData.currentUser)
+
+          function customSuccess(data){
+            console.log(data[0].CustomProperties);
+            model.templateData.requirements.customFields = data[0].CustomProperties;
             //populate fields
             populateFields();
           }

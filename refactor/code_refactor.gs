@@ -41,6 +41,13 @@ function getUsers(currentUser){
   return res;
 }
 
+function getCustoms(currentUser){
+  var params = '/services/v5_0/RestService.svc/requirements?username='
+  var res = fetcher(currentUser, params);
+  Logger.log(res)
+  return res;
+}
+
 function fetcher (currentUser, params, init){
   var URL = stubUser.url + params + stubUser.userName + stubUser.api_key;
   init ? null : init = {'content-type' : 'application/json'}
@@ -78,6 +85,10 @@ function templateLoader(data){
   //append headings to sheet
   sheet.appendRow(data.requirements.headings)
 
+  //set custom headings if they exist
+  //pass in custom field range and data model
+  customFieldSetter(sheet.getRange('N2:AQ2'), data);
+
   //loop through model sizes data and set columns to correct width
   for(var i = 0; i < data.requirements.sizes.length; i++){
     sheet.setColumnWidth(data.requirements.sizes[i][0],data.requirements.sizes[i][1]);
@@ -99,6 +110,20 @@ function templateLoader(data){
     cell.setDataValidation(rule);
   }
 }
+
+function customFieldSetter(range, data){
+  //shorten variable
+  var fields = data.requirements.customFields
+  //loop through model custom fields data
+  //take passed in range and only overwrite the fields if a value is present in the model
+  for(var i = 0; i < fields.length; i++){
+    var cell = range.getCell(1, i + 1)
+    cell.setValue('Custom Field ' + (i + 1) + '\n' + fields[i].Definition.Name).setWrap(true);
+
+  }
+}
+
+
 
 //import function, basic for now
 //stretch goal is to have this as a useful import
@@ -155,18 +180,22 @@ function mapper(item, list, objNums){
   return val;
 }
 
-function richData(data){
-  var textArr = data.split(' ');
-
-  for (var i = 0; i < textArr.length; i++){
-
-    var bold = textArr[i].getFontWeight()
-    var italic = textArr[i].getFontStyle()
-    var underline = textArr[i].getFOntLines()
-
-  }
-  return data;
-}
+//function richData(data){
+//  var textArr = data.split(' ');
+//
+//  for (var i = 0; i < textArr.length; i++){
+//
+//    var word = textArr[i]
+//    //.isBold()
+//
+////    var italic = textArr[i].getFontStyle()
+////    var underline = textArr[i].getFOntLines()
+////
+//    Logger.log(word)// + italic + underline
+//
+//  }
+//  return data;
+//}
 
 function indender(cell){
   // var indentCount = 0;
@@ -224,7 +253,7 @@ function exporter(data){
       var cell = range.offset(j, i).getValue();
 
       //passes description data to richData function to attach HTML tags for spirateam
-      if(i === 2.0){ cell = richData(cell) }
+      //if(i === 2.0){ cell = richData(cell) }
 
       //shorten variables
       var users = data.userData.projUserWNum;
@@ -268,21 +297,21 @@ function exporter(data){
 
   // set up to individually add each requirement to spirateam
   // maybe there's a way to bulk add them instead of individual calls?
-var responses = []
-for(var i = 0; i < bodyArr.length; i++){
- //stringify
- var JSON_body = JSON.stringify( bodyArr[i] );
- //send JSON to export function
- var response = requirementExportCall( JSON_body, data.templateData.currentProjectNumber, data.userData.currentUser )
- //push API approval into array
- responses.push(response.RequirementId)
-}
+//var responses = []
+//for(var i = 0; i < bodyArr.length; i++){
+// //stringify
+// var JSON_body = JSON.stringify( bodyArr[i] );
+// //send JSON to export function
+// var response = requirementExportCall( JSON_body, data.templateData.currentProjectNumber, data.userData.currentUser )
+// //push API approval into array
+// responses.push(response.RequirementId)
+//}
 
 
 
 
-  return responses
-  //return bodyArr
+  //return responses
+  return bodyArr
   //return JSON.stringify( bodyArr )
   //return JSON_body;
 }
