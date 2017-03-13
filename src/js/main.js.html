@@ -15,6 +15,24 @@
     model.templateData.requirements.dropdowns['Author'] = model.userData.projUsers;
   }
 
+  function errorNetwork (err){
+    google.script.run.error();
+    $('#js--loader').toggleClass('hidden');
+    console.log(err);
+  }
+
+  function errorImpExp (err){
+    google.script.run.error('impExp');
+    $('#js--loader').toggleClass('hidden');
+    console.log(err);
+  }
+
+  function errorUnk (err){
+    google.script.run.error('unk');
+    $('#js--loader').toggleClass('hidden');
+    console.log(err);
+  }
+
   $('#js--logIn').click( () => {
     //get user data from input fields and store in user data object
     model.userData.currentUser.url = $('#js--url').val();
@@ -25,7 +43,7 @@
     $('#js--loader').toggleClass('hidden');
 
     //call google function to load data
-    google.script.run.withSuccessHandler(projectSuccess).withFailureHandler().getProjects(model.userData.currentUser)
+    google.script.run.withSuccessHandler(projectSuccess).withFailureHandler(errorNetwork).getProjects(model.userData.currentUser)
 
     function projectSuccess (projects){
         //store project data
@@ -35,8 +53,8 @@
         }
 
     //call google function to load user data
-    function getUsers (){
-      google.script.run.withSuccessHandler(userSuccess).withFailureHandler().getUsers(model.userData.currentUser)
+    let getUsers = () => {
+      google.script.run.withSuccessHandler(userSuccess).withFailureHandler(errorNetwork).getUsers(model.userData.currentUser)
 
       function userSuccess (users){
         //map through user obj and assign names
@@ -64,7 +82,7 @@
     }
 
     function getCustomFields(){
-      google.script.run.withSuccessHandler(customSuccess).withFailureHandler().getCustoms(model.userData.currentUser)
+      google.script.run.withSuccessHandler(customSuccess).withFailureHandler(errorNetwork).getCustoms(model.userData.currentUser)
 
       function customSuccess(data){
         console.log(data[0].CustomProperties);
@@ -86,9 +104,7 @@
       if (bool){
         //clear spreadsheet
         google.script.run.clearAll();
-        //close main page and open sign in page
         $('#js--auth').toggleClass('open');
-        //clear user data variables
         isTemplateLoaded = false;
         model.userData.currentUser.url = '';
         model.userData.currentUser.userName = '';
@@ -105,7 +121,6 @@
     let projName = $('#js--project option:selected').text()
     //get and store project number for future calls
     let projNum = 0
-    //loop through projects and assign the number to the currently selected project
     for(let i = 0; i < model.userData.projects.length; i++){
       model.userData.projects[i] === projName ? projNum = i + 1 : null;
     }
@@ -120,20 +135,25 @@
 
     //if yes run template loader script
     function userChoice(bool){
-      bool ? google.script.run.withSuccessHandler(templateSuccess).withFailureHandler().templateLoader(model.templateData) : null
+      bool ? google.script.run.withSuccessHandler(templateSuccess).withFailureHandler(errorUnk).templateLoader(model.templateData) : null
     }
 
     function templateSuccess(){
       model.templateData.isTemplateLoaded = true;
+      google.script.run.success('Template loaded successfully.')
     }
   });
 
   $('#js--import').click( () =>{
 
     if (model.templateData.isTemplateLoaded){
-      google.script.run.withSuccessHandler().importer(model.userData.currentUser)
+      google.script.run.withSuccessHandler(importSuccess).withFailureHandler(errorNetwork).importer(model.userData.currentUser)
     } else {
       google.script.run.noTemplate()
+    }
+
+    function importSuccess (){
+      google.script.run.success('Data loaded successfully.')
     }
 
   });
@@ -142,7 +162,7 @@
     if (model.templateData.isTemplateLoaded){
       // toggle on spinner
       $('#js--loader').toggleClass('hidden');
-      google.script.run.withSuccessHandler(exportSuccess).exporter(model)
+      google.script.run.withFailureHandler(errorImpExp).withSuccessHandler(exportSuccess).exporter(model)
     } else {
       google.script.run.noTemplate()
     }
@@ -150,6 +170,7 @@
     function exportSuccess(data){
       //toggle off spinner
       $('#js--loader').toggleClass('hidden');
+      google.script.run.success('Data exported successfully.')
       console.log(data);
     }
   });
@@ -158,7 +179,7 @@
     if (model.templateData.isTemplateLoaded){
       //toggle spinner on
       $('#js--loader').toggleClass('hidden');
-      google.script.run.withSuccessHandler(saveSuccess).save();
+      google.script.run.withFailureHandler(errorUnk).withSuccessHandler(saveSuccess).save();
     } else {
       google.script.run.noTemplate();
     }
@@ -166,6 +187,7 @@
     function saveSuccess(){
       // toggle spinner off
       $('#js--loader').toggleClass('hidden');
+      google.script.run.success('Sheet saved in new tab.')
     }
   });
 
