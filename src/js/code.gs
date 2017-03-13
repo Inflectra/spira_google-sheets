@@ -6,6 +6,20 @@ var stubUser = {
     api_key: '&api-key=' + encodeURIComponent('{2AE93998-6849-4132-80F6-3C9981A7CB96}')
   }
 
+
+
+
+
+
+
+
+
+//App script boilerplate install function
+//opens app on install
+function onInstall(e) {
+  onOpen(e);
+}
+
 //App script boilerplate open function
 //opens sidebar
 function onOpen(e) {
@@ -14,17 +28,20 @@ function onOpen(e) {
       .addToUi();
 }
 
-//App script boilerplate install function
-//opens app on install
-function onInstall(e) {
-  onOpen(e);
-}
+
 
 //side bar function gets index.html and opens in side window
 function showSidebar() {
-  var ui = HtmlService.createHtmlOutputFromFile('index')
+  var ui = HtmlService.createTemplateFromFile('index')
+      .evaluate()
+      .setSandboxMode(HtmlService.SandboxMode.IFRAME)
       .setTitle('Inflectra Corporation');
   SpreadsheetApp.getUi().showSidebar(ui);
+}
+
+function include(filename) {
+  Logger.log(filename)
+  return HtmlService.createHtmlOutputFromFile(filename).getContent();
 }
 
 function getProjects(currentUser){
@@ -171,7 +188,7 @@ function mapper(item, list, objNums){
       if (item == list[i][0]) {val = list[i][1]}
     }
   } else {
-    for (var i = 1; i < list.length; i++){
+    for (var i = 0; i < list.length; i++){
       if (item == list[i]){ val = i }
     }
   }
@@ -297,21 +314,21 @@ function exporter(data){
 
   // set up to individually add each requirement to spirateam
   // maybe there's a way to bulk add them instead of individual calls?
-//var responses = []
-//for(var i = 0; i < bodyArr.length; i++){
-// //stringify
-// var JSON_body = JSON.stringify( bodyArr[i] );
-// //send JSON to export function
-// var response = requirementExportCall( JSON_body, data.templateData.currentProjectNumber, data.userData.currentUser )
-// //push API approval into array
-// responses.push(response.RequirementId)
-//}
+  var responses = []
+  for(var i = 0; i < bodyArr.length; i++){
+   //stringify
+   var JSON_body = JSON.stringify( bodyArr[i] );
+   //send JSON to export function
+   var response = requirementExportCall( JSON_body, data.templateData.currentProjectNumber, data.userData.currentUser )
+   //push API approval into array
+   responses.push(response.RequirementId)
+  }
 
 
 
 
-  //return responses
-  return bodyArr
+  return responses
+  //return bodyArr
   //return JSON.stringify( bodyArr )
   //return JSON_body;
 }
@@ -356,7 +373,7 @@ function noTemplate() {
 function save(){
   //pop up telling the user that their data will be saved
   var ui = SpreadsheetApp.getUi();
-  var response = ui.alert('This will save the current sheet in a new tab. Continue?', ui.ButtonSet.YES_NO_SAVE);
+  var response = ui.alert('This will save the current sheet in a new tab. Continue?', ui.ButtonSet.YES_NO);
 
   //returns with user choice
   if (response == ui.Button.YES) {

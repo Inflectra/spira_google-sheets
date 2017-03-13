@@ -1,180 +1,183 @@
 <script>
-      let populateFields = () => {
-        //clear project drop down in case of reload
-        $('#js--project').html('');
-        //populate projects drop down
-        model.userData.projects.map( proj => {
-          let option = $('<option></option>');
-          option.attr('value', proj);
-          option.text(proj);
-          $('#js--project').append(option);
+  let populateFields = () => {
+    //clear project drop down in case of reload
+    $('#js--project').html('');
+    //populate projects drop down
+    model.userData.projects.map( proj => {
+      let option = $('<option></option>');
+      option.attr('value', proj);
+      option.text(proj);
+      $('#js--project').append(option);
+    })
+
+    //populate user dropdowns
+    model.templateData.requirements.dropdowns['Owner'] = model.userData.projUsers;
+    model.templateData.requirements.dropdowns['Author'] = model.userData.projUsers;
+  }
+
+  $('#js--logIn').click( () => {
+    //get user data from input fields and store in user data object
+    model.userData.currentUser.url = $('#js--url').val();
+    model.userData.currentUser.userName = $('#js--userName').val();
+    model.userData.currentUser.API_KEY = encodeURIComponent( $('#js--password').val() )
+
+    //turn on ajax spinner
+    $('#js--loader').toggleClass('hidden');
+
+    //call google function to load data
+    google.script.run.withSuccessHandler(projectSuccess).withFailureHandler().getProjects(model.userData.currentUser)
+
+    function projectSuccess (projects){
+        //store project data
+        projects.map( project => model.userData.projects.push(project.Name) );
+        //call user data function
+        getUsers();
+        }
+
+    //call google function to load user data
+    function getUsers (){
+      google.script.run.withSuccessHandler(userSuccess).withFailureHandler().getUsers(model.userData.currentUser)
+
+      function userSuccess (users){
+        //map through user obj and assign names
+        users.map( user => {
+          let num = user.UserId;
+          let first = user.FirstName;
+          let last = user.LastName;
+          let full = ''
+          //check to see if middle names exist
+          if (user.MiddleInitial){
+            let middle = user.MiddleInitial
+            full = `${first} ${middle} ${last}`
+          } else {
+            full = `${first} ${last}`
+          }
+          model.userData.projUsers.push(full)
+          model.userData.projUserWNum.push([full, num])
         })
-
-        //populate user dropdowns
-        model.templateData.requirements.dropdowns['Owner'] = model.userData.projUsers;
-        model.templateData.requirements.dropdowns['Author'] = model.userData.projUsers;
+        //turn off ajax spinner
+        $('#js--loader').toggleClass('hidden')
+        //close auth window
+        $('#js--auth').removeClass('open')
+        getCustomFields();
       }
+    }
 
-      $('#js--logIn').click( () => {
-        //get user data from input fields and store in user data object
-        model.userData.currentUser.url = $('#js--url').val();
-        model.userData.currentUser.userName = $('#js--userName').val();
-        model.userData.currentUser.API_KEY = encodeURIComponent( $('#js--password').val() )
+    function getCustomFields(){
+      google.script.run.withSuccessHandler(customSuccess).withFailureHandler().getCustoms(model.userData.currentUser)
 
-        //turn on ajax spinner
-        $('#js--loader').toggleClass('hidden');
+      function customSuccess(data){
+        console.log(data[0].CustomProperties);
+        model.templateData.requirements.customFields = data[0].CustomProperties;
+        //populate fields
+        populateFields();
+      }
+    }
+  });
 
-        //call google function to load data
-        google.script.run.withSuccessHandler(projectSuccess).withFailureHandler().getProjects(model.userData.currentUser)
+  $('#js--cancel').click( () => console.log('test') );
 
-        function projectSuccess (projects){
-            //store project data
-            projects.map( project => model.userData.projects.push(project.Name) );
-            //call user data function
-            getUsers();
-            }
+  $('#js--connect').click( () => console.log('test') );
 
-        //call google function to load user data
-        let getUsers = () => {
-          google.script.run.withSuccessHandler(userSuccess).withFailureHandler().getUsers(model.userData.currentUser)
+  $('#js--disconnect').click( () => {
+    google.script.run.withSuccessHandler(userChoice).warn();
 
-          function userSuccess (users){
-            //map through user obj and assign names
-            users.map( user => {
-              let num = user.UserId;
-              let first = user.FirstName;
-              let last = user.LastName;
-              let full = ''
-              //check to see if middle names exist
-              if (user.MiddleInitial){
-                let middle = user.MiddleInitial
-                full = `${first} ${middle} ${last}`
-              } else {
-                full = `${first} ${last}`
-              }
-              model.userData.projUsers.push(full)
-              model.userData.projUserWNum.push([full, num])
-            })
-            //turn off ajax spinner
-            $('#js--loader').toggleClass('hidden')
-            //close auth window
-            $('#js--auth').removeClass('open')
-            getCustomFields();
-          }
-        }
+    function userChoice(bool){
+      if (bool){
+        //clear spreadsheet
+        google.script.run.clearAll();
+        //close main page and open sign in page
+        $('#js--auth').toggleClass('open');
+        //clear user data variables
+        isTemplateLoaded = false;
+        model.userData.currentUser.url = '';
+        model.userData.currentUser.userName = '';
+        model.userData.currentUser.API_KEY = '';
+      }
+    }
+  });
 
-        function getCustomFields(){
-          google.script.run.withSuccessHandler(customSuccess).withFailureHandler().getCustoms(model.userData.currentUser)
+  $('#js--options').click( () => console.log('test') );
 
-          function customSuccess(data){
-            console.log(data[0].CustomProperties);
-            model.templateData.requirements.customFields = data[0].CustomProperties;
-            //populate fields
-            populateFields();
-          }
-        }
-      });
+  $('#js--template').click( () => {
+    //get selected artifact and project
+    let artifactName = $('#js--artifact option:selected').text();
+    let projName = $('#js--project option:selected').text()
+    //get and store project number for future calls
+    let projNum = 0
+    //loop through projects and assign the number to the currently selected project
+    for(let i = 0; i < model.userData.projects.length; i++){
+      model.userData.projects[i] === projName ? projNum = i + 1 : null;
+    }
 
-      $('#js--cancel').click( () => console.log('test') );
+    //store variables
+    model.templateData.currentArtifactName = artifactName;
+    model.templateData.currentProjectNumber = projNum;
+    model.templateData.currentProjectName = projName;
 
-      $('#js--connect').click( () => console.log('test') );
+    //warn the user data will be erased
+    google.script.run.withSuccessHandler(userChoice).warn();
 
-      $('#js--disconnect').click( () => {
-        google.script.run.withSuccessHandler(userChoice).warn();
+    //if yes run template loader script
+    function userChoice(bool){
+      bool ? google.script.run.withSuccessHandler(templateSuccess).withFailureHandler().templateLoader(model.templateData) : null
+    }
 
-        function userChoice(bool){
-          if (bool){
-            //clear spreadsheet
-            google.script.run.clearAll();
-            $('#js--auth').toggleClass('open');
-            isTemplateLoaded = false;
-            model.userData.currentUser.url = '';
-            model.userData.currentUser.userName = '';
-            model.userData.currentUser.API_KEY = '';
-          }
-        }
-      });
+    function templateSuccess(){
+      model.templateData.isTemplateLoaded = true;
+    }
+  });
 
-      $('#js--options').click( () => console.log('test') );
+  $('#js--import').click( () =>{
 
-      $('#js--template').click( () => {
-        //get selected artifact and project
-        let artifactName = $('#js--artifact option:selected').text();
-        let projName = $('#js--project option:selected').text()
-        //get and store project number for future calls
-        let projNum = 0
-        for(let i = 0; i < model.userData.projects.length; i++){
-          model.userData.projects[i] === projName ? projNum = i + 1 : null;
-        }
+    if (model.templateData.isTemplateLoaded){
+      google.script.run.withSuccessHandler().importer(model.userData.currentUser)
+    } else {
+      google.script.run.noTemplate()
+    }
 
-        //store variables
-        model.templateData.currentArtifactName = artifactName;
-        model.templateData.currentProjectNumber = projNum;
-        model.templateData.currentProjectName = projName;
+  });
 
-        //warn the user data will be erased
-        google.script.run.withSuccessHandler(userChoice).warn();
+  $('#js--export').click( () => {
+    if (model.templateData.isTemplateLoaded){
+      // toggle on spinner
+      $('#js--loader').toggleClass('hidden');
+      google.script.run.withSuccessHandler(exportSuccess).exporter(model)
+    } else {
+      google.script.run.noTemplate()
+    }
 
-        //if yes run template loader script
-        function userChoice(bool){
-          bool ? google.script.run.withSuccessHandler(templateSuccess).withFailureHandler().templateLoader(model.templateData) : null
-        }
+    function exportSuccess(data){
+      //toggle off spinner
+      $('#js--loader').toggleClass('hidden');
+      console.log(data);
+    }
+  });
 
-        function templateSuccess(){
-          model.templateData.isTemplateLoaded = true;
-        }
-      });
+  $('#js--save').click(() => {
+    if (model.templateData.isTemplateLoaded){
+      //toggle spinner on
+      $('#js--loader').toggleClass('hidden');
+      google.script.run.withSuccessHandler(saveSuccess).save();
+    } else {
+      google.script.run.noTemplate();
+    }
 
-      $('#js--import').click( () =>{
+    function saveSuccess(){
+      // toggle spinner off
+      $('#js--loader').toggleClass('hidden');
+    }
+  });
 
-        if (model.templateData.isTemplateLoaded){
-          google.script.run.withSuccessHandler().importer(model.userData.currentUser)
-        } else {
-          google.script.run.noTemplate()
-        }
+  $('#js--clear').click( () => {
+    //warn that data will be erased
+    google.script.run.withSuccessHandler(userChoice).warn();
 
-      });
+    function userChoice(bool){
+      bool ? google.script.run.clearAll() : null;
+    }
 
-      $('#js--export').click( () => {
-        if (model.templateData.isTemplateLoaded){
-          // toggle on spinner
-          $('#js--loader').toggleClass('hidden');
-          google.script.run.withSuccessHandler(exportSuccess).exporter(model)
-        } else {
-          google.script.run.noTemplate()
-        }
+  });
 
-        function exportSuccess(data){
-          //toggle off spinner
-          $('#js--loader').toggleClass('hidden');
-          console.log(data);
-        }
-      });
-
-      $('#js--save').click(() => {
-        if (model.templateData.isTemplateLoaded){
-          //toggle spinner on
-          $('#js--loader').toggleClass('hidden');
-          google.script.run.withSuccessHandler(saveSuccess).save();
-        } else {
-          google.script.run.noTemplate();
-        }
-
-        function saveSuccess(){
-          // toggle spinner off
-          $('#js--loader').toggleClass('hidden');
-        }
-      });
-
-      $('#js--clear').click( () => {
-        //warn that data will be erased
-        google.script.run.withSuccessHandler(userChoice).warn();
-
-        function userChoice(bool){
-          bool ? google.script.run.clearAll() : null;
-        }
-
-      });
-
-      $('#js--errorToggle').click( () => console.log('test') );
-    </script>
+  $('#js--errorToggle').click( () => console.log('test') );
+</script>
