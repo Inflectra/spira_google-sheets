@@ -93,7 +93,12 @@
     }
   });
 
-  $('#js--cancel').click( () => console.log('test') );
+  $('#js--cancel').click( () => {
+    //clear field values
+    $('#js--url').val('');
+    $('#js--userName').val('');
+    $('#js--password').val('');
+  });
 
   $('#js--connect').click( () => console.log('test') );
 
@@ -200,6 +205,4 @@
     }
 
   });
-
-  $('#js--errorToggle').click( () => console.log('test') );
 </script>
