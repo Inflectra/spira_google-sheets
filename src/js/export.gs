@@ -1,6 +1,9 @@
-function mapper(item, list, objNums){
+//export function pulled from Code.gs
+//takes item {cell}, list {array}, and isObj {bool}
+//isObj is true if list is an object, i.e in the case of the users array
+function mapper(item, list, isObj){
   var val = 1;
-  if(objNums){
+  if(isObj){
     for (var i = 1; i < list.length; i++){
       if (item == list[i][0]) {val = list[i][1]}
     }
@@ -9,8 +12,6 @@ function mapper(item, list, objNums){
       if (item == list[i]){ val = i }
     }
   }
-  //Logger.log(list)
-  Logger.log(item)
   return val;
 }
 
@@ -31,7 +32,7 @@ function mapper(item, list, objNums){
 //  return data;
 //}
 
-function indender(cell){
+function indenter(cell){
   // var indentCount = 0;
   // //check for indent character '>'
   // if(cell && cell[0] === '>'){
@@ -52,21 +53,21 @@ function exporter(data){
   var ss = SpreadsheetApp.getActiveSpreadsheet()
   var sheet = ss.getSheets()[0];
 
-  var range = sheet.getRange("A3:AQ3")
+  var range = sheet.getRange(data.templateData.requirements.cellRange)
   var isRangeEmpty = false;
   var numberOfRows = 0;
-  var count = 0;
+  var row = 0;
   var bodyArr = [];
 
   //loop through and collect number of rows that contain data
   //TODO skip two lines before changing isRangeEmpty var
   while (isRangeEmpty === false){
-    var newRange = range.offset(count, 0, 43);
+    var newRange = range.offset(row, 0, data.templateData.requirements.cellRangeLength);
     if ( newRange.isBlank() ){
       isRangeEmpty = true
     } else {
       //move to next row
-      count++;
+      row++;
       //add to number of rows
       numberOfRows++;
     }
@@ -108,7 +109,7 @@ function exporter(data){
 
 
       //call indent checker and set indent amount
-      xObj['IndentLevel'] = indender();
+      xObj['IndentLevel'] = indenter();
 
       //if empty add null otherwise add the cell
       // ...to the object under the proper key relative to its location on the template

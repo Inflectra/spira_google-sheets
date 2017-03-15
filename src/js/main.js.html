@@ -5,14 +5,20 @@
     //populate projects drop down
     model.userData.projects.map( proj => {
       let option = $('<option></option>');
-      option.attr('value', proj);
-      option.text(proj);
+      option.attr('value', proj[1]);
+      option.text(proj[1]);
       $('#js--project').append(option);
     })
+     //turn off ajax spinner
+     $('#js--loader').toggleClass('hidden')
+     //close auth window
+     $('#js--auth').removeClass('open')
+
 
     //populate user dropdowns
     model.templateData.requirements.dropdowns['Owner'] = model.userData.projUsers;
     model.templateData.requirements.dropdowns['Author'] = model.userData.projUsers;
+    google.script.run.success('User data loaded');
   }
 
   function errorNetwork (err){
@@ -33,28 +39,21 @@
     console.log(err);
   }
 
-  $('#js--logIn').click( () => {
-    //get user data from input fields and store in user data object
-    model.userData.currentUser.url = $('#js--url').val();
-    model.userData.currentUser.userName = $('#js--userName').val();
-    model.userData.currentUser.API_KEY = encodeURIComponent( $('#js--password').val() )
-
-    //turn on ajax spinner
-    $('#js--loader').toggleClass('hidden');
-
-    //call google function to load data
-    google.script.run.withSuccessHandler(projectSuccess).withFailureHandler(errorNetwork).getProjects(model.userData.currentUser)
-
-    function projectSuccess (projects){
-        //store project data
-        projects.map( project => model.userData.projects.push(project.Name) );
-        //call user data function
-        getUsers();
-        }
-
+    //on artifact change call users and repopulate fields
+//  function artifactChange(){
+//    google.script.run.withSuccessHandler(changeSuccess).withFailureHandler(errorNetwork).getUsers(model.userData.currentUser, model.templateData.currentProjectNumber)
+//
+//    function changeSuccess(){
+        //populate user dropdowns
+//        model.templateData.requirements.dropdowns['Owner'] = model.userData.projUsers;
+//        model.templateData.requirements.dropdowns['Author'] = model.userData.projUsers;
+//        google.script.run.success('User data loaded');
+//    }
+//  }
     //call google function to load user data
-    let getUsers = () => {
-      google.script.run.withSuccessHandler(userSuccess).withFailureHandler(errorNetwork).getUsers(model.userData.currentUser)
+    function getUserData() {
+      //default project number hard coded to one on load
+      google.script.run.withSuccessHandler(userSuccess).withFailureHandler(errorNetwork).getUsers(model.userData.currentUser, model.templateData.currentProjectNumber)
 
       function userSuccess (users){
         //map through user obj and assign names
@@ -73,13 +72,32 @@
           model.userData.projUsers.push(full)
           model.userData.projUserWNum.push([full, num])
         })
-        //turn off ajax spinner
-        $('#js--loader').toggleClass('hidden')
-        //close auth window
-        $('#js--auth').removeClass('open')
-        getCustomFields();
+
       }
     }
+  $('#js--logIn').click( () => {
+    //get user data from input fields and store in user data object
+    model.userData.currentUser.url = $('#js--url').val();
+    model.userData.currentUser.userName = $('#js--userName').val();
+    model.userData.currentUser.API_KEY = encodeURIComponent( $('#js--password').val() )
+
+    //turn on ajax spinner
+    $('#js--loader').toggleClass('hidden');
+
+    //call google function to load data
+    google.script.run.withSuccessHandler(projectSuccess).withFailureHandler(errorNetwork).getProjects(model.userData.currentUser)
+
+    function projectSuccess (projects){
+        //store project data
+        projects.map( function (project){
+            let projArr = [project.ProjectId, project.Name]
+            model.userData.projects.push(projArr)
+          });
+        //call user data function
+        getUserData();
+        getCustomFields();
+        }
+
 
     function getCustomFields(){
       google.script.run.withSuccessHandler(customSuccess).withFailureHandler(errorNetwork).getCustoms(model.userData.currentUser)
@@ -127,7 +145,7 @@
     //get and store project number for future calls
     let projNum = 0
     for(let i = 0; i < model.userData.projects.length; i++){
-      model.userData.projects[i] === projName ? projNum = i + 1 : null;
+      model.userData.projects[i][1] === projName ? projNum = model.userData.projects[i][0] : null;
     }
 
     //store variables
@@ -146,6 +164,7 @@
     function templateSuccess(){
       model.templateData.isTemplateLoaded = true;
       google.script.run.success('Template loaded successfully.')
+      console.log(model.templateData)
     }
   });
 
@@ -204,5 +223,15 @@
       bool ? google.script.run.clearAll() : null;
     }
 
+  });
+
+  $('#js--project').change(function(e){
+    console.log(e.target.value);
+
+    userdata(model.userData.currentUser, );
+  });
+
+  $('#js--artifact').change(function(e){
+    console.log(e.target.value);
   });
 </script>

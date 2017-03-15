@@ -43,8 +43,8 @@ function getProjects(currentUser){
   return res;
 }
 
-function getUsers(currentUser){
-  var params = '/services/v5_0/RestService.svc/users/all?username='
+function getUsers(currentUser, proj){
+  var params = '/services/v5_0/RestService.svc/projects/' + proj + '/users?username='
   var res = fetcher(currentUser, params);
 
   return res;
@@ -53,14 +53,13 @@ function getUsers(currentUser){
 function getCustoms(currentUser){
   var params = '/services/v5_0/RestService.svc/requirements?username='
   var res = fetcher(currentUser, params);
-  Logger.log(res)
+
   return res;
 }
 
 function fetcher (currentUser, params, init){
   var URL = stubUser.url + params + stubUser.userName + stubUser.api_key;
-  init ? null : init = {'content-type' : 'application/json'}
-
+  var init = init || {'content-type' : 'application/json'}
 
   var response = UrlFetchApp.fetch(URL, init)
 
@@ -81,12 +80,16 @@ function templateLoader(data){
   sheet.setName(data.currentProjectName + ' - ' + data.currentArtifactName);
 
   //color heading cells
-  var stdColorRange = sheet.getRange('A1:M2');
+  var stdColorRange = sheet.getRange(data.requirements.color1Range);
   stdColorRange.setBackground('#ffbf80');
-  var cusColorRange = sheet.getRange('N1:AQ2');
+  var cusColorRange = sheet.getRange(data.requirements.color2Range);
   cusColorRange.setBackground('#70db70');
   var reqIdRange = sheet.getRange('A3:A100');
   reqIdRange.setBackground('#a6a6a6')
+  //set column A to present a warning if the user trys to write in a value
+  var protection = reqIdRange.protect().setDescription('Exported items must not have a requirement number');
+  //set warning. Remove this to make the column un-writable
+  protection.setWarningOnly(true);
 
   sheet.getRange('A1:M1').merge().setValue("Requirements Standard Fields").setHorizontalAlignment("center");
   sheet.getRange('N1:AQ1').merge().setValue("Custom Fields").setHorizontalAlignment("center");
