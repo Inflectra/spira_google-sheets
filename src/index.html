@@ -1,79 +1,81 @@
-
 <!DOCTYPE html>
 <html>
-  <head>
+
+<head>
     <base target="_top">
     <link rel="stylesheet" href="https://ssl.gstatic.com/docs/script/css/add-ons1.css">
     <?!= include('styles.css') ?>
-  </head>
+</head>
 
-  <body>
+<body>
     <!--auth page-->
     <div class="slide-out transition open" id="js--auth">
-      <header class="container">
-        <h3 class="">Import / Export Wizard</h3>
-        <img src="http://placehold.it/50x50" id="logo--top" class="">
-      </header>
-      <p>Please enter the information used to access your server</p>
-      <div class="container" id="auth-fields">
-        <label class="">Spira URL: <input type="text" name="URL" placeholder="SpiraTeam URL" class="urlInput" id="js--url" /></label>
-        <label class="">User Name: <input type="text" name="user-name" placeholder="User Name" class="userNameInput" id="js--userName" /></label>
-        <label class="">Password:  <input type="password" name="password" placeholder="Password" class="passwordInput" id="js--password" /></label>
-      </div>
-      <label class="checkbox"><input type="checkbox" name="remember" class="mr-2" id="js--remember" /><small>Remember Me</small></label>
-      <footer class="container">
-        <img src="http://placehold.it/100x35" id="logo--bottom" class="col-4">
-        <div class="col-8">
-        <button class="action" id="js--logIn">Log In</button>
-        <button class="" id="js--cancel">Cancel</button>
+        <header class="container">
+            <h3 class="">Import / Export Wizard</h3>
+            <img src="http://placehold.it/50x50" id="logo--top" class="">
+        </header>
+        <p>Please enter the information used to access your server</p>
+        <div class="container" id="auth-fields">
+            <label class="">Spira URL:
+                <input type="text" name="URL" placeholder="SpiraTeam URL" class="urlInput" id="js--url" />
+            </label>
+            <label class="">User Name:
+                <input type="text" name="user-name" placeholder="User Name" class="userNameInput" id="js--userName" />
+            </label>
+            <label class="">Password:
+                <input type="password" name="password" placeholder="Password" class="passwordInput" id="js--password" />
+            </label>
         </div>
-      </footer>
+        <label class="checkbox">
+            <input type="checkbox" name="remember" class="mr-2" id="js--remember" /><small>Remember Me</small></label>
+        <footer class="container">
+            <img src="http://placehold.it/100x35" id="logo--bottom" class="col-4">
+            <div class="col-8">
+                <button class="action" id="js--logIn">Log In</button>
+                <button class="" id="js--cancel">Cancel</button>
+            </div>
+        </footer>
     </div>
-
     <!--spinner-->
     <div id='js--loader' class='spinner-holder hidden'>
-      <div class="loader"></div>
+        <div class="loader"></div>
     </div>
-
     <!--main screen-->
     <div class="main">
-      <header class="container">
-        <h3 class="">Import / Export Wizard</h3>
-        <img src="http://placehold.it/50x50" id="logo--top" class="">
-      </header>
-      <div class="container" id="buttons-top">
-        <button id="js--connect" class="">Connect</button>
-        <button id="js--disconnect" class="">Disconnect</button>
-        <button id="js--options" class="">Options</button>
-      </div>
-      <div class="select-section">
-        <label class="">Projects:
-          <select class="" id="js--project">
-             <!--aysnc populated -->
-          </select>
-        </label>
-      </div>
-      <div class="select-section">
-        <label class="">Artifact:
-          <select class="" id="js--artifact">
-             <option value="requirements">Requirements</option>
-             <option value="test_cases">Test Cases</option>
-          </select>
-        </label>
-      </div>
-      <div class="container" id="buttons-mid">
-        <button id="js--template" class="">Load Template</button>
-        <button id="js--save" class="">Save</button>
-      </div>
-
-      <div class="row justify-content-around" id="buttons-bottom">
-        <button class="" id="js--import">Import</button>
-        <button class="" id="js--export">Export</button>
-        <button class="" id="js--clear">Clear</button>
-      </div>
+        <header class="container">
+            <h3 class="">Import / Export Wizard</h3>
+            <img src="http://placehold.it/50x50" id="logo--top" class="">
+        </header>
+        <div class="container" id="buttons-top">
+            <button id="js--connect" class="">Connect</button>
+            <button id="js--disconnect" class="">Disconnect</button>
+            <button id="js--options" class="">Options</button>
+        </div>
+        <div class="select-section">
+            <label class="">Projects:
+                <select class="" id="js--project">
+                    <!--aysnc populated -->
+                </select>
+            </label>
+        </div>
+        <div class="select-section">
+            <label class="">Artifact:
+                <select class="" id="js--artifact">
+                    <option value="requirements">Requirements</option>
+                    <option value="test_cases">Test Cases</option>
+                </select>
+            </label>
+        </div>
+        <div class="container" id="buttons-mid">
+            <button id="js--template" class="">Load Template</button>
+            <button id="js--save" class="">Save</button>
+        </div>
+        <div class="row justify-content-around" id="buttons-bottom">
+            <button class="" id="js--import">Import</button>
+            <button class="" id="js--export">Export</button>
+            <button class="" id="js--clear">Clear</button>
+        </div>
     </div>
-
-
     <!--Jquery-->
     <script src="https://code.jquery.com/jquery-3.1.1.slim.min.js" integrity="sha256-/SIrNqv8h6QGKDuNoLGA4iret+kyesCkHGzVUUV0shc=" crossorigin="anonymous"></script>
     <!--Bootstrap-->
@@ -82,6 +84,6 @@
     <!--user agent-->
     <?!= include('store.js') ?>
     <?!= include('main.js') ?>
-  </body>
-</html>
+</body>
 
+</html>

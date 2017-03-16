@@ -1,151 +1,159 @@
 <style>
-  /*main and utility styles--------------------------------------*/
-  body {
+/*main and utility styles--------------------------------------*/
+
+body {
     background-color: white;
     overflow-x: hidden;
     font-family: Arial;
     height: 100vh;
     width: 100vw;
-  }
+}
 
-  .container {
+.container {
     display: flex;
-  }
+}
 
-  .main,
-  .slide-out,
-  .spinner-holder {
+.main,
+.slide-out,
+.spinner-holder {
     padding: 10px;
-  }
+}
 
-  #logo--top {
+#logo--top {
     width: 75px;
     height: 75px;
-  }
+}
 
-  #logo--bottom {
+#logo--bottom {
     width: 100px;
     height: 35px;
-  }
+}
 
-   .hidden {
+.hidden {
     display: none;
-   }
+}
 
-   .clearfix {
-     overflow: auto;
-   }
+.clearfix {
+    overflow: auto;
+}
 
- /*auth screen styles--------------------------------------------*/
-  #js--auth {
+
+/*auth screen styles--------------------------------------------*/
+
+#js--auth {
     position: relative;
     background-color: white;
     z-index: 100;
     right: -520px;
-  }
+}
 
-  header {
+header {
     padding-bottom: 20px;
-  }
+}
 
-  header h3 {
+header h3 {
     width: 188px;
     text-align: center;
     padding-top: 14px;
-  }
+}
 
-  #js--auth p {
+#js--auth p {
     text-align: center;
-  }
+}
 
-  #auth-fields {
+#auth-fields {
     flex-direction: column;
-  }
+}
 
-  #auth-fields label {
+#auth-fields label {
     font-size: 15px;
     margin-bottom: 10px;
-  }
+}
 
-  #auth-fields .urlInput {
+#auth-fields .urlInput {
     margin-left: 27px;
-  }
+}
 
-  #auth-fields .userNameInput {
+#auth-fields .userNameInput {
     margin-left: 21px;
-  }
+}
 
-  #auth-fields .passwordInput {
+#auth-fields .passwordInput {
     margin-left: 31px;
-  }
+}
 
-  .checkbox {
+.checkbox {
     margin-left: 38%;
-  }
+}
 
-  footer {
+footer {
     margin-top: 50px;
     padding-bottom: 75px;
-  }
+}
 
-  #js--logIn {
+#js--logIn {
     margin-left: 18px;
-  }
+}
 
-  #js--cancel {
+#js--cancel {
     margin-left: 2px;
-  }
+}
 
-
-  .open {
+.open {
     right: 0px !important;
-  }
+}
 
-  .transition {
-    -webkit-transition: right 0.3s ease-out;  /* Chrome 1-25, Safari 3.2+ */
-       -moz-transition: right 0.3s ease-out;  /* Firefox 4-15 */
-         -o-transition: right 0.3s ease-out;  /* Opera 10.50–12.00 */
-            transition: right 0.3s ease-out;  /* Chrome 26, Firefox 16+, IE 10+, Opera 12.10+ */
-  }
+.transition {
+    -webkit-transition: right 0.3s ease-out;
+    /* Chrome 1-25, Safari 3.2+ */
+    -moz-transition: right 0.3s ease-out;
+    /* Firefox 4-15 */
+    -o-transition: right 0.3s ease-out;
+    /* Opera 10.50–12.00 */
+    transition: right 0.3s ease-out;
+    /* Chrome 26, Firefox 16+, IE 10+, Opera 12.10+ */
+}
 
 
-  /*main screen styles------------------------------------------*/
-  .main {
+/*main screen styles------------------------------------------*/
+
+.main {
     position: absolute;
     top: 0;
-  }
+}
 
-  .select-section {
+.select-section {
     padding-bottom: 25px;
-  }
+}
 
-  #buttons-top {
+#buttons-top {
     margin-left: 14px;
     margin-bottom: 38px;
-  }
+}
 
-  #buttons-mid {
+#buttons-mid {
     margin-left: 44px;
     margin-top: 27px;
-  }
+}
 
-  #buttons-bottom {
+#buttons-bottom {
     margin-left: 14px;
     margin-top: 38px;
-  }
+}
 
 
+/*loading screen styles-----------------------------------------*/
 
-  /*loading screen styles-----------------------------------------*/
-  .spinner-holder{
+.spinner-holder {
     background-color: rgba(191, 191, 191, 0.4);
     z-index: 1000;
     position: absolute;
     top: 0;
     height: 100%;
     width: 100%;
-  }
-  .loader {
+}
+
+.loader {
     position: absolute;
     left: 65%;
     top: 50%;
@@ -158,17 +166,23 @@
     height: 50px;
     -webkit-animation: spin 2s linear infinite;
     animation: spin 2s linear infinite;
-  }
+}
 
-  @-webkit-keyframes spin {
-    0% { -webkit-transform: rotate(0deg); }
-    100% { -webkit-transform: rotate(360deg); }
-  }
+@-webkit-keyframes spin {
+    0% {
+        -webkit-transform: rotate(0deg);
+    }
+    100% {
+        -webkit-transform: rotate(360deg);
+    }
+}
 
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
-
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
 </style>
-
