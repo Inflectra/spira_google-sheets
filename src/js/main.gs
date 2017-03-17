@@ -50,8 +50,8 @@ function getUsers(currentUser, proj){
   return res;
 }
 
-function getCustoms(currentUser){
-  var params = '/services/v5_0/RestService.svc/requirements?username='
+function getCustoms(currentUser, proj, artifact){
+  var params = '/services/v5_0/RestService.svc/projects/' + proj + '/custom-properties/' + artifact + '?username='
   var res = fetcher(currentUser, params);
 
   return res;
@@ -130,7 +130,7 @@ function customFieldSetter(range, data){
   //take passed in range and only overwrite the fields if a value is present in the model
   for(var i = 0; i < fields.length; i++){
     var cell = range.getCell(1, i + 1)
-    cell.setValue('Custom Field ' + (i + 1) + '\n' + fields[i].Definition.Name).setWrap(true);
+    cell.setValue('Custom Field ' + (i + 1) + '\n' + fields[i].Name).setWrap(true);
 
   }
 }
@@ -203,6 +203,11 @@ function warn(){
   } else {
     return false;
   }
+}
+
+function warnProjArt(){
+  var ui = SpreadsheetApp.getUi();
+  var response = ui.alert(' Warning! Changing the current project or artifact will clear all unsaved data.', ui.ButtonSet.OK);
 }
 
 

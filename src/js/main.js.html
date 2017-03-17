@@ -47,13 +47,13 @@ function updateData() {
 
 
     function getCustomFields() {
-        google.script.run.withSuccessHandler(customSuccess).withFailureHandler(errorNetwork).getCustoms(model.userData.currentUser)
+        google.script.run.withSuccessHandler(customSuccess).withFailureHandler(errorNetwork)
+            .getCustoms(model.userData.currentUser, model.templateData.currentProjectNumber, model.templateData.currentArtifactId)
 
         function customSuccess(data) {
-            console.log(data[0].CustomProperties);
-            model.templateData.requirements.customFields = data[0].CustomProperties;
-            //turn off ajax spinner
-            $('#js--loader').toggleClass('hidden')
+            model.templateData.requirements.customFields = data;
+            //turn off ajax spinner if it's on
+            $('#js--loader').hasClass('hidden') ? null : $('#js--loader').toggleClass('hidden')
             //success notification
             google.script.run.success('User data loaded');
         }
@@ -218,19 +218,42 @@ $('#js--clear').click(() => {
     }
 
 });
+//variables for select dropdown values
+let prevProj,
+    prevArti;
+
+//on click this stores the current values of the dropdown menus for
+//...recall if the user decides not to change the fields.
+$('#js--artifact, #js--project').click(function(e){
+    prevProj = $('#js--project option:selected')
+    prevArti = $('#js--artifact option:selected')
+})
 
 $('#js--project').change(function(e) {
-    console.log(e.target.value);
+    //stores new dropdown value
+    let newProj = e.target.value;
     //warn the user data will be erased
     google.script.run.withSuccessHandler(userChoice).warn();
 
     function userChoice(bool) {
-
+        if (bool){
+            model.userData.projects.map(function(proj){
+                if (proj[1] === newProj){
+                    model.templateData.currentProjectName = newProj;
+                    model.templateData.currentProjectNumber = proj[0];
+                }
+            });
+            console.log(model.templateData)
+            updateData();
+        } else {
+            //sets the select dropdown back to the original value if the user says no
+            prevProj[0].selected = true;
+        }
     }
 
 });
 
 $('#js--artifact').change(function(e) {
-    console.log(e.target.value);
+     //TODO add change artifact functionality
 });
 </script>
