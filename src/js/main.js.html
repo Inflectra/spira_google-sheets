@@ -1,19 +1,20 @@
 <script>
+//TODO refactor to remove 'WET'-ness
 function errorNetwork(err) {
     google.script.run.error();
-    $('#js--loader').toggleClass('hidden');
+    $('#js--loader').hasClass('hidden') ? null : $('#js--loader').toggleClass('hidden');
     console.log(err);
 }
 
 function errorImpExp(err) {
     google.script.run.error('impExp');
-    $('#js--loader').toggleClass('hidden');
+    $('#js--loader').hasClass('hidden') ? null : $('#js--loader').toggleClass('hidden');
     console.log(err);
 }
 
 function errorUnk(err) {
     google.script.run.error('unk');
-    $('#js--loader').toggleClass('hidden');
+    $('#js--loader').hasClass('hidden') ? null : $('#js--loader').toggleClass('hidden');
     console.log(err);
 }
 
@@ -37,7 +38,7 @@ function updateData() {
                 full = `${first} ${last}`
             }
             model.userData.projUsers.push(full)
-            model.userData.projUserWNum.push([full, num])
+            model.userData.projUserWNum.push([num, full])
             //populate user dropdowns
             model.templateData.requirements.dropdowns['Owner'] = model.userData.projUsers;
             model.templateData.requirements.dropdowns['Author'] = model.userData.projUsers;
@@ -146,6 +147,7 @@ $('#js--template').click(() => {
     model.templateData.currentArtifactName = artifactName;
     model.templateData.currentProjectNumber = projNum;
     model.templateData.currentProjectName = projName;
+    console.log(model.templateData.currentArtifactName);
 
     //warn the user data will be erased
     google.script.run.withSuccessHandler(userChoice).warn();
@@ -155,10 +157,9 @@ $('#js--template').click(() => {
         bool ? google.script.run.withSuccessHandler(templateSuccess).withFailureHandler(errorUnk).templateLoader(model.templateData) : null
     }
 
-    function templateSuccess() {
+    function templateSuccess(data) {
         model.templateData.isTemplateLoaded = true;
         google.script.run.success('Template loaded successfully.')
-        console.log(model.templateData)
     }
 });
 
@@ -237,6 +238,7 @@ $('#js--project').change(function(e) {
 
     function userChoice(bool) {
         if (bool){
+            google.script.run.clearAll();
             model.userData.projects.map(function(proj){
                 if (proj[1] === newProj){
                     model.templateData.currentProjectName = newProj;

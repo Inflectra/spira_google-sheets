@@ -110,8 +110,18 @@ function templateLoader(data){
   for(var i = 0; i < dropdownColumnAssignments.length; i++){
     var letter = dropdownColumnAssignments[i][1];
     var name = dropdownColumnAssignments[i][0];
-    var list = data.requirements.dropdowns[name]
-
+    var list = [];
+    if (name == 'Owner' || name == 'Author'){
+      list = data.requirements.dropdowns[name]
+    } else {
+      var listArr = [];
+      //loop through 2D arrays and form standard array
+      for(var j = 0; j < data.requirements.dropdowns[name].length; j++){
+        listArr.push(data.requirements.dropdowns[name][j][1])
+      }
+      //list must be an array so assign new array to list variable
+      list = listArr;
+    }
 
     //set range to entire column excluding top two rows
     var cell = SpreadsheetApp.getActive().getRange(letter + ':' + letter).offset(2, 0);

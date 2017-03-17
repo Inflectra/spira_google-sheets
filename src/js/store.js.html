@@ -40,9 +40,34 @@ let model = {
                 [13, 400]
             ],
             dropdowns: {
-                'Type': ['Package', 'Design Element', 'Feature', 'Need', 'Quality', 'Use Case', 'User Story'],
-                'Importance': ['1 - Critical', '2 - High', '3 - Medium', '4 - Low'],
-                'Status': ['Requested', 'Planned', 'In Progress', 'Developed', 'Accepted', 'Rejected', 'Under Review', 'Obsolete', 'Completed', 'Tested']
+                //TODO check numbers against code since it's bugged and wont accept a type input
+                'Type': [
+                    [1, 'Package'],
+                    [2, 'Design Element'],
+                    [3, 'Feature'],
+                    [4, 'Need'],
+                    [5, 'Quality'],
+                    [6, 'Use Case'],
+                    [7, 'User Story']
+                ],
+                'Importance': [
+                    [1, '1 - Critical'],
+                    [2, '2 - High'],
+                    [3, '3 - Medium'],
+                    [4, '4 - Low']
+                ],
+                'Status': [
+                    [1, 'Requested'],
+                    [2, 'Planned'],
+                    [3, 'In Progress'],
+                    [4, 'Developed'],
+                    [5, 'Accepted'],
+                    [6, 'Rejected'],
+                    [7, 'Under Review'],
+                    [8, 'Obsolete'],
+                    [9, 'Completed'],
+                    [10, 'Tested']
+                ]
             },
             customFields: []
         }
