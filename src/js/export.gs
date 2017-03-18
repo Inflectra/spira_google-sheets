@@ -1,16 +1,10 @@
 //export function pulled from Code.gs
 //takes item {cell}, list {array}, and isObj {bool}
 //isObj is true if list is an object, i.e in the case of the users array
-function mapper(item, list, isObj){
+function mapper(item, list){
   var val = 1;
-  if(isObj){
-    for (var i = 1; i < list.length; i++){
-      if (item == list[i][0]) {val = list[i][1]}
-    }
-  } else {
-    for (var i = 0; i < list.length; i++){
-      if (item == list[i]){ val = i }
-    }
+  for (var i = 0; i < list.length; i++){
+    if (item == list[i][1]) {val = list[i][0]}
   }
   return val;
 }
@@ -52,19 +46,26 @@ function indenter(cell){
 function exporter(data){
   var ss = SpreadsheetApp.getActiveSpreadsheet()
   var sheet = ss.getSheets()[0];
-
+  //number of cells in a row
   var range = sheet.getRange(data.templateData.requirements.cellRange)
-  var isRangeEmpty = false;
+  //var i
+  var isRowEmpty = false;
   var numberOfRows = 0;
   var row = 0;
+  var col = 0;
   var bodyArr = [];
 
+  //shorten variable
+  var reqs = data.templateData.requirements;
+
   //loop through and collect number of rows that contain data
-  //TODO skip two lines before changing isRangeEmpty var
-  while (isRangeEmpty === false){
-    var newRange = range.offset(row, 0, data.templateData.requirements.cellRangeLength);
+  while (isRowEmpty === false){
+    //select row
+    var newRange = range.offset(row, col, reqs.cellRangeLength);
+    //check if the row is empty
     if ( newRange.isBlank() ){
-      isRangeEmpty = true
+      //if row is empty set var to true
+      isRowEmpty = true
     } else {
       //move to next row
       row++;
@@ -73,13 +74,11 @@ function exporter(data){
     }
   }
 
-  //loop through rows
+  //loop through standard rows
   for (var j = 0; j < numberOfRows + 1; j++){
 
     //initialize/clear new object for row values
     var xObj = {}
-    //shorten variable
-    var reqs = data.templateData.requirements;
 
     //loop through cells in row
     for (var i = 0; i < reqs.JSON_headings.length; i++){
@@ -92,19 +91,18 @@ function exporter(data){
 
       //shorten variables
       var users = data.userData.projUserWNum;
-      var dataReqs = data.templateData.requirements;
 
       //pass values to mapper function
       //mapper iterates and assigns the values number based on the list order
-      if(i === 4.0){ cell = mapper(cell, dataReqs.dropdowns['Type']) }
+      if(i === 4.0){ cell = mapper(cell, reqs.dropdowns['Type']) }
 
-      if(i === 5.0){ xObj['ImportanceId'] = mapper(cell, dataReqs.dropdowns['Importance']) }
+      if(i === 5.0){ xObj['ImportanceId'] = mapper(cell, reqs.dropdowns['Importance']) }
 
-      if(i === 6.0){ xObj['StatusId'] = mapper(cell, dataReqs.dropdowns['Status']) }
+      if(i === 6.0){ xObj['StatusId'] = mapper(cell, reqs.dropdowns['Status']) }
 
-      if (i === 8.0){ xObj['AuthorId'] = mapper(cell, users, true) }
+      if (i === 8.0){ xObj['AuthorId'] = mapper(cell, users) }
 
-      if (i === 9.0){ xObj['OwnerId'] = mapper(cell, users, true) }
+      if (i === 9.0){ xObj['OwnerId'] = mapper(cell, users) }
 
 
 
@@ -122,7 +120,8 @@ function exporter(data){
 
     }
 
-    //if not empty add object or a generated placeholder (no name)
+    //if not empty add object
+    //entry MUST have a name
     if ( xObj.Name ) {
       xObj['ProjectName'] = data.templateData.currentProjectName;
       bodyArr.push(xObj)
@@ -132,21 +131,21 @@ function exporter(data){
 
   // set up to individually add each requirement to spirateam
   // maybe there's a way to bulk add them instead of individual calls?
-var responses = []
-for(var i = 0; i < bodyArr.length; i++){
- //stringify
- var JSON_body = JSON.stringify( bodyArr[i] );
- //send JSON to export function
- var response = requirementExportCall( JSON_body, data.templateData.currentProjectNumber, data.userData.currentUser )
- //push API approval into array
- responses.push(response.RequirementId)
-}
+// var responses = []
+// for(var i = 0; i < bodyArr.length; i++){
+//  //stringify
+//  var JSON_body = JSON.stringify( bodyArr[i] );
+//  //send JSON to export function
+//  var response = requirementExportCall( JSON_body, data.templateData.currentProjectNumber, data.userData.currentUser )
+//  //push API approval into array
+//  responses.push(response.RequirementId)
+// }
 
 
 
 
-  return responses
-  //return bodyArr
+  //return responses
+  return bodyArr
   //return JSON.stringify( bodyArr )
   //return JSON_body;
 }
@@ -155,7 +154,6 @@ function requirementExportCall(body, projNum, currentUser){
   //unique url for requirement POST
   var params = '/services/v5_0/RestService.svc/projects/' + projNum + '/requirements?username=';
   //POST headers
-
   var init = {
    'method' : 'post',
    'contentType': 'application/json',

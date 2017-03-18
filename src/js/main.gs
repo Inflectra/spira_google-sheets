@@ -80,9 +80,9 @@ function templateLoader(data){
   sheet.setName(data.currentProjectName + ' - ' + data.currentArtifactName);
 
   //color heading cells
-  var stdColorRange = sheet.getRange(data.requirements.color1Range);
+  var stdColorRange = sheet.getRange(data.requirements.standardRange);
   stdColorRange.setBackground('#ffbf80');
-  var cusColorRange = sheet.getRange(data.requirements.color2Range);
+  var cusColorRange = sheet.getRange(data.requirements.customRange);
   cusColorRange.setBackground('#70db70');
   var reqIdRange = sheet.getRange('A3:A100');
   reqIdRange.setBackground('#a6a6a6')
