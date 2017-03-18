@@ -131,6 +131,13 @@ function templateLoader(data){
     var rule = SpreadsheetApp.newDataValidation().requireValueInList(list, true).setAllowInvalid(false).build();
     cell.setDataValidation(rule);
   }
+  //set number only columns to only accept numbers
+  for(var i = 0; i < data.requirements.requireNumberFields.length; i++){
+    var colLetter = data.requirements.requireNumberFields[i];
+    var column = SpreadsheetApp.getActive().getRange(colLetter + ':' + colLetter);
+    var rule = SpreadsheetApp.newDataValidation().requireNumberGreaterThan(-1).setAllowInvalid(false).setHelpText('Must be a positive integer').build();
+    column.setDataValidation(rule);
+  }
 }
 
 function customFieldSetter(range, data){
