@@ -53,6 +53,7 @@ function updateData() {
 
         function customSuccess(data) {
             model.templateData.requirements.customFields = data;
+            console.log(data);
             //turn off ajax spinner if it's on
             $('#js--loader').hasClass('hidden') ? null : $('#js--loader').toggleClass('hidden')
             //success notification

@@ -37,12 +37,15 @@ function templateLoader(data){
 
   //set custom headings if they exist
   //pass in custom field range, data model, and custom column to be used for background coloring
-  customFieldSetter(sheet.getRange('N2:AQ2'), data, sheet.getRange('N3:N200'));
+  customHeadSetter(sheet.getRange('N2:AQ2'), data, sheet.getRange('N3:N200'));
 
   //loop through model sizes data and set columns to correct width
   for(var i = 0; i < data.requirements.sizes.length; i++){
     sheet.setColumnWidth(data.requirements.sizes[i][0],data.requirements.sizes[i][1]);
   }
+
+  //custom field validation and dropdowns
+  customContentSetter(sheet.getRange(data.requirements.customCellRange), data)
 
   //loop through dropdowns model data
   for(var i = 0; i < dropdownColumnAssignments.length; i++){
@@ -78,9 +81,7 @@ function templateLoader(data){
   }
 }
 
-function customFieldSetter(range, data, col){
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheets()[0];
+function customHeadSetter(range, data, col){
 
   //shorten variable
   var fields = data.requirements.customFields
@@ -96,3 +97,34 @@ function customFieldSetter(range, data, col){
     column.setBackground('#fff');
   }
 }
+
+function customContentSetter(range, data){
+  //shorten variable
+  customs = data.requirements.customFields;
+  for(var i = 0; i < customs.length; i++){
+    if(customs[i].CustomPropertyTypeId == 2 || customs[i].CustomPropertyTypeId == 3){
+      var cell = range.getCell(1, i + 1);
+      cell.setValue('number only')
+    }
+    if(customs[i].CustomPropertyTypeId == 4){
+      var cell = range.getCell(1, i + 1);
+      cell.setValue('Boolean')
+    }
+    if(customs[i].CustomPropertyTypeId == 5){
+      var cell = range.getCell(1, i + 1);
+      cell.setValue('Date')
+    }
+    if(customs[i].CustomPropertyTypeId == 6 || customs[i].CustomPropertyTypeId == 7){
+      var cell = range.getCell(1, i + 1);
+      cell.setValue('list')
+    }
+    if(customs[i].CustomPropertyTypeId == 8){
+      var cell = range.getCell(1, i + 1);
+      cell.setValue('user list')
+    }
+  }
+
+}
+
+
+
