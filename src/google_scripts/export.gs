@@ -131,21 +131,21 @@ function exporter(data){
 
   // set up to individually add each requirement to spirateam
   // maybe there's a way to bulk add them instead of individual calls?
-// var responses = []
-// for(var i = 0; i < bodyArr.length; i++){
-//  //stringify
-//  var JSON_body = JSON.stringify( bodyArr[i] );
-//  //send JSON to export function
-//  var response = requirementExportCall( JSON_body, data.templateData.currentProjectNumber, data.userData.currentUser )
-//  //push API approval into array
-//  responses.push(response.RequirementId)
-// }
+var responses = []
+for(var i = 0; i < bodyArr.length; i++){
+ //stringify
+ var JSON_body = JSON.stringify( bodyArr[i] );
+ //send JSON to export function
+ var response = requirementExportCall( JSON_body, data.templateData.currentProjectNumber, data.userData.currentUser )
+ //push API approval into array
+ responses.push(response.RequirementId)
+}
 
 
 
 
-  //return responses
-  return bodyArr
+  return responses
+  //return bodyArr
   //return JSON.stringify( bodyArr )
   //return JSON_body;
 }
