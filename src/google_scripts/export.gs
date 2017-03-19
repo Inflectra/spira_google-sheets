@@ -1,47 +1,6 @@
 //export function pulled from Code.gs
 //takes item {cell}, list {array}, and isObj {bool}
 //isObj is true if list is an object, i.e in the case of the users array
-function mapper(item, list){
-  var val = 1;
-  for (var i = 0; i < list.length; i++){
-    if (item == list[i][1]) {val = list[i][0]}
-  }
-  return val;
-}
-
-//function richData(data){
-//  var textArr = data.split(' ');
-//
-//  for (var i = 0; i < textArr.length; i++){
-//
-//    var word = textArr[i]
-//    //.isBold()
-//
-////    var italic = textArr[i].getFontStyle()
-////    var underline = textArr[i].getFOntLines()
-////
-//    Logger.log(word)// + italic + underline
-//
-//  }
-//  return data;
-//}
-
-function indenter(cell){
-  // var indentCount = 0;
-  // //check for indent character '>'
-  // if(cell && cell[0] === '>'){
-  // //increment indent counter while there are '>'s present
-  //   while (cell[0] === '>'){
-  //     //get entry length for slice
-  //     var len = cell.length;
-  //     //slice the first character off of the entry
-  //     cell = cell.slice(1, len);
-  //     indentCount++;
-  //   }
-  //   xObj['IndentLevel'] = 'AAB';
-  // }
-  return 'AAA'
-}
 
 function exporter(data){
   var ss = SpreadsheetApp.getActiveSpreadsheet()
@@ -80,11 +39,17 @@ function exporter(data){
     //initialize/clear new object for row values
     var xObj = {}
 
+
+
     //loop through cells in row
     for (var i = 0; i < reqs.JSON_headings.length; i++){
 
+
       //get cell value
       var cell = range.offset(j, i).getValue();
+
+      //get cell Range for req# insertion after export
+      if(i=== 0.0) { xObj['idField'] = range.offset(j, i).getCell(1, 1) }
 
       //passes description data to richData function to attach HTML tags for spirateam
       //if(i === 2.0){ cell = richData(cell) }
@@ -139,6 +104,8 @@ for(var i = 0; i < bodyArr.length; i++){
  var response = requirementExportCall( JSON_body, data.templateData.currentProjectNumber, data.userData.currentUser )
  //push API approval into array
  responses.push(response.RequirementId)
+//set returned ID
+ bodyArr[i].idField.setValue('RQ:' + response.RequirementId)
 }
 
 
@@ -163,4 +130,46 @@ function requirementExportCall(body, projNum, currentUser){
   var res = fetcher(currentUser, params, init);
 
   return res;
+}
+
+function mapper(item, list){
+  var val = 1;
+  for (var i = 0; i < list.length; i++){
+    if (item == list[i][1]) {val = list[i][0]}
+  }
+  return val;
+}
+
+//function richData(data){
+//  var textArr = data.split(' ');
+//
+//  for (var i = 0; i < textArr.length; i++){
+//
+//    var word = textArr[i]
+//    //.isBold()
+//
+////    var italic = textArr[i].getFontStyle()
+////    var underline = textArr[i].getFOntLines()
+////
+//    Logger.log(word)// + italic + underline
+//
+//  }
+//  return data;
+//}
+
+function indenter(cell){
+  // var indentCount = 0;
+  // //check for indent character '>'
+  // if(cell && cell[0] === '>'){
+  // //increment indent counter while there are '>'s present
+  //   while (cell[0] === '>'){
+  //     //get entry length for slice
+  //     var len = cell.length;
+  //     //slice the first character off of the entry
+  //     cell = cell.slice(1, len);
+  //     indentCount++;
+  //   }
+  //   xObj['IndentLevel'] = 'AAB';
+  // }
+  return 'AAA'
 }
