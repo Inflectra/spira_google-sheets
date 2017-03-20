@@ -32,7 +32,6 @@ function showSidebar() {
 }
 
 function include(filename) {
-  Logger.log(filename)
   return HtmlService.createHtmlOutputFromFile(filename).getContent();
 }
 
