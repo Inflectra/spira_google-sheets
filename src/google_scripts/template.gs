@@ -101,29 +101,79 @@ function customHeadSetter(range, data, col){
 function customContentSetter(range, data){
   //shorten variable
   customs = data.requirements.customFields;
+  //loop through custom property fields
   for(var i = 0; i < customs.length; i++){
+    //check if field matches {2: integer} or {3: float}
     if(customs[i].CustomPropertyTypeId == 2 || customs[i].CustomPropertyTypeId == 3){
+      //get first cell in range
       var cell = range.getCell(1, i + 1);
-      cell.setValue('number only')
+      //get column range (x : x)
+      var column = columnRanger(cell);
+      //set number only data validation
+      var rule = SpreadsheetApp.newDataValidation().requireNumberGreaterThan(-1).setAllowInvalid(false).setHelpText('Must be a positive integer').build();
+      column.setDataValidation(rule);
     }
+
     if(customs[i].CustomPropertyTypeId == 4){
+      var bool = ['True', 'False'];
       var cell = range.getCell(1, i + 1);
-      cell.setValue('Boolean')
+      var cellsTop = cell.getA1Notation();
+      var cellsEnd = cell.offset(200, 0).getA1Notation();
+      var column = SpreadsheetApp.getActive().getRange(cellsTop + ':' + cellsEnd);
+
+     var rule = SpreadsheetApp.newDataValidation().requireValueInList(bool, true).setAllowInvalid(false).build();
+     column.setDataValidation(rule);
     }
+
     if(customs[i].CustomPropertyTypeId == 5){
       var cell = range.getCell(1, i + 1);
       cell.setValue('Date')
     }
+
     if(customs[i].CustomPropertyTypeId == 6 || customs[i].CustomPropertyTypeId == 7){
+      var list = [];
+      for(var j = 0; j < customs[i].CustomList.Values.length; j++){
+        list.push(customs[i].CustomList.Values[j].Name);
+      }
       var cell = range.getCell(1, i + 1);
-      cell.setValue('list')
+      var cellsTop = cell.getA1Notation();
+      var cellsEnd = cell.offset(200, 0).getA1Notation();
+      var column = SpreadsheetApp.getActive().getRange(cellsTop + ':' + cellsEnd);
+
+     var rule = SpreadsheetApp.newDataValidation().requireValueInList(list, true).setAllowInvalid(false).build();
+     column.setDataValidation(rule);
     }
+
     if(customs[i].CustomPropertyTypeId == 8){
       var cell = range.getCell(1, i + 1);
       cell.setValue('user list')
     }
   }
 
+}
+
+function columnRanger(cell){
+  //get the column
+  var col = cell.getColumn();
+  //get column letter
+  col = columnToLetter(col);
+  //get column range for data validation
+  var column = SpreadsheetApp.getActive().getRange(col + ':' + col);
+
+  return column;
+}
+
+//open source column to letter function **Adam L from Stack OverFlow
+function columnToLetter(column)
+{
+  var temp, letter = '';
+  while (column > 0)
+  {
+    temp = (column - 1) % 26;
+    letter = String.fromCharCode(temp + 65) + letter;
+    column = (column - temp - 1) / 26;
+  }
+  return letter;
 }
 
 
