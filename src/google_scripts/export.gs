@@ -171,7 +171,31 @@ function customFiller(cell, data){
   //all custom values need a property number
   //set it and add to object for return
   var propNum = data.PropertyNumber;
-  var prop = {PropertyNumber: propNum}
+  var prop = {PropertyNumber: propNum, info: data}
+
+  //check data type of custom fields and assign values if condition is met
+  if(data.CustomPropertyTypeName == 'Text'){
+    prop['StringValue'] = cell;
+  }
+
+  if(data.CustomPropertyTypeName == 'Integer'){
+    prop['IntegerValue'] = cell;
+  }
+
+  if(data.CustomPropertyTypeName == 'Decimal'){
+    prop['DecimalValue'] = cell;
+  }
+
+  if(data.CustomPropertyTypeName == 'List'){
+    var len = data.CustomList.Values.length;
+    //loop through custom list and match name to cell value
+    for (var i = 0; i < len; i++){
+      if (cell == data.CustomList.Values[i].Name){
+        //assign list value number to integer
+        prop['IntegerValue'] = data.CustomList.Values[i].CustomPropertyValueId
+      }
+    }
+  }
 
 
 
