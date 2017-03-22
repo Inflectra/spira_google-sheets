@@ -7,6 +7,7 @@ function exporter(data){
   var sheet = ss.getSheets()[0];
   //number of cells in a row
   var range = sheet.getRange(data.templateData.requirements.cellRange)
+  var customRange = sheet.getRange(data.templateData.requirements.customCellRange)
   //var i
   var isRowEmpty = false;
   var numberOfRows = 0;
@@ -39,6 +40,9 @@ function exporter(data){
     //initialize/clear new object for row values
     var xObj = {}
 
+    //send current row
+    var row = customRange.offset(j, 0)
+    xObj['CustomProperties'] = customBuilder(data, row)
 
 
     //loop through cells in row
@@ -51,8 +55,6 @@ function exporter(data){
       //get cell Range for req# insertion after export
       if(i=== 0.0) { xObj['idField'] = range.offset(j, i).getCell(1, 1) }
 
-      //passes description data to richData function to attach HTML tags for spirateam
-      //if(i === 2.0){ cell = richData(cell) }
 
       //shorten variables
       var users = data.userData.projUserWNum;
@@ -96,23 +98,23 @@ function exporter(data){
 
   // set up to individually add each requirement to spirateam
   // maybe there's a way to bulk add them instead of individual calls?
-var responses = []
-for(var i = 0; i < bodyArr.length; i++){
- //stringify
- var JSON_body = JSON.stringify( bodyArr[i] );
- //send JSON to export function
- var response = requirementExportCall( JSON_body, data.templateData.currentProjectNumber, data.userData.currentUser )
- //push API approval into array
- responses.push(response.RequirementId)
-//set returned ID
- bodyArr[i].idField.setValue('RQ:' + response.RequirementId)
-}
+// var responses = []
+// for(var i = 0; i < bodyArr.length; i++){
+//  //stringify
+//  var JSON_body = JSON.stringify( bodyArr[i] );
+//  //send JSON to export function
+//  var response = requirementExportCall( JSON_body, data.templateData.currentProjectNumber, data.userData.currentUser )
+//  //push API approval into array
+//  responses.push(response.RequirementId)
+// //set returned ID
+//  bodyArr[i].idField.setValue('RQ:' + response.RequirementId)
+// }
 
 
 
 
-  return responses
-  //return bodyArr
+  //return responses
+  return bodyArr
   //return JSON.stringify( bodyArr )
   //return JSON_body;
 }
@@ -140,22 +142,41 @@ function mapper(item, list){
   return val;
 }
 
-//function richData(data){
-//  var textArr = data.split(' ');
-//
-//  for (var i = 0; i < textArr.length; i++){
-//
-//    var word = textArr[i]
-//    //.isBold()
-//
-////    var italic = textArr[i].getFontStyle()
-////    var underline = textArr[i].getFOntLines()
-////
-//    Logger.log(word)// + italic + underline
-//
-//  }
-//  return data;
-//}
+//gets full model data and custom properites cell range
+function customBuilder(data, rowRange){
+  //shorten variable
+  var customs = data.templateData.requirements.customFields;
+  //length of custom data to optimise perf
+  var len = customs.length;
+  //custom props array of objects to be returned
+  var customProps = [];
+  //loop through cells based on custom data fields
+  for(var i = 0; i < len; i++){
+    //assign custom property to variable
+    var customData = customs[i];
+    //get cell data
+    var cell = rowRange.offset(0, i).getValue()
+    //check if the cell is empty
+    if (cell !== ""){
+      //call custom content function and push data into array from export
+      customProps.push( customFiller(cell, customData) )
+    }
+  }
+  //custom properties array ready for API export
+  return customProps
+}
+
+//gets specific cell and custom property data for that column
+function customFiller(cell, data){
+  //all custom values need a property number
+  //set it and add to object for return
+  var propNum = data.PropertyNumber;
+  var prop = {PropertyNumber: propNum}
+
+
+
+  return prop;
+}
 
 function indenter(cell){
   // var indentCount = 0;
