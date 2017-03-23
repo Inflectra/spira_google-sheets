@@ -103,15 +103,14 @@ $('#js--logIn').click(() => {
     //get user data from input fields and store in user data object
     model.userData.currentUser.url = $('#js--url').val();
     model.userData.currentUser.userName = $('#js--userName').val();
-    model.userData.currentUser.API_KEY = encodeURIComponent($('#js--password').val())
+    model.userData.currentUser.api_key = '&api-key=' + encodeURIComponent($('#js--password').val())
+    console.log(model.userData.currentUser);
     init();
 });
 
 $('#js--cancel').click(() => {
-    //clear field values
-    $('#js--url').val('');
-    $('#js--userName').val('');
-    $('#js--password').val('');
+    //clear input field values
+    $('#js--url, #js--userName, #js--password').val('');
 });
 
 $('#js--connect').click(() => console.log('test'));
@@ -123,11 +122,15 @@ $('#js--disconnect').click(() => {
         if (bool) {
             //clear spreadsheet
             google.script.run.clearAll();
+            //display log-in page
             $('#js--auth').toggleClass('open');
             isTemplateLoaded = false;
+            //clear model user values
             model.userData.currentUser.url = '';
             model.userData.currentUser.userName = '';
             model.userData.currentUser.API_KEY = '';
+            //clear input fields
+            $('#js--url, #js--userName, #js--password').val('');
         }
     }
 });
@@ -190,7 +193,7 @@ $('#js--export').click(() => {
     function exportSuccess(data) {
         //toggle off spinner
         $('#js--loader').toggleClass('hidden');
-        google.script.run.success('Data exported successfully.')
+        google.script.run.exportSuccess();
         console.log(data);
     }
 });
@@ -249,6 +252,7 @@ $('#js--project').change(function(e) {
             console.log(model.templateData)
             updateData();
         } else {
+            console.log(prevProj[0]);
             //sets the select dropdown back to the original value if the user says no
             prevProj[0].selected = true;
         }
@@ -259,4 +263,12 @@ $('#js--project').change(function(e) {
 $('#js--artifact').change(function(e) {
      //TODO add change artifact functionality
 });
+
+$('#js--help').click(function(){
+  $('#js--helpPage').toggleClass('open hidden')
+})
+
+$('#js--helpClose').click(function(){
+  $('#js--helpPage').toggleClass('open hidden')
+})
 </script>

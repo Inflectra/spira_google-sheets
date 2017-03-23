@@ -100,7 +100,9 @@ function customHeadSetter(range, data, col){
 
 function customContentSetter(range, data){
   //shorten variable
-  customs = data.requirements.customFields;
+  var customs = data.requirements.customFields;
+  //grab users list from owners dropdown
+  var users = data.requirements.dropdowns['Owner'];
   //loop through custom property fields
   for(var i = 0; i < customs.length; i++){
     //check if field matches {2: integer} or {3: float}
@@ -113,23 +115,26 @@ function customContentSetter(range, data){
       var rule = SpreadsheetApp.newDataValidation().requireNumberGreaterThan(-1).setAllowInvalid(false).setHelpText('Must be a positive integer').build();
       column.setDataValidation(rule);
     }
-
+    //boolean
     if(customs[i].CustomPropertyTypeId == 4){
-      var bool = ['True', 'False'];
+      var list = ["Yes", "No"];
       var cell = range.getCell(1, i + 1);
       var cellsTop = cell.getA1Notation();
       var cellsEnd = cell.offset(200, 0).getA1Notation();
       var column = SpreadsheetApp.getActive().getRange(cellsTop + ':' + cellsEnd);
 
-     var rule = SpreadsheetApp.newDataValidation().requireValueInList(bool, true).setAllowInvalid(false).build();
+     var rule = SpreadsheetApp.newDataValidation().requireValueInList(list, true).setAllowInvalid(false).build();
      column.setDataValidation(rule);
     }
-
+    //date
     if(customs[i].CustomPropertyTypeId == 5){
       var cell = range.getCell(1, i + 1);
-      cell.setValue('Date')
+      var column = columnRanger(cell);
+      //set number only data validation
+      var rule = SpreadsheetApp.newDataValidation().requireDate().setAllowInvalid(false).setHelpText('Must be a valid date').build();
+      column.setDataValidation(rule);
     }
-
+    //List and MultiList
     if(customs[i].CustomPropertyTypeId == 6 || customs[i].CustomPropertyTypeId == 7){
       var list = [];
       for(var j = 0; j < customs[i].CustomList.Values.length; j++){
@@ -143,10 +148,20 @@ function customContentSetter(range, data){
      var rule = SpreadsheetApp.newDataValidation().requireValueInList(list, true).setAllowInvalid(false).build();
      column.setDataValidation(rule);
     }
-
+    //users
     if(customs[i].CustomPropertyTypeId == 8){
+      var list = [];
+      var len = users.length;
+      for(var j = 0; j < len; j++){
+        list.push(users[j]);
+      }
       var cell = range.getCell(1, i + 1);
-      cell.setValue('user list')
+      var cellsTop = cell.getA1Notation();
+      var cellsEnd = cell.offset(200, 0).getA1Notation();
+      var column = SpreadsheetApp.getActive().getRange(cellsTop + ':' + cellsEnd);
+
+     var rule = SpreadsheetApp.newDataValidation().requireValueInList(list, true).setAllowInvalid(false).build();
+     column.setDataValidation(rule);
     }
   }
 

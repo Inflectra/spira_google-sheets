@@ -8,6 +8,17 @@
 </head>
 
 <body>
+    <!--help page-->
+    <!--<div class="slide-out transition hidden" id="js--helpPage">
+    <header class="container">
+        <h3 class="">Import / Export Wizard</h3>
+        <img src="https://www.inflectra.com/Images/ApplicationIcons/SpiraTeam-Icon.png" id="logo--top" class="">
+    </header>
+    <h3>Help Page</h3>
+    <p>{Todo add: help information}</p>
+    <button id="js--helpClose">Close</button>
+    </div>-->
+
     <!--auth page-->
     <div class="slide-out transition open" id="js--auth">
         <header class="container">
@@ -26,20 +37,22 @@
                 <input type="password" name="password" placeholder="Password" class="passwordInput" id="js--password" />
             </label>
         </div>
-        <label class="checkbox">
-            <input type="checkbox" name="remember" class="" id="js--remember" /><small>Remember Me</small></label>
         <footer class="container">
             <img src="https://financesonline.com/uploads/2014/11/spirateam-logo.jpg" id="logo--bottom" class="">
             <div class="">
                 <button class="action" id="js--logIn">Log In</button>
                 <button class="" id="js--cancel">Cancel</button>
             </div>
+            <br>
+            <!--<button id="js--help">Help</button>-->
         </footer>
     </div>
+
     <!--spinner-->
     <div id='js--loader' class='spinner-holder hidden'>
         <div class="loader"></div>
     </div>
+
     <!--main screen-->
     <div class="main">
         <header class="container">
@@ -47,9 +60,9 @@
             <img src="https://www.inflectra.com/Images/ApplicationIcons/SpiraTeam-Icon.png" id="logo--top" class="">
         </header>
         <div class="container" id="buttons-top">
-            <button id="js--connect" class="">Connect</button>
+            <button id="js--connect" class="" disabled>Connect</button>
             <button id="js--disconnect" class="">Disconnect</button>
-            <button id="js--options" class="">Options</button>
+            <button id="js--options" class="" disabled>Options</button>
         </div>
         <div class="select-section">
             <label class="">Projects:
@@ -60,7 +73,7 @@
         </div>
         <div class="select-section">
             <label class="">Artifact:
-                <select class="" id="js--artifact">
+                <select class="" id="js--artifact" disabled>
                     <option value="requirements">Requirements</option>
                     <option value="test_cases">Test Cases</option>
                 </select>
@@ -71,7 +84,7 @@
             <button id="js--save" class="">Save</button>
         </div>
         <div class="row justify-content-around" id="buttons-bottom">
-            <button class="" id="js--import">Import</button>
+            <button class="" id="js--import" disabled>Import</button>
             <button class="" id="js--export">Export</button>
             <button class="" id="js--clear">Clear</button>
         </div>

@@ -98,23 +98,23 @@ function exporter(data){
 
   // set up to individually add each requirement to spirateam
   // maybe there's a way to bulk add them instead of individual calls?
-// var responses = []
-// for(var i = 0; i < bodyArr.length; i++){
-//  //stringify
-//  var JSON_body = JSON.stringify( bodyArr[i] );
-//  //send JSON to export function
-//  var response = requirementExportCall( JSON_body, data.templateData.currentProjectNumber, data.userData.currentUser )
-//  //push API approval into array
-//  responses.push(response.RequirementId)
-// //set returned ID
-//  bodyArr[i].idField.setValue('RQ:' + response.RequirementId)
-// }
+ var responses = []
+ for(var i = 0; i < bodyArr.length; i++){
+  //stringify
+  var JSON_body = JSON.stringify( bodyArr[i] );
+  //send JSON to export function
+  var response = requirementExportCall( JSON_body, data.templateData.currentProjectNumber, data.userData.currentUser )
+  //push API approval into array
+  responses.push(response.RequirementId)
+ //set returned ID
+  bodyArr[i].idField.setValue('RQ:' + response.RequirementId)
+ }
 
 
 
 
-  //return responses
-  return bodyArr
+  return responses
+  //return bodyArr
   //return JSON.stringify( bodyArr )
   //return JSON_body;
 }
@@ -134,9 +134,13 @@ function requirementExportCall(body, projNum, currentUser){
   return res;
 }
 
+//map cell data to their corresponding IDs for export to spirateam
 function mapper(item, list){
+  //set return value to 1 on err
   var val = 1;
+  //loop through model for variable being mapped
   for (var i = 0; i < list.length; i++){
+    //cell value matches model value assign id number
     if (item == list[i][1]) {val = list[i][0]}
   }
   return val;
@@ -144,8 +148,9 @@ function mapper(item, list){
 
 //gets full model data and custom properites cell range
 function customBuilder(data, rowRange){
-  //shorten variable
+  //shorten variables
   var customs = data.templateData.requirements.customFields;
+  var users = data.userData.projUserWNum;
   //length of custom data to optimise perf
   var len = customs.length;
   //custom props array of objects to be returned
@@ -159,7 +164,7 @@ function customBuilder(data, rowRange){
     //check if the cell is empty
     if (cell !== ""){
       //call custom content function and push data into array from export
-      customProps.push( customFiller(cell, customData) )
+      customProps.push( customFiller(cell, customData, users) )
     }
   }
   //custom properties array ready for API export
@@ -167,36 +172,58 @@ function customBuilder(data, rowRange){
 }
 
 //gets specific cell and custom property data for that column
-function customFiller(cell, data){
+function customFiller(cell, data, users){
   //all custom values need a property number
   //set it and add to object for return
   var propNum = data.PropertyNumber;
-  var prop = {PropertyNumber: propNum, info: data}
+  var prop = {PropertyNumber: propNum}
 
-  //check data type of custom fields and assign values if condition is met
-  if(data.CustomPropertyTypeName == 'Text'){
-    prop['StringValue'] = cell;
+ //check data type of custom fields and assign values if condition is met
+ if(data.CustomPropertyTypeName == 'Text'){
+   prop['StringValue'] = cell;
+ }
+
+ if(data.CustomPropertyTypeName == 'Integer'){
+   prop['IntegerValue'] = cell;
+ }
+
+ if(data.CustomPropertyTypeName == 'Decimal'){
+   prop['DecimalValue'] = cell;
+ }
+
+ if(data.CustomPropertyTypeName == 'Boolean'){
+   cell == "Yes" ? prop['BooleanValue'] = true : prop['BooleanValue'] = false;
+ }
+
+ if(data.CustomPropertyTypeName == 'List'){
+   var len = data.CustomList.Values.length;
+   //loop through custom list and match name to cell value
+   for (var i = 0; i < len; i++){
+     if (cell == data.CustomList.Values[i].Name){
+       //assign list value number to integer
+       prop['IntegerValue'] = data.CustomList.Values[i].CustomPropertyValueId
+     }
+   }
+ }
+
+  if(data.CustomPropertyTypeName == 'Date'){
+    //parse date into milliseconds
+    cell = Date.parse(cell);
+    //concat values accepted by spira and assign to correct prop
+    prop['DateTimeValue'] = "\/Date(" + cell + ")\/";
   }
 
-  if(data.CustomPropertyTypeName == 'Integer'){
-    prop['IntegerValue'] = cell;
-  }
 
-  if(data.CustomPropertyTypeName == 'Decimal'){
-    prop['DecimalValue'] = cell;
-  }
+ if(data.CustomPropertyTypeName == 'MultiList'){}
 
-  if(data.CustomPropertyTypeName == 'List'){
-    var len = data.CustomList.Values.length;
-    //loop through custom list and match name to cell value
-    for (var i = 0; i < len; i++){
-      if (cell == data.CustomList.Values[i].Name){
-        //assign list value number to integer
-        prop['IntegerValue'] = data.CustomList.Values[i].CustomPropertyValueId
-      }
-    }
-  }
-
+ if(data.CustomPropertyTypeName == 'User'){
+   var len = users.length
+   for (var i = 0; i < len; i++){
+     if (cell == users[i][1]){
+       prop['IntegerValue'] = users[i][0];
+     }
+   }
+ }
 
 
   return prop;

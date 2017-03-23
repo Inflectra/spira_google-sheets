@@ -57,7 +57,7 @@ function getCustoms(currentUser, proj, artifact){
 }
 
 function fetcher (currentUser, params, init){
-  var URL = stubUser.url + params + stubUser.userName + stubUser.api_key;
+  var URL = currentUser.url + params + currentUser.userName + currentUser.api_key;
   var init = init || {'content-type' : 'application/json'}
 
   var response = UrlFetchApp.fetch(URL, init)
@@ -80,9 +80,10 @@ function error(type){
 }
 
 function success(string){
-  // Show a 3-second popup with the title "Status" and the message "Task started".
+  // Show a 2-second popup with the title "Status" and the message "Task started".
   SpreadsheetApp.getActiveSpreadsheet().toast(string, 'Success', 2);
 }
+
 
 //Alert pop up for data clear warning
 function warn(){
@@ -97,9 +98,15 @@ function warn(){
   }
 }
 
+//TODO Combine all of these OK warns to take a single string
 function warnProjArt(){
   var ui = SpreadsheetApp.getUi();
   var response = ui.alert(' Warning! Changing the current project or artifact will clear all unsaved data.', ui.ButtonSet.OK);
+}
+
+function exportSuccess(){
+  var ui = SpreadsheetApp.getUi();
+  var response = ui.alert('Export Success! Clear sheet to export more artifacts.', ui.ButtonSet.OK);
 }
 
 
