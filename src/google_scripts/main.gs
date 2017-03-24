@@ -57,7 +57,7 @@ function getCustoms(currentUser, proj, artifact){
 }
 
 function fetcher (currentUser, params, init){
-  var URL = currentUser.url + params + currentUser.userName + currentUser.api_key;
+  var URL = stubUser.url + params + stubUser.userName + stubUser.api_key;
   var init = init || {'content-type' : 'application/json'}
 
   var response = UrlFetchApp.fetch(URL, init)

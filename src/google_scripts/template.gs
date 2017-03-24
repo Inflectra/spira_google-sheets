@@ -12,9 +12,11 @@ function templateLoader(data){
 
   //color heading cells
   var stdColorRange = sheet.getRange(data.requirements.standardRange);
-  stdColorRange.setBackground('#ffbf80');
+  stdColorRange.setBackground('#073642');
+  stdColorRange.setFontColor('#fff');
   var cusColorRange = sheet.getRange(data.requirements.customRange);
-  cusColorRange.setBackground('#70db70');
+  cusColorRange.setBackground('#1398b9');
+  cusColorRange.setFontColor('#fff');
 
   //get range for requirement numbers and set as greyed out
   var reqIdRange = sheet.getRange('A3:A200');
