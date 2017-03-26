@@ -24,6 +24,9 @@ function updateData() {
     google.script.run.withSuccessHandler(userSuccess).withFailureHandler(errorNetwork).getUsers(model.userData.currentUser, model.templateData.currentProjectNumber)
 
     function userSuccess(users) {
+        //clear old values
+        model.userData.projUsers = [];
+        model.userData.projUserWNum = [];
         //map through user obj and assign names
         users.map(user => {
             let num = user.UserId;
@@ -39,6 +42,7 @@ function updateData() {
             }
             model.userData.projUsers.push(full)
             model.userData.projUserWNum.push([num, full])
+            console.log(model.userData.projUsers)
             //populate user dropdowns
             model.templateData.requirements.dropdowns['Owner'] = model.userData.projUsers;
             model.templateData.requirements.dropdowns['Author'] = model.userData.projUsers;
@@ -249,7 +253,6 @@ $('#js--project').change(function(e) {
                     model.templateData.currentProjectNumber = proj[0];
                 }
             });
-            console.log(model.templateData)
             updateData();
         } else {
             console.log(prevProj[0]);
@@ -264,11 +267,21 @@ $('#js--artifact').change(function(e) {
      //TODO add change artifact functionality
 });
 
-$('#js--help').click(function(){
+var authHelp = false
+
+$('.js--help').click(function(){
   $('#js--helpPage').toggleClass('open hidden')
+ if ( $('#js--auth').hasClass('open') ) {
+   authHelp = true;
+   $('#js--auth').toggle('open');
+ }
 })
 
 $('#js--helpClose').click(function(){
   $('#js--helpPage').toggleClass('open hidden')
+  if (authHelp){
+    $('#js--auth').toggle('open');
+  }
+  authHelp = false;
 })
 </script>

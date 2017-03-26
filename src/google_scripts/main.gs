@@ -37,23 +37,17 @@ function include(filename) {
 
 function getProjects(currentUser){
   var params = '/services/v5_0/RestService.svc/projects?username='
-  var res = fetcher(currentUser, params);
-
-  return res;
+  return fetcher(currentUser, params);
 }
 
 function getUsers(currentUser, proj){
   var params = '/services/v5_0/RestService.svc/projects/' + proj + '/users?username='
-  var res = fetcher(currentUser, params);
-
-  return res;
+  return fetcher(currentUser, params);
 }
 
 function getCustoms(currentUser, proj, artifact){
   var params = '/services/v5_0/RestService.svc/projects/' + proj + '/custom-properties/' + artifact + '?username='
-  var res = fetcher(currentUser, params);
-
-  return res;
+  return fetcher(currentUser, params);
 }
 
 function fetcher (currentUser, params, init){
@@ -66,16 +60,13 @@ function fetcher (currentUser, params, init){
 }
 
 
-
-
 function error(type){
-  var ui = SpreadsheetApp.getUi();
   if(type == 'impExp') {
-    var response = ui.alert('There was an input error. Please check that your entries are correct.', ui.ButtonSet.OK);
+    okWarn('There was an input error. Please check that your entries are correct.')
   } else if (type == 'unk') {
-    var response = ui.alert('Unkown error. Please try again later or contact your system administrator', ui.ButtonSet.OK);
+    okWarn('Unkown error. Please try again later or contact your system administrator')
   } else {
-    var response = ui.alert('Network error. Please check your username, url, and password.', ui.ButtonSet.OK);
+    okWarn('Network error. Please check your username, url, and password.')
   }
 }
 
@@ -98,22 +89,25 @@ function warn(){
   }
 }
 
-//TODO Combine all of these OK warns to take a single string
+//Alert pop up for project or artifact dropdown change
 function warnProjArt(){
-  var ui = SpreadsheetApp.getUi();
-  var response = ui.alert(' Warning! Changing the current project or artifact will clear all unsaved data.', ui.ButtonSet.OK);
+  okWarn('Warning! Changing the current project or artifact will clear all unsaved data.')
 }
 
+//Alert pop up for export success
 function exportSuccess(){
-  var ui = SpreadsheetApp.getUi();
-  var response = ui.alert('Export Success! Clear sheet to export more artifacts.', ui.ButtonSet.OK);
+  okWarn('Export Success! Clear sheet to export more artifacts.');
 }
-
 
 //Alert pop up for no template present
-function noTemplate() {
+function noTemplate(){
+  okWarn('Please load a template to continue.');
+}
+
+//warn with Ok button
+function okWarn(dialoge){
   var ui = SpreadsheetApp.getUi();
-  var response = ui.alert('Please load a template to continue.', ui.ButtonSet.OK);
+  var response = ui.alert(dialoge, ui.ButtonSet.OK);
 }
 
 //save function
@@ -150,3 +144,26 @@ function clearAll(){
   //Reset sheet name
   sheet.setName('Sheet');
 }
+
+
+// this loads the es6-promises polyfill to make promise syntax available in Apps Script
+// copyright notice - https://raw.githubusercontent.com/jakearchibald/es6-promise/master/LICENSE
+var Promise,
+    setTimeout = setTimeout || function (func,ms) {
+      Utilities.sleep(ms);
+      func();
+    };
+
+(function () {
+
+  // get the polyfill and eval
+  if (!Promise) {
+    var result = UrlFetchApp.fetch('https://cdnjs.cloudflare.com/ajax/libs/es6-promise/3.2.1/es6-promise.min.js');
+    eval (result.getContentText());
+
+    // add done for compatibility with other promise systems
+    Promise.prototype.done = Promise.prototype.done || Promise.prototype.then ;
+
+  }
+
+}());

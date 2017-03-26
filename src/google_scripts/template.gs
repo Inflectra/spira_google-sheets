@@ -1,197 +1,266 @@
-function templateLoader(data){
-  clearAll();
+//export function pulled from Code.gs
+//takes item {cell}, list {array}, and isObj {bool}
+//isObj is true if list is an object, i.e in the case of the users array
 
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
+function exporter(data){
+  var ss = SpreadsheetApp.getActiveSpreadsheet()
   var sheet = ss.getSheets()[0];
-  var dropdownColumnAssignments = [
-        ['Type', 'e'],['Importance', 'f'], ['Status', 'g'], ['Author', 'i'], ['Owner', 'j']
-      ]
+  //number of cells in a row
+  var range = sheet.getRange(data.templateData.requirements.cellRange)
+  var customRange = sheet.getRange(data.templateData.requirements.customCellRange)
+  //var i
+  var isRowEmpty = false;
+  var numberOfRows = 0;
+  var row = 0;
+  var col = 0;
+  var bodyArr = [];
 
-  //set sheet name to model name
-  sheet.setName(data.currentProjectName + ' - ' + data.currentArtifactName);
+  //shorten variable
+  var reqs = data.templateData.requirements;
 
-  //color heading cells
-  var stdColorRange = sheet.getRange(data.requirements.standardRange);
-  stdColorRange.setBackground('#073642');
-  stdColorRange.setFontColor('#fff');
-  var cusColorRange = sheet.getRange(data.requirements.customRange);
-  cusColorRange.setBackground('#1398b9');
-  cusColorRange.setFontColor('#fff');
-
-  //get range for requirement numbers and set as greyed out
-  var reqIdRange = sheet.getRange('A3:A200');
-  reqIdRange.setBackground('#a6a6a6');
-
-  //set customfield cells as grey if inactive
-  var customCellRange = sheet.getRange('N3:AQ200');
-  customCellRange.setBackground('#a6a6a6');
-
-  //set column A to present a warning if the user trys to write in a value
-  var protection = reqIdRange.protect().setDescription('Exported items must not have a requirement number');
-  //set warning. Remove this to make the column un-writable
-  protection.setWarningOnly(true);
-
-  sheet.getRange('A1:M1').merge().setValue("Requirements Standard Fields").setHorizontalAlignment("center");
-  sheet.getRange('N1:AQ1').merge().setValue("Custom Fields").setHorizontalAlignment("center");
-
-  //append headings to sheet
-  sheet.appendRow(data.requirements.headings)
-
-  //set custom headings if they exist
-  //pass in custom field range, data model, and custom column to be used for background coloring
-  customHeadSetter(sheet.getRange('N2:AQ2'), data, sheet.getRange('N3:N200'));
-
-  //loop through model sizes data and set columns to correct width
-  for(var i = 0; i < data.requirements.sizes.length; i++){
-    sheet.setColumnWidth(data.requirements.sizes[i][0],data.requirements.sizes[i][1]);
-  }
-
-  //custom field validation and dropdowns
-  customContentSetter(sheet.getRange(data.requirements.customCellRange), data)
-
-  //loop through dropdowns model data
-  for(var i = 0; i < dropdownColumnAssignments.length; i++){
-    var letter = dropdownColumnAssignments[i][1];
-    var name = dropdownColumnAssignments[i][0];
-    var list = [];
-    if (name == 'Owner' || name == 'Author'){
-      list = data.requirements.dropdowns[name]
+  //loop through and collect number of rows that contain data
+  while (isRowEmpty === false){
+    //select row
+    var newRange = range.offset(row, col, reqs.cellRangeLength);
+    //check if the row is empty
+    if ( newRange.isBlank() ){
+      //if row is empty set var to true
+      isRowEmpty = true
     } else {
-      var listArr = [];
-      //loop through 2D arrays and form standard array
-      for(var j = 0; j < data.requirements.dropdowns[name].length; j++){
-        listArr.push(data.requirements.dropdowns[name][j][1])
+      //move to next row
+      row++;
+      //add to number of rows
+      numberOfRows++;
+    }
+  }
+
+  //loop through standard rows
+  for (var j = 0; j < numberOfRows + 1; j++){
+
+    //initialize/clear new object for row values
+    var xObj = {}
+
+    //send current row
+    var row = customRange.offset(j, 0)
+    xObj['CustomProperties'] = customBuilder(data, row)
+
+
+    //loop through cells in row
+    for (var i = 0; i < reqs.JSON_headings.length; i++){
+
+
+      //get cell value
+      var cell = range.offset(j, i).getValue();
+
+      //get cell Range for req# insertion after export
+      if(i=== 0.0) { xObj['idField'] = range.offset(j, i).getCell(1, 1) }
+
+      //call indent checker and set indent amount
+      if(i === 1.0) { xObj['indentCount'] = indenter(cell) }
+
+      //shorten variables
+      var users = data.userData.projUserWNum;
+
+      //pass values to mapper function
+      //mapper iterates and assigns the values number based on the list order
+      if(i === 4.0){ cell = mapper(cell, reqs.dropdowns['Type']) }
+
+      if(i === 5.0){ xObj['ImportanceId'] = mapper(cell, reqs.dropdowns['Importance']) }
+
+      if(i === 6.0){ xObj['StatusId'] = mapper(cell, reqs.dropdowns['Status']) }
+
+      if (i === 8.0){ xObj['AuthorId'] = mapper(cell, users) }
+
+      if (i === 9.0){ xObj['OwnerId'] = mapper(cell, users) }
+
+
+      //if empty add null otherwise add the cell
+      // ...to the object under the proper key relative to its location on the template
+      //Offset by 2 for proj name and indent level
+      if (cell === ""){
+        xObj[reqs.JSON_headings[i]] = null;
+      } else {
+        xObj[reqs.JSON_headings[i]] = cell;
       }
-      //list must be an array so assign new array to list variable
-      list = listArr;
+
     }
 
-    //set range to entire column excluding top two rows
-    var cell = SpreadsheetApp.getActive().getRange(letter + ':' + letter).offset(2, 0);
-    //require list of values as dropdown and entered values
-    //require value in list: list variable is from the model, true shows dropdown arrow
-    //allow invalid set to false does not allow invalid entries
-    var rule = SpreadsheetApp.newDataValidation().requireValueInList(list, true).setAllowInvalid(false).build();
-    cell.setDataValidation(rule);
+    //if not empty add object
+    //entry MUST have a name
+    if ( xObj.Name ) {
+      xObj['ProjectName'] = data.templateData.currentProjectName;
+      bodyArr.push(xObj)
+    }
+
   }
-  //set number only columns to only accept numbers
-  for(var i = 0; i < data.requirements.requireNumberFields.length; i++){
-    var colLetter = data.requirements.requireNumberFields[i];
-    var column = SpreadsheetApp.getActive().getRange(colLetter + ':' + colLetter);
-    var rule = SpreadsheetApp.newDataValidation().requireNumberGreaterThan(-1).setAllowInvalid(false).setHelpText('Must be a positive integer').build();
-    column.setDataValidation(rule);
+
+  // set up to individually add each requirement to spirateam
+  // maybe there's a way to bulk add them instead of individual calls?
+ var responses = []
+ var test = '';
+ for(var i = 0; i < bodyArr.length; i++){
+  //stringify
+  var JSON_body = JSON.stringify( bodyArr[i] );
+  //send JSON to export function
+   var response = new Promise(function(res, rej){
+     res( requirementExportCall( JSON_body, data.templateData.currentProjectNumber, data.userData.currentUser ) );
+   });
+
+   response.then(function(resp){
+     responses.push(resp.RequirementId)
+     //set returned ID
+     bodyArr[i].idField.setValue('RQ:' + resp.RequirementId)
+     if (bodyArr[i].indentCount > 0){
+      var indentNum = bodyArr[i].indentCount;
+      requirementIndentCall(data.templateData.currentProjectNumber, data.userData.currentUser, resp.RequirementId, indentNum)
+    }
+   });
+
+  //push API approval into array
+  //responses.push(response.RequirementId)
+
+ }
+
+
+
+
+  return responses
+  //return test
+}
+
+function requirementExportCall(body, projNum, currentUser, indent){
+  //unique url for requirement POST
+  var params = '/services/v5_0/RestService.svc/projects/' + projNum + '/requirements?username=';
+  //POST headers
+  var init = {
+   'method' : 'post',
+   'contentType': 'application/json',
+   'payload' : body
+  };
+  //call fetch with POST request
+  return fetcher(currentUser, params, init);
+}
+
+function requirementIndentCall(projNum, currentUser, reqId, numOfIndents){
+  //unique url for indent POST
+  var params = '/services/v5_0/RestService.svc/projects/' + projNum + '/requirements/' + reqId + '/indent?username=';
+  //POST headers
+  var init = {
+   'method' : 'post',
+   'contentType': 'application/json',
+  };
+  for(var i = 1; i <= numOfIndents; i++){
+    fetcher(currentUser, params, init);
   }
 }
 
-function customHeadSetter(range, data, col){
-
-  //shorten variable
-  var fields = data.requirements.customFields
-  //loop through model custom fields data
-  //take passed in range and only overwrite the fields if a value is present in the model
-  for(var i = 0; i < fields.length; i++){
-    //get cell and offset by one column very iteration
-    var cell = range.getCell(1, i + 1)
-    //set heading
-    cell.setValue('Custom Field ' + (i + 1) + '\n' + fields[i].Name).setWrap(true);
-    //get column and offset every iteration and set background
-    var column = col.offset(0, i)
-    column.setBackground('#fff');
+//map cell data to their corresponding IDs for export to spirateam
+function mapper(item, list){
+  //set return value to 1 on err
+  var val = 1;
+  //loop through model for variable being mapped
+  for (var i = 0; i < list.length; i++){
+    //cell value matches model value assign id number
+    if (item == list[i][1]) {val = list[i][0]}
   }
+  return val;
 }
 
-function customContentSetter(range, data){
-  //shorten variable
-  var customs = data.requirements.customFields;
-  //grab users list from owners dropdown
-  var users = data.requirements.dropdowns['Owner'];
-  //loop through custom property fields
-  for(var i = 0; i < customs.length; i++){
-    //check if field matches {2: integer} or {3: float}
-    if(customs[i].CustomPropertyTypeId == 2 || customs[i].CustomPropertyTypeId == 3){
-      //get first cell in range
-      var cell = range.getCell(1, i + 1);
-      //get column range (x : x)
-      var column = columnRanger(cell);
-      //set number only data validation
-      var rule = SpreadsheetApp.newDataValidation().requireNumberGreaterThan(-1).setAllowInvalid(false).setHelpText('Must be a positive integer').build();
-      column.setDataValidation(rule);
-    }
-    //boolean
-    if(customs[i].CustomPropertyTypeId == 4){
-      var list = ["Yes", "No"];
-      var cell = range.getCell(1, i + 1);
-      var cellsTop = cell.getA1Notation();
-      var cellsEnd = cell.offset(200, 0).getA1Notation();
-      var column = SpreadsheetApp.getActive().getRange(cellsTop + ':' + cellsEnd);
-
-     var rule = SpreadsheetApp.newDataValidation().requireValueInList(list, true).setAllowInvalid(false).build();
-     column.setDataValidation(rule);
-    }
-    //date
-    if(customs[i].CustomPropertyTypeId == 5){
-      var cell = range.getCell(1, i + 1);
-      var column = columnRanger(cell);
-      //set number only data validation
-      var rule = SpreadsheetApp.newDataValidation().requireDate().setAllowInvalid(false).setHelpText('Must be a valid date').build();
-      column.setDataValidation(rule);
-    }
-    //List and MultiList
-    if(customs[i].CustomPropertyTypeId == 6 || customs[i].CustomPropertyTypeId == 7){
-      var list = [];
-      for(var j = 0; j < customs[i].CustomList.Values.length; j++){
-        list.push(customs[i].CustomList.Values[j].Name);
-      }
-      var cell = range.getCell(1, i + 1);
-      var cellsTop = cell.getA1Notation();
-      var cellsEnd = cell.offset(200, 0).getA1Notation();
-      var column = SpreadsheetApp.getActive().getRange(cellsTop + ':' + cellsEnd);
-
-     var rule = SpreadsheetApp.newDataValidation().requireValueInList(list, true).setAllowInvalid(false).build();
-     column.setDataValidation(rule);
-    }
-    //users
-    if(customs[i].CustomPropertyTypeId == 8){
-      var list = [];
-      var len = users.length;
-      for(var j = 0; j < len; j++){
-        list.push(users[j]);
-      }
-      var cell = range.getCell(1, i + 1);
-      var cellsTop = cell.getA1Notation();
-      var cellsEnd = cell.offset(200, 0).getA1Notation();
-      var column = SpreadsheetApp.getActive().getRange(cellsTop + ':' + cellsEnd);
-
-     var rule = SpreadsheetApp.newDataValidation().requireValueInList(list, true).setAllowInvalid(false).build();
-     column.setDataValidation(rule);
+//gets full model data and custom properites cell range
+function customBuilder(data, rowRange){
+  //shorten variables
+  var customs = data.templateData.requirements.customFields;
+  var users = data.userData.projUserWNum;
+  //length of custom data to optimise perf
+  var len = customs.length;
+  //custom props array of objects to be returned
+  var customProps = [];
+  //loop through cells based on custom data fields
+  for(var i = 0; i < len; i++){
+    //assign custom property to variable
+    var customData = customs[i];
+    //get cell data
+    var cell = rowRange.offset(0, i).getValue()
+    //check if the cell is empty
+    if (cell !== ""){
+      //call custom content function and push data into array from export
+      customProps.push( customFiller(cell, customData, users) )
     }
   }
-
+  //custom properties array ready for API export
+  return customProps
 }
 
-function columnRanger(cell){
-  //get the column
-  var col = cell.getColumn();
-  //get column letter
-  col = columnToLetter(col);
-  //get column range for data validation
-  var column = SpreadsheetApp.getActive().getRange(col + ':' + col);
+//gets specific cell and custom property data for that column
+function customFiller(cell, data, users){
+  //all custom values need a property number
+  //set it and add to object for return
+  var propNum = data.PropertyNumber;
+  var prop = {PropertyNumber: propNum}
 
-  return column;
-}
+ //check data type of custom fields and assign values if condition is met
+ if(data.CustomPropertyTypeName == 'Text'){
+   prop['StringValue'] = cell;
+ }
 
-//open source column to letter function **Adam L from Stack OverFlow
-function columnToLetter(column)
-{
-  var temp, letter = '';
-  while (column > 0)
-  {
-    temp = (column - 1) % 26;
-    letter = String.fromCharCode(temp + 65) + letter;
-    column = (column - temp - 1) / 26;
+ if(data.CustomPropertyTypeName == 'Integer'){
+   prop['IntegerValue'] = cell;
+ }
+
+ if(data.CustomPropertyTypeName == 'Decimal'){
+   prop['DecimalValue'] = cell;
+ }
+
+ if(data.CustomPropertyTypeName == 'Boolean'){
+   cell == "Yes" ? prop['BooleanValue'] = true : prop['BooleanValue'] = false;
+ }
+
+ if(data.CustomPropertyTypeName == 'List'){
+   var len = data.CustomList.Values.length;
+   //loop through custom list and match name to cell value
+   for (var i = 0; i < len; i++){
+     if (cell == data.CustomList.Values[i].Name){
+       //assign list value number to integer
+       prop['IntegerValue'] = data.CustomList.Values[i].CustomPropertyValueId
+     }
+   }
+ }
+
+  if(data.CustomPropertyTypeName == 'Date'){
+    //parse date into milliseconds
+    cell = Date.parse(cell);
+    //concat values accepted by spira and assign to correct prop
+    prop['DateTimeValue'] = "\/Date(" + cell + ")\/";
   }
-  return letter;
+
+
+ if(data.CustomPropertyTypeName == 'MultiList'){}
+
+ if(data.CustomPropertyTypeName == 'User'){
+   var len = users.length
+   for (var i = 0; i < len; i++){
+     if (cell == users[i][1]){
+       prop['IntegerValue'] = users[i][0];
+     }
+   }
+ }
+
+
+  return prop;
 }
 
-
-
+function indenter(cell){
+  var indentCount = 0;
+  //check for indent character '>'
+  if(cell && cell[0] === '>'){
+  //increment indent counter while there are '>'s present
+    while (cell[0] === '>'){
+      //get entry length for slice
+      var len = cell.length;
+      //slice the first character off of the entry
+      cell = cell.slice(1, len);
+      indentCount++;
+    }
+  }
+  return indentCount
+}

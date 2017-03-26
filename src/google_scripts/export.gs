@@ -55,6 +55,8 @@ function exporter(data){
       //get cell Range for req# insertion after export
       if(i=== 0.0) { xObj['idField'] = range.offset(j, i).getCell(1, 1) }
 
+      //call indent checker and set indent amount
+      if(i === 1.0) { xObj['indentCount'] = indenter(cell) }
 
       //shorten variables
       var users = data.userData.projUserWNum;
@@ -71,10 +73,6 @@ function exporter(data){
 
       if (i === 9.0){ xObj['OwnerId'] = mapper(cell, users) }
 
-
-
-      //call indent checker and set indent amount
-      xObj['IndentLevel'] = indenter();
 
       //if empty add null otherwise add the cell
       // ...to the object under the proper key relative to its location on the template
@@ -99,27 +97,38 @@ function exporter(data){
   // set up to individually add each requirement to spirateam
   // maybe there's a way to bulk add them instead of individual calls?
  var responses = []
+ var test = '';
  for(var i = 0; i < bodyArr.length; i++){
   //stringify
   var JSON_body = JSON.stringify( bodyArr[i] );
   //send JSON to export function
-  var response = requirementExportCall( JSON_body, data.templateData.currentProjectNumber, data.userData.currentUser )
+   var response = new Promise(function(res, rej){
+     res( requirementExportCall( JSON_body, data.templateData.currentProjectNumber, data.userData.currentUser ) );
+   });
+
+   response.then(function(resp){
+     responses.push(resp.RequirementId)
+     //set returned ID
+     bodyArr[i].idField.setValue('RQ:' + resp.RequirementId)
+     if (bodyArr[i].indentCount > 0){
+      var indentNum = bodyArr[i].indentCount;
+      requirementIndentCall(data.templateData.currentProjectNumber, data.userData.currentUser, resp.RequirementId, indentNum)
+    }
+   });
+
   //push API approval into array
-  responses.push(response.RequirementId)
- //set returned ID
-  bodyArr[i].idField.setValue('RQ:' + response.RequirementId)
+  //responses.push(response.RequirementId)
+
  }
 
 
 
 
   return responses
-  //return bodyArr
-  //return JSON.stringify( bodyArr )
-  //return JSON_body;
+  //return test
 }
 
-function requirementExportCall(body, projNum, currentUser){
+function requirementExportCall(body, projNum, currentUser, indent){
   //unique url for requirement POST
   var params = '/services/v5_0/RestService.svc/projects/' + projNum + '/requirements?username=';
   //POST headers
@@ -129,9 +138,20 @@ function requirementExportCall(body, projNum, currentUser){
    'payload' : body
   };
   //call fetch with POST request
-  var res = fetcher(currentUser, params, init);
+  return fetcher(currentUser, params, init);
+}
 
-  return res;
+function requirementIndentCall(projNum, currentUser, reqId, numOfIndents){
+  //unique url for indent POST
+  var params = '/services/v5_0/RestService.svc/projects/' + projNum + '/requirements/' + reqId + '/indent?username=';
+  //POST headers
+  var init = {
+   'method' : 'post',
+   'contentType': 'application/json',
+  };
+  for(var i = 1; i <= numOfIndents; i++){
+    fetcher(currentUser, params, init);
+  }
 }
 
 //map cell data to their corresponding IDs for export to spirateam
@@ -230,18 +250,17 @@ function customFiller(cell, data, users){
 }
 
 function indenter(cell){
-  // var indentCount = 0;
-  // //check for indent character '>'
-  // if(cell && cell[0] === '>'){
-  // //increment indent counter while there are '>'s present
-  //   while (cell[0] === '>'){
-  //     //get entry length for slice
-  //     var len = cell.length;
-  //     //slice the first character off of the entry
-  //     cell = cell.slice(1, len);
-  //     indentCount++;
-  //   }
-  //   xObj['IndentLevel'] = 'AAB';
-  // }
-  return 'AAA'
+  var indentCount = 0;
+  //check for indent character '>'
+  if(cell && cell[0] === '>'){
+  //increment indent counter while there are '>'s present
+    while (cell[0] === '>'){
+      //get entry length for slice
+      var len = cell.length;
+      //slice the first character off of the entry
+      cell = cell.slice(1, len);
+      indentCount++;
+    }
+  }
+  return indentCount
 }
