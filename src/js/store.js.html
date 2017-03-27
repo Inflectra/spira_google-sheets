@@ -1,31 +1,78 @@
 <script>
-  let model = {
-    userData : {
-      currentUser : {
-        url: '',
-        userName: '',
-        password: ''
-      },
-      projects: [],
-      projUsers: [],
-      projUserWNum: []
-    },
-    templateData : {
-      currentProjectName: '',
-      currentProjectNumber: '',
-      currentArtifactName:'',
-      isTemplateLoaded: false,
-      requirements: {
-        headings: ['Requirement Id','Requirement Name','Requirement Description', 'Release Version', 'Type', 'Importance','Status', 'Estimate', 'Author', 'Owner', 'Component', 'Linked Requirements', 'Comment', 'CUS-01', 'CUS-02','CUS-03', 'CUS-04', 'CUS-05', 'CUS-06', 'CUS-07', 'CUS-08', 'CUS-09', 'CUS-10', 'CUS-11', 'CUS-12', 'CUS-13','CUS-14', 'CUS-15', 'CUS-16', 'CUS-17', 'CUS-18', 'CUS-19', 'CUS-20', 'CUS-21', 'CUS-22', 'CUS-23', 'CUS-24','CUS-25', 'CUS-26', 'CUS-27', 'CUS-28', 'CUS-29', 'CUS-30'],
-        JSON_headings: ["RequirementId","Name","Description","ReleaseVersionNumber","RequirementTypeId","ImportanceName","StatusName","EstimatePoints","AuthorName","OwnerName","ComponentId"],
-        sizes: [ [1, 100], [2, 250], [3, 350], [4, 100], [5, 100], [6, 100], [7, 100], [8, 100], [9, 100], [11, 200], [12, 200], [13, 400] ],
-        dropdowns: {
-          'Type': ['Package', 'Design Element','Feature','Need','Quality','Use Case','User Story'],
-          'Importance': ['1 - Critical', '2 - High', '3 - Medium', '4 - Low'],
-          'Status' : ['Requested','Planned','In Progress', 'Developed', 'Accepted','Rejected','Under Review', 'Obsolete', 'Completed', 'Tested']
+let model = {
+    userData: {
+        currentUser: {
+            url: '',
+            userName: '',
+            api_key: ''
         },
-        customFields: []
-      }
+        projects: [],
+        projUsers: [],
+        projUserWNum: []
+    },
+    templateData: {
+        currentProjectName: '',
+        //hard coded until programatically changed
+        currentProjectNumber: 1,
+        currentArtifactName: '',
+        //hard coded until changed in future versions
+        currentArtifactId: 1,
+        isTemplateLoaded: false,
+        requirements: {
+            requireNumberFields: ['D', 'H'],
+            standardRange: 'A1:M2',
+            customRange: 'N1:AQ2',
+            cellRange: 'A3:M3',
+            customCellRange: 'N3:AQ3',
+            cellRangeLength: 43,
+            headings: ['Requirement Id', 'Requirement Name', 'Requirement Description', 'Release Version', 'Type', 'Importance', 'Status', 'Estimate', 'Author', 'Owner', 'Component', 'Linked Requirements', 'Comment', 'CUS-01', 'CUS-02', 'CUS-03', 'CUS-04', 'CUS-05', 'CUS-06', 'CUS-07', 'CUS-08', 'CUS-09', 'CUS-10', 'CUS-11', 'CUS-12', 'CUS-13', 'CUS-14', 'CUS-15', 'CUS-16', 'CUS-17', 'CUS-18', 'CUS-19', 'CUS-20', 'CUS-21', 'CUS-22', 'CUS-23', 'CUS-24', 'CUS-25', 'CUS-26', 'CUS-27', 'CUS-28', 'CUS-29', 'CUS-30'],
+            JSON_headings: ["RequirementId", "Name", "Description", "ReleaseVersionNumber", "RequirementTypeId", "ImportanceName", "StatusName", "EstimatePoints", "AuthorName", "OwnerName", "ComponentId"],
+            sizes: [
+                [1, 100],
+                [2, 250],
+                [3, 350],
+                [4, 100],
+                [5, 100],
+                [6, 100],
+                [7, 100],
+                [8, 100],
+                [9, 100],
+                [11, 200],
+                [12, 200],
+                [13, 400]
+            ],
+            dropdowns: {
+                //TODO check numbers against code since it's bugged and wont accept a type input
+                'Type': [
+                    [1, 'Package'],
+                    [2, 'Design Element'],
+                    [3, 'Feature'],
+                    [4, 'Need'],
+                    [5, 'Quality'],
+                    [6, 'Use Case'],
+                    [7, 'User Story']
+                ],
+                'Importance': [
+                    [1, '1 - Critical'],
+                    [2, '2 - High'],
+                    [3, '3 - Medium'],
+                    [4, '4 - Low']
+                ],
+                'Status': [
+                    [1, 'Requested'],
+                    [2, 'Planned'],
+                    [3, 'In Progress'],
+                    [4, 'Developed'],
+                    [5, 'Accepted'],
+                    [6, 'Rejected'],
+                    [7, 'Under Review'],
+                    [8, 'Obsolete'],
+                    [9, 'Completed'],
+                    [10, 'Tested']
+                ]
+            },
+            customFields: []
+        }
     }
-  }
+}
 </script>

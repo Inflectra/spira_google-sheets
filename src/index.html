@@ -1,85 +1,99 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <base target="_top">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/5.0.0/normalize.min.css">
-    <link href="https://fonts.googleapis.com/css?family=Lato" rel="stylesheet">
-    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/css/bootstrap.min.css" integrity="sha384-rwoIResjU2yc3z8GV/NPeZWAv56rSmLldC3R/AZzGRnGxQQKnKkoFVhFQhNUwEyJ" crossorigin="anonymous">
-    <!--<link rel="stylesheet" href="https://ssl.gstatic.com/docs/script/css/add-ons1.css">-->
-    <?!= include('styles.css') ?>
-  </head>
 
-  <body>
+<head>
+    <base target="_top">
+    <link rel="stylesheet" href="https://ssl.gstatic.com/docs/script/css/add-ons1.css">
+    <?!= include('styles.css') ?>
+</head>
+
+<body>
+    <!--help page-->
+    <div class="slide-out transition hidden" id="js--helpPage">
+    <header class="container">
+        <h3 class="">Import / Export Wizard</h3>
+        <img src="https://www.inflectra.com/Images/ApplicationIcons/SpiraTeam-Icon.png" id="logo--top" class="">
+    </header>
+    <h3>Help Page</h3>
+    <p>{Todo add: help information}</p>
+    <button id="js--helpClose">Close</button>
+    </div>
+
     <!--auth page-->
-    <div class="container slide-out transition open" id="js--auth">
-      <header class="row py-3">
-        <h5 class="col-9">SpiraTeam | Sheets Importer</h5>
-        <img src="http://placehold.it/50x50" id="logo--top" class="col-3">
-      </header>
-      <p>Please enter the information used to access your server</p>
-      <div class="">
-        <label class="">Spira URL: <input type="text" name="URL" placeholder="SpiraTeam URL" class="ml-2" id="js--url" /></label>
-        <label class="">User Name: <input type="text" name="user-name" placeholder="User Name" class="ml-2" id="js--userName" /></label>
-        <label class="">Password:  <input type="password" name="password" placeholder="Password" class="ml-2" id="js--password" /></label>
-        <label class="checkbox"><input type="checkbox" name="remember" class="mr-2" id="js--remember" /><small>Remember Me</small></label>
-      </div>
-      <footer class="row mt-3">
-        <img src="http://placehold.it/100x35" id="logo--bottom" class="col-4">
-        <div class="col-8">
-          <button class="btn btn-sm" id="js--cancel">Cancel</button>
-          <button class="btn btn-sm action" id="js--logIn">Log In</button>
+    <div class="slide-out transition open" id="js--auth">
+        <header class="container">
+            <h3 class="">Import / Export Wizard</h3>
+            <img src="https://www.inflectra.com/Images/ApplicationIcons/SpiraTeam-Icon.png" id="logo--top" class="">
+        </header>
+        <p>Please enter the information used to access your server</p>
+        <div class="container" id="auth-fields">
+            <label class="">Spira URL:
+                <input type="text" name="URL" placeholder="SpiraTeam URL" class="urlInput" id="js--url" />
+            </label>
+            <label class="">User Name:
+                <input type="text" name="user-name" placeholder="User Name" class="userNameInput" id="js--userName" />
+            </label>
+            <label class="">Password:
+                <input type="password" name="password" placeholder="Password" class="passwordInput" id="js--password" />
+            </label>
         </div>
-      </footer>
+        <footer class="container">
+            <img src="https://financesonline.com/uploads/2014/11/spirateam-logo.jpg" id="logo--bottom" class="">
+            <div class="">
+                <button class="action" id="js--logIn">Log In</button>
+                <button class="" id="js--cancel">Cancel</button>
+            </div>
+            <br>
+            <button class="js--help">Help</button>
+        </footer>
     </div>
 
     <!--spinner-->
     <div id='js--loader' class='spinner-holder hidden'>
-      <div class="loader"></div>
+        <div class="loader"></div>
     </div>
 
     <!--main screen-->
-    <div class="main container">
-      <header class="row py-3">
-        <h5 class="col-9">SpiraTeam | Sheets Importer</h5>
-        <img src="http://placehold.it/50x50" id="logo--top" class="col-3">
-      </header>
-      <div class="row justify-content-around" id="buttons-top">
-        <button id="js--connect" class="btn btn-sm col-3">Connect</button>
-        <button id="js--disconnect" class="btn btn-sm col-4">Disconnect</button>
-        <button id="js--options" class="btn btn-sm col-3">Options</button>
-      </div>
-      <div class="select-section">
-        <label class="">Projects:
-          <select class="" id="js--project">
-             <!--aysnc populated -->
-          </select>
-        </label>
-      </div>
-      <div class="select-section">
-        <label class="">Artifact:
-          <select class="" id="js--artifact">
-             <option value="requirements">Requirements</option>
-             <option value="test_cases">Test Cases</option>
-          </select>
-        </label>
-        <button id="js--template" class="btn btn-sm">Load Template</button>
-        <button id="js--save" class="btn btn-sm">Save</button>
-      </div>
-      <div class="row justify-content-around" id="buttons-bottom">
-        <button class="btn btn-sm col-3" id="js--import">Import</button>
-        <button class="btn btn-sm col-3" id="js--export">Export</button>
-        <button class="btn btn-sm col-3" id="js--clear">Clear</button>
-      </div>
+    <div class="main">
+        <header class="container">
+            <h3 class="">Import / Export Wizard</h3>
+            <img src="https://www.inflectra.com/Images/ApplicationIcons/SpiraTeam-Icon.png" id="logo--top" class="">
+        </header>
+        <div class="container" id="buttons-top">
+            <button class="js--help">help</button>
+            <button id="js--disconnect" class="">Disconnect</button>
+            <button id="js--options" class="" disabled>Options</button>
+        </div>
+        <div class="select-section">
+            <label class="">Projects:
+                <select class="" id="js--project">
+                    <!--aysnc populated -->
+                </select>
+            </label>
+        </div>
+        <div class="select-section">
+            <label class="">Artifact:
+                <select class="" id="js--artifact" disabled>
+                    <option value="requirements">Requirements</option>
+                    <option value="test_cases">Test Cases</option>
+                </select>
+            </label>
+        </div>
+        <div class="container" id="buttons-mid">
+            <button id="js--template" class="">Load Template</button>
+            <button id="js--save" class="">Save</button>
+        </div>
+        <div class="row justify-content-around" id="buttons-bottom">
+            <button class="" id="js--import" disabled>Import</button>
+            <button class="" id="js--export">Export</button>
+            <button class="" id="js--clear">Clear</button>
+        </div>
     </div>
-
     <!--Jquery-->
     <script src="https://code.jquery.com/jquery-3.1.1.slim.min.js" integrity="sha256-/SIrNqv8h6QGKDuNoLGA4iret+kyesCkHGzVUUV0shc=" crossorigin="anonymous"></script>
-    <!--Bootstrap-->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/tether/1.4.0/js/tether.min.js" integrity="sha384-DztdAPBWPRXSA/3eYEEUWrWCy7G5KFbe8fFjk5JAIxUYHKkDx6Qin1DkWx51bBrb" crossorigin="anonymous"></script>
-    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-alpha.6/js/bootstrap.min.js" integrity="sha384-vBWWzlZJ8ea9aCX4pEW3rVHjgjt7zpkNpZk+02D9phzyeVkE+jo0ieGizqPLForn" crossorigin="anonymous"></script>
     <!--user agent-->
     <?!= include('store.js') ?>
     <?!= include('main.js') ?>
-  </body>
-</html>
+</body>
 
+</html>
