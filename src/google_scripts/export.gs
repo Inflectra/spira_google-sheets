@@ -3,8 +3,8 @@
 //isObj is true if list is an object, i.e in the case of the users array
 
 function exporter(data){
-  var ss = SpreadsheetApp.getActiveSpreadsheet()
-  var sheet = ss.getSheets()[0];
+  var spreadSheet = SpreadsheetApp.getActiveSpreadsheet()
+  var sheet = spreadSheet.getSheets()[0];
   //number of cells in a row
   var range = sheet.getRange(data.templateData.requirements.cellRange)
   var customRange = sheet.getRange(data.templateData.requirements.customCellRange)
@@ -14,6 +14,8 @@ function exporter(data){
   var row = 0;
   var col = 0;
   var bodyArr = [];
+  var responses = [];
+  var xObjArr = [];
 
   //shorten variable
   var reqs = data.templateData.requirements;
@@ -42,7 +44,8 @@ function exporter(data){
 
     //send current row
     var row = customRange.offset(j, 0)
-    xObj['CustomProperties'] = customBuilder(data, row)
+    xObj['CustomProperties'] = customHeaderRowBuilder(data, row)
+    xObj['positionNumber'] = 0;
 
 
     //loop through cells in row
@@ -53,10 +56,20 @@ function exporter(data){
       var cell = range.offset(j, i).getValue();
 
       //get cell Range for req# insertion after export
-      if(i=== 0.0) { xObj['idField'] = range.offset(j, i).getCell(1, 1) }
+      if(i === 0.0) { xObj['idField'] = range.offset(j, i).getCell(1, 1) }
 
       //call indent checker and set indent amount
-      if(i === 1.0) { xObj['indentCount'] = indenter(cell) }
+      if(i === 1.0) {
+        //call indent function
+        //counts the number of ">"s to assign an indent value
+        xObj['indentCount'] = indenter(cell)
+
+        //remove '>' symbols from requirement name string
+        while(cell[0] == '>' || cell[0] == ' '){
+          //removes first charactor if it's a space or ">"
+          cell = cell.slice(1)
+        }
+      }
 
       //shorten variables
       var users = data.userData.projUserWNum;
@@ -89,48 +102,37 @@ function exporter(data){
     //entry MUST have a name
     if ( xObj.Name ) {
       xObj['ProjectName'] = data.templateData.currentProjectName;
-      bodyArr.push(xObj)
+
+      xObjArr.push(xObj);
     }
 
+    xObjArr = parentChildSetter(xObjArr);
   }
+
+
 
   // set up to individually add each requirement to spirateam
   // maybe there's a way to bulk add them instead of individual calls?
- var responses = []
- var test = '';
- for(var i = 0; i < bodyArr.length; i++){
-  //stringify
-  var JSON_body = JSON.stringify( bodyArr[i] );
-  //send JSON to export function
-   var response = new Promise(function(res, rej){
-     res( requirementExportCall( JSON_body, data.templateData.currentProjectNumber, data.userData.currentUser ) );
-   });
 
-   response.then(function(resp){
-     responses.push(resp.RequirementId)
-     //set returned ID
-     bodyArr[i].idField.setValue('RQ:' + resp.RequirementId)
-     if (bodyArr[i].indentCount > 0){
-      var indentNum = bodyArr[i].indentCount;
-      requirementIndentCall(data.templateData.currentProjectNumber, data.userData.currentUser, resp.RequirementId, indentNum)
-    }
-   });
+ // for(var i = 0; i < xObjArr.length; i++){
+ //  //stringify
+ //  var JSON_body = JSON.stringify( xObjArr[i] );
+ //  //send JSON to export function
+ //  var response = requirementExportCall( JSON_body, data.templateData.currentProjectNumber, data.userData.currentUser, xObjArr[i].positionNumber);
 
-  //push API approval into array
-  //responses.push(response.RequirementId)
+ //  responses.push(response.RequirementId)
+ //  //set returned ID
+ //  xObjArr[i].idField.setValue(response.RequirementId)
 
- }
+ // }
 
-
-
-
-  return responses
+  return xObjArr;
   //return test
 }
 
-function requirementExportCall(body, projNum, currentUser, indent){
+function requirementExportCall(body, projNum, currentUser, posNum){
   //unique url for requirement POST
-  var params = '/services/v5_0/RestService.svc/projects/' + projNum + '/requirements?username=';
+  var fetcherURL = '/services/v5_0/RestService.svc/projects/' + projNum + '/requirements/indent/' + posNum + '?username=';
   //POST headers
   var init = {
    'method' : 'post',
@@ -138,21 +140,21 @@ function requirementExportCall(body, projNum, currentUser, indent){
    'payload' : body
   };
   //call fetch with POST request
-  return fetcher(currentUser, params, init);
+  return fetcher(currentUser, fetcherURL, init);
 }
 
-function requirementIndentCall(projNum, currentUser, reqId, numOfIndents){
-  //unique url for indent POST
-  var params = '/services/v5_0/RestService.svc/projects/' + projNum + '/requirements/' + reqId + '/indent?username=';
-  //POST headers
-  var init = {
-   'method' : 'post',
-   'contentType': 'application/json',
-  };
-  for(var i = 1; i <= numOfIndents; i++){
-    fetcher(currentUser, params, init);
-  }
-}
+// function requirementIndentCall(projNum, currentUser, reqId, numOfIndents){
+//   //unique url for indent POST
+//   var fetcherURL = '/services/v5_0/RestService.svc/projects/' + projNum + '/requirements/' + reqId + '/indent?username=';
+//   //POST headers
+//   var init = {
+//    'method' : 'post',
+//    'contentType': 'application/json',
+//   };
+//   for(var i = 1; i <= numOfIndents; i++){
+//     fetcher(currentUser, fetcherURL, init);
+//   }
+// }
 
 //map cell data to their corresponding IDs for export to spirateam
 function mapper(item, list){
@@ -167,7 +169,7 @@ function mapper(item, list){
 }
 
 //gets full model data and custom properites cell range
-function customBuilder(data, rowRange){
+function customHeaderRowBuilder(data, rowRange){
   //shorten variables
   var customs = data.templateData.requirements.customFields;
   var users = data.userData.projUserWNum;
@@ -263,4 +265,24 @@ function indenter(cell){
     }
   }
   return indentCount
+}
+
+function parentChildSetter(arr){
+  var len = arr.length;
+  //set to 2 to make the math work on the first indent level 2 - 1 = indent level 1
+  var count = 0;
+
+  for(var i = 0; i < len; i++){
+    if(arr[i].indentCount > 0 && arr[i].indentCount !== count){
+      arr[i].positionNumber = arr[i].indentCount - count;
+      count  = arr[i].indentCount;
+    }
+
+    if(arr[i].indentCount == 0){
+      arr[i].positionNumber = -count;
+      //reset count variable
+      count = 0;
+    }
+  }
+  return arr;
 }

@@ -36,25 +36,25 @@ function include(filename) {
 }
 
 function getProjects(currentUser){
-  var params = '/services/v5_0/RestService.svc/projects?username='
-  return fetcher(currentUser, params);
+  var fetcherURL = '/services/v5_0/RestService.svc/projects?username=';
+  return fetcher(currentUser, fetcherURL);
 }
 
 function getUsers(currentUser, proj){
-  var params = '/services/v5_0/RestService.svc/projects/' + proj + '/users?username='
-  return fetcher(currentUser, params);
+  var fetcherURL = '/services/v5_0/RestService.svc/projects/' + proj + '/users?username=';
+  return fetcher(currentUser, fetcherURL);
 }
 
 function getCustoms(currentUser, proj, artifact){
-  var params = '/services/v5_0/RestService.svc/projects/' + proj + '/custom-properties/' + artifact + '?username='
-  return fetcher(currentUser, params);
+  var fetcherURL = '/services/v5_0/RestService.svc/projects/' + proj + '/custom-properties/' + artifact + '?username=';
+  return fetcher(currentUser, fetcherURL);
 }
 
-function fetcher (currentUser, params, init){
-  var URL = stubUser.url + params + stubUser.userName + stubUser.api_key;
+function fetcher (currentUser, fetcherURL, init){
+  var URL = stubUser.url + fetcherURL + stubUser.userName + stubUser.api_key;
   var init = init || {'content-type' : 'application/json'}
 
-  var response = UrlFetchApp.fetch(URL, init)
+  var response = UrlFetchApp.fetch(URL, init);
 
   return JSON.parse(response);
 }
@@ -62,11 +62,11 @@ function fetcher (currentUser, params, init){
 
 function error(type){
   if(type == 'impExp') {
-    okWarn('There was an input error. Please check that your entries are correct.')
+    okWarn('There was an input error. Please check that your entries are correct.');
   } else if (type == 'unk') {
-    okWarn('Unkown error. Please try again later or contact your system administrator')
+    okWarn('Unkown error. Please try again later or contact your system administrator');
   } else {
-    okWarn('Network error. Please check your username, url, and password.')
+    okWarn('Network error. Please check your username, url, and password.');
   }
 }
 
@@ -91,7 +91,7 @@ function warn(){
 
 //Alert pop up for project or artifact dropdown change
 function warnProjArt(){
-  okWarn('Warning! Changing the current project or artifact will clear all unsaved data.')
+  okWarn('Warning! Changing the current project or artifact will clear all unsaved data.');
 }
 
 //Alert pop up for export success
@@ -118,10 +118,10 @@ function save(){
 
   //returns with user choice
   if (response == ui.Button.YES) {
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
-    var sheet = ss.getSheets()[0];
+    var spreadSheet = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = spreadSheet.getSheets()[0];
     //get entire spreadsheet id
-    var id = ss.getId()
+    var id = spreadSheet.getId();
     //set as destination
     var destination = SpreadsheetApp.openById(id);
     //copy to destination
@@ -133,11 +133,11 @@ function save(){
 //clears current sheet
 function clearAll(){
   //get first active spreadsheet
-  var ss = SpreadsheetApp.getActiveSpreadsheet()
-  var sheet = ss.getSheets()[0];
+  var spreadSheet = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = spreadSheet.getSheets()[0];
 
   //clear all formatting and content
-  sheet.clear()
+  sheet.clear();
   //clears data validations from the entire sheet
   var range = SpreadsheetApp.getActive().getRange('A:AZ');
   range.clearDataValidations();
@@ -146,24 +146,3 @@ function clearAll(){
 }
 
 
-// this loads the es6-promises polyfill to make promise syntax available in Apps Script
-// copyright notice - https://raw.githubusercontent.com/jakearchibald/es6-promise/master/LICENSE
-var Promise,
-    setTimeout = setTimeout || function (func,ms) {
-      Utilities.sleep(ms);
-      func();
-    };
-
-(function () {
-
-  // get the polyfill and eval
-  if (!Promise) {
-    var result = UrlFetchApp.fetch('https://cdnjs.cloudflare.com/ajax/libs/es6-promise/3.2.1/es6-promise.min.js');
-    eval (result.getContentText());
-
-    // add done for compatibility with other promise systems
-    Promise.prototype.done = Promise.prototype.done || Promise.prototype.then ;
-
-  }
-
-}());

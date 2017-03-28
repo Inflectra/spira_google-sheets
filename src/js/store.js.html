@@ -12,19 +12,29 @@ let model = {
     },
     templateData: {
         currentProjectName: '',
-        //hard coded until programatically changed
+        //hard coded on load
         currentProjectNumber: 1,
         currentArtifactName: '',
-        //hard coded until changed in future versions
+        //hard coded on load
         currentArtifactId: 1,
         isTemplateLoaded: false,
         requirements: {
+            standardTitleRange: 'A1:M1',
+            customTitleRange: 'N1:AQ1',
             requireNumberFields: ['D', 'H'],
+            editableRange: 'A3:AQ3',
             standardRange: 'A1:M2',
             customRange: 'N1:AQ2',
             cellRange: 'A3:M3',
             customCellRange: 'N3:AQ3',
             cellRangeLength: 43,
+            dropdownColumnAssignments: [
+                ['Type', 'e'],
+                ['Importance', 'f'],
+                ['Status', 'g'],
+                ['Author', 'i'],
+                ['Owner', 'j']
+            ],
             headings: ['Requirement Id', 'Requirement Name', 'Requirement Description', 'Release Version', 'Type', 'Importance', 'Status', 'Estimate', 'Author', 'Owner', 'Component', 'Linked Requirements', 'Comment', 'CUS-01', 'CUS-02', 'CUS-03', 'CUS-04', 'CUS-05', 'CUS-06', 'CUS-07', 'CUS-08', 'CUS-09', 'CUS-10', 'CUS-11', 'CUS-12', 'CUS-13', 'CUS-14', 'CUS-15', 'CUS-16', 'CUS-17', 'CUS-18', 'CUS-19', 'CUS-20', 'CUS-21', 'CUS-22', 'CUS-23', 'CUS-24', 'CUS-25', 'CUS-26', 'CUS-27', 'CUS-28', 'CUS-29', 'CUS-30'],
             JSON_headings: ["RequirementId", "Name", "Description", "ReleaseVersionNumber", "RequirementTypeId", "ImportanceName", "StatusName", "EstimatePoints", "AuthorName", "OwnerName", "ComponentId"],
             sizes: [
@@ -42,7 +52,8 @@ let model = {
                 [13, 400]
             ],
             dropdowns: {
-                //TODO check numbers against code since it's bugged and wont accept a type input
+                //BUG API will not accept a type, always assigns `feature`.
+                //This has been corrected and will be merged in next API release.
                 'Type': [
                     [1, 'Package'],
                     [2, 'Design Element'],

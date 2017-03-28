@@ -1,11 +1,9 @@
 function templateLoader(data){
   clearAll();
 
-  var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheets()[0];
-  var dropdownColumnAssignments = [
-        ['Type', 'e'],['Importance', 'f'], ['Status', 'g'], ['Author', 'i'], ['Owner', 'j']
-      ]
+  var spreadSheet = SpreadsheetApp.getActiveSpreadsheet();
+  var sheet = spreadSheet.getSheets()[0];
+  var dropdownColumnAssignments = data.requirements.dropdownColumnAssignments;
 
   //set sheet name to model name
   sheet.setName(data.currentProjectName + ' - ' + data.currentArtifactName);
@@ -31,8 +29,8 @@ function templateLoader(data){
   //set warning. Remove this to make the column un-writable
   protection.setWarningOnly(true);
 
-  sheet.getRange('A1:M1').merge().setValue("Requirements Standard Fields").setHorizontalAlignment("center");
-  sheet.getRange('N1:AQ1').merge().setValue("Custom Fields").setHorizontalAlignment("center");
+  sheet.getRange(data.requirements.standardTitleRange).merge().setValue("Requirements Standard Fields").setHorizontalAlignment("center");
+  sheet.getRange(data.requirements.customTitleRange).merge().setValue("Custom Fields").setHorizontalAlignment("center");
 
   //append headings to sheet
   sheet.appendRow(data.requirements.headings)

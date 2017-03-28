@@ -1,22 +1,15 @@
 <script>
-//TODO refactor to remove 'WET'-ness
-function errorNetwork(err) {
-    google.script.run.error();
-    $('#js--loader').hasClass('hidden') ? null : $('#js--loader').toggleClass('hidden');
-    console.log(err);
+function errorPopUp(err, type){
+  google.script.run.error(type);
+   $('#js--loader').hasClass('hidden') ? null : $('#js--loader').toggleClass('hidden');
+   console.log(err);
 }
 
-function errorImpExp(err) {
-    google.script.run.error('impExp');
-    $('#js--loader').hasClass('hidden') ? null : $('#js--loader').toggleClass('hidden');
-    console.log(err);
-}
+function errorNetwork(err){ errorPopUp(err) }
 
-function errorUnk(err) {
-    google.script.run.error('unk');
-    $('#js--loader').hasClass('hidden') ? null : $('#js--loader').toggleClass('hidden');
-    console.log(err);
-}
+function errorImpExp(err){ errorPopUp(err, 'impExp') }
+
+function errorUnk(err){ errorPopUp(err, 'unk') }
 
 function updateData() {
     //call google function to load user data
@@ -284,4 +277,6 @@ $('#js--helpClose').click(function(){
   }
   authHelp = false;
 })
+
+
 </script>
