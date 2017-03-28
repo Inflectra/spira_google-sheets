@@ -3,6 +3,7 @@
 //isObj is true if list is an object, i.e in the case of the users array
 
 function exporter(data){
+
   var spreadSheet = SpreadsheetApp.getActiveSpreadsheet()
   var sheet = spreadSheet.getSheets()[0];
   //number of cells in a row
@@ -107,6 +108,7 @@ function exporter(data){
     }
 
     xObjArr = parentChildSetter(xObjArr);
+
   }
 
 
@@ -114,23 +116,27 @@ function exporter(data){
   // set up to individually add each requirement to spirateam
   // maybe there's a way to bulk add them instead of individual calls?
 
- // for(var i = 0; i < xObjArr.length; i++){
- //  //stringify
- //  var JSON_body = JSON.stringify( xObjArr[i] );
- //  //send JSON to export function
- //  var response = requirementExportCall( JSON_body, data.templateData.currentProjectNumber, data.userData.currentUser, xObjArr[i].positionNumber);
+  var len = xObjArr.length
+ for(var i = 0; i < len; i++){
+  //stringify
+  var JSON_body = JSON.stringify( xObjArr[i] );
+  //send JSON to export function
+  var response = requirementExportCall( JSON_body, data.templateData.currentProjectNumber, data.userData.currentUser, xObjArr[i].positionNumber);
 
- //  responses.push(response.RequirementId)
- //  //set returned ID
- //  xObjArr[i].idField.setValue(response.RequirementId)
+  responses.push(response.RequirementId)
+  //set returned ID
+  xObjArr[i].idField.setValue(response.RequirementId)
 
- // }
+  var htmlOutput = HtmlService.createHtmlOutput('<p>' + i + ' of ' + len + ' sent!</p>').setWidth(250).setHeight(75);
+  SpreadsheetApp.getUi().showModalDialog(htmlOutput, 'Progress');
+
+ }
 
   return xObjArr;
-  //return test
 }
 
 function requirementExportCall(body, projNum, currentUser, posNum){
+
   //unique url for requirement POST
   var fetcherURL = '/services/v5_0/RestService.svc/projects/' + projNum + '/requirements/indent/' + posNum + '?username=';
   //POST headers
@@ -143,18 +149,6 @@ function requirementExportCall(body, projNum, currentUser, posNum){
   return fetcher(currentUser, fetcherURL, init);
 }
 
-// function requirementIndentCall(projNum, currentUser, reqId, numOfIndents){
-//   //unique url for indent POST
-//   var fetcherURL = '/services/v5_0/RestService.svc/projects/' + projNum + '/requirements/' + reqId + '/indent?username=';
-//   //POST headers
-//   var init = {
-//    'method' : 'post',
-//    'contentType': 'application/json',
-//   };
-//   for(var i = 1; i <= numOfIndents; i++){
-//     fetcher(currentUser, fetcherURL, init);
-//   }
-// }
 
 //map cell data to their corresponding IDs for export to spirateam
 function mapper(item, list){
@@ -286,3 +280,4 @@ function parentChildSetter(arr){
   }
   return arr;
 }
+
