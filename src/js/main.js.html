@@ -190,7 +190,7 @@ $('#js--export').click(() => {
     function exportSuccess(data) {
         //toggle off spinner
         $('#js--loader').toggleClass('hidden');
-        google.script.run.exportSuccess();
+        google.script.run.exportSuccess(data[1]);
         console.log(data);
     }
 });

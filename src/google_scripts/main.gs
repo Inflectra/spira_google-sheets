@@ -50,9 +50,9 @@ function getCustoms(currentUser, proj, artifact){
   return fetcher(currentUser, fetcherURL);
 }
 
-function fetcher (currentUser, fetcherURL, init){
+function fetcher (currentUser, fetcherURL){
   var URL = stubUser.url + fetcherURL + stubUser.userName + stubUser.api_key;
-  var init = init || {'content-type' : 'application/json'}
+  var init = {'content-type' : 'application/json'}
 
   var response = UrlFetchApp.fetch(URL, init);
 
@@ -95,8 +95,12 @@ function warnProjArt(){
 }
 
 //Alert pop up for export success
-function exportSuccess(){
-  okWarn('Export Success! Clear sheet to export more artifacts.');
+function exportSuccess(err){
+  if (err) {
+    okWarn('Operation complete, some errors occured. Clear sheet to export more artifacts.');
+  } else {
+    okWarn('Operation complete. Clear sheet to export more artifacts.');
+  }
 }
 
 //Alert pop up for no template present
