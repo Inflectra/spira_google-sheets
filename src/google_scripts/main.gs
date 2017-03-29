@@ -1,4 +1,14 @@
-//stubbed
+/*
+Main Google Script function (.gs)
+
+The Utility functions needed for initialization and basic app functionality are located here.
+
+All Google App Script (GAS) files are bundled by the engine at start up so any non-scoped variable declared will be available globally.
+
+*/
+
+
+//Mock values for development
 var stubUser = {
     url: 'https://demo.spiraservice.net/christopher-abramson',
     userName: 'administrator',
@@ -13,6 +23,7 @@ function onInstall(e) {
 
 //App script boilerplate open function
 //opens sidebar
+// `addItem` method is related to the 'Add-on' menu items. Currently just one is listed 'Start' in the dropdown menu
 function onOpen(e) {
     SpreadsheetApp.getUi().createAddonMenu()
         .addItem('Start', 'showSidebar')
@@ -30,35 +41,50 @@ function showSidebar() {
     SpreadsheetApp.getUi().showSidebar(ui);
 }
 
+//This function is part of the google template engine and allows for modularization of code
 function include(filename) {
     return HtmlService.createHtmlOutputFromFile(filename).getContent();
 }
 
+/*  Begin non Google app functions */
+
+//Gets projects for current logged in user returns data to main.js.html
 function getProjects(currentUser) {
     var fetcherURL = '/services/v5_0/RestService.svc/projects?username=';
     return fetcher(currentUser, fetcherURL);
 }
 
+//Gets User data for current user and current project
+//this function is called on log in and on project change
 function getUsers(currentUser, proj) {
     var fetcherURL = '/services/v5_0/RestService.svc/projects/' + proj + '/users?username=';
     return fetcher(currentUser, fetcherURL);
 }
 
+//Gets custom fields for current user, project and artifact.
+//this function is called on log in and on project change
 function getCustoms(currentUser, proj, artifact) {
     var fetcherURL = '/services/v5_0/RestService.svc/projects/' + proj + '/custom-properties/' + artifact + '?username=';
     return fetcher(currentUser, fetcherURL);
 }
 
+
+//Fetch function uses Googles built in fetch api
 function fetcher(currentUser, fetcherURL) {
+    //build URL from args
+    //this must be changed if using mock values in development
     var URL = stubUser.url + fetcherURL + stubUser.userName + stubUser.api_key;
+    //set MIME type
     var init = { 'content-type': 'application/json' }
-
+    //call Google fetch function
     var response = UrlFetchApp.fetch(URL, init);
-
+    //returns parsed JSON
+    //unparsed response contains error codes if needed
     return JSON.parse(response);
 }
 
-
+//Error notification function
+//Assigns string value and routes error call from main.js.html
 function error(type) {
     if (type == 'impExp') {
         okWarn('There was an input error. Please check that your entries are correct.');
@@ -69,6 +95,7 @@ function error(type) {
     }
 }
 
+//Pop-up notification function
 function success(string) {
     // Show a 2-second popup with the title "Status" and the message "Task started".
     SpreadsheetApp.getActiveSpreadsheet().toast(string, 'Success', 2);
@@ -107,7 +134,7 @@ function noTemplate() {
     okWarn('Please load a template to continue.');
 }
 
-//warn with Ok button
+//Google alert popup with Ok button
 function okWarn(dialoge) {
     var ui = SpreadsheetApp.getUi();
     var response = ui.alert(dialoge, ui.ButtonSet.OK);
@@ -125,7 +152,7 @@ function save() {
         var sheet = spreadSheet.getSheets()[0];
         //get entire spreadsheet id
         var id = spreadSheet.getId();
-        //set as destination
+        //set current spreadsheet file as destination
         var destination = SpreadsheetApp.openById(id);
         //copy to destination
         sheet.copyTo(destination);
