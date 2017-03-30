@@ -138,7 +138,7 @@ function exporter(data) {
                 //set returned ID
             xObjArr[i].idField.setValue('Error')
 
-            var htmlOutput = HtmlService.createHtmlOutput('<p>Error for ' + (i + 1) + ' of ' + (len + 1) + '</p>').setWidth(250).setHeight(75);
+            var htmlOutput = HtmlService.createHtmlOutput('<p>Error for ' + (i + 1)  + ' of ' + (len + 1) + '</p>').setWidth(250).setHeight(75);
             SpreadsheetApp.getUi().showModalDialog(htmlOutput, 'Progress');
         }
 
@@ -162,7 +162,6 @@ function requirementExportCall(body, projNum, currentUser, posNum) {
         'payload': body
     };
 
-    //returns HTTPObject and body
     return UrlFetchApp.fetch(URL, init);
 
 

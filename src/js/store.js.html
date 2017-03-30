@@ -1,5 +1,15 @@
 <script>
+/*
+
+Data Model
+
+This holds all the information about the selected template layout. Future versions of this program can add their artifact to the `templateData` object.
+
+*/
+
 let model = {
+    //All current user data is stored here and is cleared on disconnect or timeout
+    //TODO Timeout function
     userData: {
         currentUser: {
             url: '',
@@ -10,6 +20,7 @@ let model = {
         projUsers: [],
         projUserWNum: []
     },
+    //Template data, can be used to populate all artifact templates
     templateData: {
         currentProjectName: '',
         //hard coded on load
@@ -18,6 +29,7 @@ let model = {
         //hard coded on load
         currentArtifactId: 1,
         isTemplateLoaded: false,
+        //Requirements template
         requirements: {
             standardTitleRange: 'A1:M1',
             customTitleRange: 'N1:AQ1',
@@ -52,7 +64,7 @@ let model = {
                 [13, 400]
             ],
             dropdowns: {
-                //BUG API will not accept a type, always assigns `feature`.
+                //***BUG*** API will not accept a type, always assigns `feature`.
                 //This has been corrected and will be merged in next API release.
                 'Type': [
                     [1, 'Package'],

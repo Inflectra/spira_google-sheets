@@ -8,17 +8,24 @@
 </head>
 
 <body>
+    <!--
+Main view
+
+This is the HTML that the user sees when the app launched and the sidebar is opened.
+
+`< ?!= include(X)? >` are template inserts for modularity and the entire document will be bundled together with inline CSS and JavaScript on deployment
+
+-->
     <!--help page-->
     <div class="slide-out transition hidden" id="js--helpPage">
-    <header class="container">
-        <h3 class="">Import / Export Wizard</h3>
-        <img src="https://www.inflectra.com/Images/ApplicationIcons/SpiraTeam-Icon.png" id="logo--top" class="">
-    </header>
-    <h3>Help Page</h3>
-    <p>{Todo add: help information}</p>
-    <button id="js--helpClose">Close</button>
+        <header class="container">
+            <h3 class="">Import / Export Wizard</h3>
+            <img src="https://www.inflectra.com/Images/ApplicationIcons/SpiraTeam-Icon.png" id="logo--top" class="">
+        </header>
+        <h3>Help Page</h3>
+        <p>{Todo add: help information}</p>
+        <button id="js--helpClose">Close</button>
     </div>
-
     <!--auth page-->
     <div class="slide-out transition open" id="js--auth">
         <header class="container">
@@ -48,12 +55,10 @@
             </a>
         </footer>
     </div>
-
     <!--spinner-->
     <div id='js--loader' class='spinner-holder hidden'>
         <div class="loader"></div>
     </div>
-
     <!--main screen-->
     <div class="main">
         <header class="container">
@@ -91,7 +96,7 @@
     </div>
     <!--Jquery-->
     <script src="https://code.jquery.com/jquery-3.1.1.slim.min.js" integrity="sha256-/SIrNqv8h6QGKDuNoLGA4iret+kyesCkHGzVUUV0shc=" crossorigin="anonymous"></script>
-    <!--user agent-->
+    <!--user agent modules-->
     <?!= include('store.js') ?>
     <?!= include('main.js') ?>
 </body>
