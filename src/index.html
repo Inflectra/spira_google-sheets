@@ -8,17 +8,24 @@
 </head>
 
 <body>
+    <!--
+Main view
+
+This is the HTML that the user sees when the app launched and the sidebar is opened.
+
+`< ?!= include(X)? >` are template inserts for modularity and the entire document will be bundled together with inline CSS and JavaScript on deployment
+
+-->
     <!--help page-->
     <div class="slide-out transition hidden" id="js--helpPage">
-    <header class="container">
-        <h3 class="">Import / Export Wizard</h3>
-        <img src="https://www.inflectra.com/Images/ApplicationIcons/SpiraTeam-Icon.png" id="logo--top" class="">
-    </header>
-    <h3>Help Page</h3>
-    <p>{Todo add: help information}</p>
-    <button id="js--helpClose">Close</button>
+        <header class="container">
+            <h3 class="">Import / Export Wizard</h3>
+            <img src="https://www.inflectra.com/Images/ApplicationIcons/SpiraTeam-Icon.png" id="logo--top" class="">
+        </header>
+        <h3>Help Page</h3>
+        <p>{Todo add: help information}</p>
+        <button id="js--helpClose">Close</button>
     </div>
-
     <!--auth page-->
     <div class="slide-out transition open" id="js--auth">
         <header class="container">
@@ -37,22 +44,21 @@
                 <input type="password" name="password" placeholder="Password" class="passwordInput" id="js--password" />
             </label>
         </div>
-        <footer class="container">
-            <img src="https://financesonline.com/uploads/2014/11/spirateam-logo.jpg" id="logo--bottom" class="">
-            <div class="">
+        <footer class="">
+            <div class="container">
                 <button class="action" id="js--logIn">Log In</button>
                 <button class="" id="js--cancel">Cancel</button>
+                <button class="js--help">Help</button>
             </div>
-            <br>
-            <button class="js--help">Help</button>
+            <a href="https://www.inflectra.com" target="_blank">
+                <img src="https://financesonline.com/uploads/2014/11/spirateam-logo.jpg" id="logo--bottom" class="">
+            </a>
         </footer>
     </div>
-
     <!--spinner-->
     <div id='js--loader' class='spinner-holder hidden'>
         <div class="loader"></div>
     </div>
-
     <!--main screen-->
     <div class="main">
         <header class="container">
@@ -60,9 +66,8 @@
             <img src="https://www.inflectra.com/Images/ApplicationIcons/SpiraTeam-Icon.png" id="logo--top" class="">
         </header>
         <div class="container" id="buttons-top">
-            <button class="js--help">help</button>
+            <button class="js--help">Help</button>
             <button id="js--disconnect" class="">Disconnect</button>
-            <button id="js--options" class="" disabled>Options</button>
         </div>
         <div class="select-section">
             <label class="">Projects:
@@ -84,14 +89,14 @@
             <button id="js--save" class="">Save</button>
         </div>
         <div class="row justify-content-around" id="buttons-bottom">
-            <button class="" id="js--import" disabled>Import</button>
-            <button class="" id="js--export">Export</button>
+            <button class="" id="js--import" disabled>Import from SpiraTeam</button>
+            <button class="" id="js--export">Send to SpiraTeam</button>
             <button class="" id="js--clear">Clear</button>
         </div>
     </div>
     <!--Jquery-->
     <script src="https://code.jquery.com/jquery-3.1.1.slim.min.js" integrity="sha256-/SIrNqv8h6QGKDuNoLGA4iret+kyesCkHGzVUUV0shc=" crossorigin="anonymous"></script>
-    <!--user agent-->
+    <!--user agent modules-->
     <?!= include('store.js') ?>
     <?!= include('main.js') ?>
 </body>
