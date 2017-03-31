@@ -222,6 +222,7 @@ function customFiller(cell, data, users) {
     }
 
     if (data.CustomPropertyTypeName == 'Integer') {
+        cell = cell.toFixed();
         prop['IntegerValue'] = cell;
     }
 
