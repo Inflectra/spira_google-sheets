@@ -71,10 +71,14 @@ function updateData() {
         google.script.run.withSuccessHandler(componentSuccess).withFailureHandler(errorNetwork).getComponents(model.userData.currentUser, model.templateData.currentProjectNumber);
 
         function componentSuccess(data){
+            var arr = [];
             data.map(function(item){
-                model.templateData.requirements.components.push([item.ComponentId, item.Name])
+                arr.push([item.ComponentId, item.Name])
             })
-            console.log(model.templateData.requirements.components);
+            model.templateData.requirements.components = arr;
+
+            model.templateData.requirements.dropdowns['Components'] = model.templateData.requirements.components;
+
             getReleasesValues();
         }
     }
@@ -83,11 +87,16 @@ function updateData() {
         google.script.run.withSuccessHandler(releaseSuccess).withFailureHandler(errorNetwork).getReleases(model.userData.currentUser, model.templateData.currentProjectNumber);
 
         function releaseSuccess(data){
+            var arr = [];
             data.map(function(data){
-                model.templateData.requirements.releases.push(data.VersionNumber)
+                arr.push(data.FullName)
             })
 
-            console.log(model.templateData.requirements.releases);
+            model.templateData.requirements.releases = arr;
+
+            model.templateData.requirements.dropdowns['Version Number'] = model.templateData.requirements.releases;
+
+            console.log(model.templateData.requirements.dropdowns);
 
             //turn off ajax spinner if it's on
             $('#js--loader').hasClass('hidden') ? null : $('#js--loader').toggleClass('hidden');
