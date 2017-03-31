@@ -1,4 +1,11 @@
 <script>
+/*
+
+Main client side scripts
+
+
+*/
+
 function errorPopUp(err, type){
   google.script.run.error(type);
    $('#js--loader').hasClass('hidden') ? null : $('#js--loader').toggleClass('hidden');
@@ -56,7 +63,32 @@ function updateData() {
 
         function customSuccess(data) {
             model.templateData.requirements.customFields = data;
-            console.log(data);
+            getComponentsValues();
+        }
+    }
+
+    function getComponentsValues(){
+        google.script.run.withSuccessHandler(componentSuccess).withFailureHandler(errorNetwork).getComponents(model.userData.currentUser, model.templateData.currentProjectNumber);
+
+        function componentSuccess(data){
+            data.map(function(item){
+                model.templateData.requirements.components.push([item.ComponentId, item.Name])
+            })
+            console.log(model.templateData.requirements.components);
+            getReleasesValues();
+        }
+    }
+
+    function getReleasesValues(){
+        google.script.run.withSuccessHandler(releaseSuccess).withFailureHandler(errorNetwork).getReleases(model.userData.currentUser, model.templateData.currentProjectNumber);
+
+        function releaseSuccess(data){
+            data.map(function(data){
+                model.templateData.requirements.releases.push(data.VersionNumber)
+            })
+
+            console.log(model.templateData.requirements.releases);
+
             //turn off ajax spinner if it's on
             $('#js--loader').hasClass('hidden') ? null : $('#js--loader').toggleClass('hidden');
             //success notification

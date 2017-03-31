@@ -68,6 +68,16 @@ function getCustoms(currentUser, proj, artifact) {
     return fetcher(currentUser, fetcherURL);
 }
 
+function getReleases(currentUser, proj) {
+    var fetcherURL = '/services/v5_0/RestService.svc/projects/' + proj + '/releases?username=';
+    return fetcher(currentUser, fetcherURL);
+}
+
+function getComponents(currentUser, proj) {
+    var fetcherURL = '/services/v5_0/RestService.svc/projects/' + proj + '/components?active_only=true&include_deleted=false&username=';
+    return fetcher(currentUser, fetcherURL);
+}
+
 
 //Fetch function uses Googles built in fetch api
 function fetcher(currentUser, fetcherURL) {
