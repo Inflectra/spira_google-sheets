@@ -303,7 +303,7 @@ function parentChildSetter(arr) {
         }
 
         if (arr[i].indentCount == 0) {
-            arr[i].positionNumber = -count;
+            arr[i].positionNumber = -20;
             //reset count variable
             count = 0;
         }

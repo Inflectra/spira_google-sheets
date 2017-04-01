@@ -54,8 +54,7 @@ function templateLoader(data) {
 
     //set custom headings if they exist
     //pass in custom field range, data model, and custom column to be used for background coloring
-    //TODO: change range to model range
-    customHeadSetter(sheet.getRange('N2:AQ2'), data, sheet.getRange('N3:N200'));
+    customHeadSetter(sheet.getRange(data.requirements.customHeaders), data, sheet.getRange(data.requirements.customColumnLength));
 
     //loop through model sizes data and set columns to correct width
     for (var i = 0; i < data.requirements.sizes.length; i++) {
