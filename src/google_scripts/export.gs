@@ -77,6 +77,10 @@ function exporter(data) {
 
             //pass values to mapper function
             //mapper iterates and assigns the values number based on the list order
+
+            //TODO add requirements and components
+            if (i === 3.0) { xObj['ReleaseId'] = mapper(cell, reqs.dropdowns['Version Number']) }
+
             if (i === 4.0) { cell = mapper(cell, reqs.dropdowns['Type']) }
 
             if (i === 5.0) { xObj['ImportanceId'] = mapper(cell, reqs.dropdowns['Importance']) }
@@ -86,6 +90,8 @@ function exporter(data) {
             if (i === 8.0) { xObj['AuthorId'] = mapper(cell, users) }
 
             if (i === 9.0) { xObj['OwnerId'] = mapper(cell, users) }
+
+            if (i === 10.0) { xObj['ComponentId'] = mapper(cell, reqs.dropdowns['Components']) }
 
 
             //if empty add null otherwise add the cell
@@ -115,7 +121,7 @@ function exporter(data) {
 
     // set up to individually add each requirement to spirateam
     // maybe there's a way to bulk add them instead of individual calls?
-    //var testArr = []
+    var testArr = []
     var isError = null;
     var len = xObjArr.length
     for (var i = 0; i < len; i++) {
@@ -123,6 +129,7 @@ function exporter(data) {
         var JSON_body = JSON.stringify(xObjArr[i]);
 
         //testArr.push(JSON_body);
+        //testArr.push(xObjArr[i])
         //send JSON to export function
         var response = requirementExportCall(JSON_body, data.templateData.currentProjectNumber, data.userData.currentUser, xObjArr[i].positionNumber);
 
@@ -222,7 +229,7 @@ function customFiller(cell, data, users) {
     }
 
     if (data.CustomPropertyTypeName == 'Integer') {
-        cell = cell.toFixed();
+        cell = parseInt(cell);
         prop['IntegerValue'] = cell;
     }
 

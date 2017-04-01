@@ -72,8 +72,8 @@ function updateData() {
 
         function componentSuccess(data){
             var arr = [];
-            data.map(function(item){
-                arr.push([item.ComponentId, item.Name])
+            data.map(function(data){
+                arr.push([data.ComponentId, data.Name])
             })
             model.templateData.requirements.components = arr;
 
@@ -88,8 +88,9 @@ function updateData() {
 
         function releaseSuccess(data){
             var arr = [];
+            console.log(data)
             data.map(function(data){
-                arr.push(data.FullName)
+                arr.push([data.ReleaseId, data.FullName])
             })
 
             model.templateData.requirements.releases = arr;

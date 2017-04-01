@@ -72,7 +72,7 @@ function templateLoader(data) {
         var name = dropdownColumnAssignments[i][0];
         //array that will hold dropdown values
         var list = [];
-        if (name == 'Owner' || name == 'Author' || name == 'Version Number') {
+        if (name == 'Owner' || name == 'Author') {
             list = data.requirements.dropdowns[name]
             //TODO: After one of the last refactors I don't believe this is 'else'  is necessary
         } else {
