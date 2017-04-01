@@ -71,17 +71,9 @@ function templateLoader(data) {
         var name = dropdownColumnAssignments[i][0];
         //array that will hold dropdown values
         var list = [];
-        if (name == 'Owner' || name == 'Author') {
-            list = data.requirements.dropdowns[name]
-            //TODO: After one of the last refactors I don't believe this is 'else'  is necessary
-        } else {
-            var listArr = [];
-            //loop through 2D arrays and form standard array
-            for (var j = 0; j < data.requirements.dropdowns[name].length; j++) {
-                listArr.push(data.requirements.dropdowns[name][j][1])
-            }
-            //list must be an array so assign new array to list variable
-            list = listArr;
+        //loop through 2D arrays and form standard array
+        for (var j = 0; j < data.requirements.dropdowns[name].length; j++) {
+            list.push(data.requirements.dropdowns[name][j][1])
         }
 
         //set range to entire column excluding top two rows (offset)
@@ -213,7 +205,7 @@ function customContentSetter(range, data) {
             var list = [];
             var len = users.length;
             for (var j = 0; j < len; j++) {
-                list.push(users[j]);
+                list.push(users[j][1]);
             }
             var cell = range.getCell(1, i + 1);
             var cellsTop = cell.getA1Notation();

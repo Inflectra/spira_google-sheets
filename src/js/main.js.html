@@ -46,12 +46,11 @@ function updateData() {
             } else {
                 full = first + ' ' + last;
             }
-            model.userData.projUsers.push(full);
             model.userData.projUserWNum.push([num, full]);
 
             //populate user dropdowns
-            model.templateData.requirements.dropdowns['Owner'] = model.userData.projUsers;
-            model.templateData.requirements.dropdowns['Author'] = model.userData.projUsers;
+            model.templateData.requirements.dropdowns['Owner'] = model.userData.projUserWNum;
+            model.templateData.requirements.dropdowns['Author'] = model.userData.projUserWNum;
         })
         getCustomFields();
     }
@@ -97,7 +96,7 @@ function updateData() {
 
             model.templateData.requirements.dropdowns['Version Number'] = model.templateData.requirements.releases;
 
-            console.log(model.templateData.requirements.dropdowns);
+            console.log(model);
 
             //turn off ajax spinner if it's on
             $('#js--loader').hasClass('hidden') ? null : $('#js--loader').toggleClass('hidden');
@@ -148,8 +147,8 @@ $('#js--logIn').click(function() {
     //get user data from input fields and store in user data object
     model.userData.currentUser.url = $('#js--url').val();
     model.userData.currentUser.userName = $('#js--userName').val();
-    model.userData.currentUser.api_key = '&api-key=' + encodeURIComponent($('#js--password').val())
-    console.log(model.userData.currentUser);
+    model.userData.currentUser.api_key = '&api-key=' + encodeURIComponent($('#js--password').val());
+    //run init function, starts building data model
     init();
 });
 
