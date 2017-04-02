@@ -6,7 +6,37 @@ JQuery click handlers for the main view
 */
 
 
+//dev only
+$('#dev--stubs').change(function(e){
+
+    if (e.target.value == 'admin'){
+        $('#js--url').val('https://demo.spiraservice.net/christopher-abramson');
+        $('#js--userName').val('administrator');
+        $('#js--password').val('{2AE93998-6849-4132-80F6-3C9981A7CB96}');
+
+    }
+    if (e.target.value == 'manager'){
+        $('#js--url').val('https://demo.spiraservice.net/christopher-abramson');
+        $('#js--userName').val('bernardtyler');
+        $('#js--password').val('{33A8D13A-A474-47C3-B50D-94243A7D1E92}');
+
+    }
+    if (e.target.value == 'dev'){
+        $('#js--url').val('https://demo.spiraservice.net/christopher-abramson');
+        $('#js--userName').val('joesmith');
+        $('#js--password').val('{7911E6B3-2C9E-4837-8B4E-96F3E2B37EFC}');
+
+    }
+    if (e.target.value == 'none'){
+        $('#js--url').val('https://demo.spiraservice.net/christopher-abramson');
+        $('#js--userName').val('amycribbins');
+        $('#js--password').val('{7C8F9525-1A16-4FFB-8C7E-15A0DC3A641F}');
+
+    }
+})
+
 $('#js--logIn').click(function() {
+    var reset = model;
     //get user data from input fields and store in user data object
     model.userData.currentUser.url = $('#js--url').val();
     model.userData.currentUser.userName = $('#js--userName').val();
@@ -152,6 +182,7 @@ $('#js--project').change(function(e) {
                     model.templateData.currentProjectNumber = proj[0];
                 }
             });
+            console.log(model);
             updateData();
         } else {
             console.log(prevProj[0]);

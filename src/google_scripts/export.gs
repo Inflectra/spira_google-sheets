@@ -148,7 +148,7 @@ function exporter(data) {
                 //set returned ID
             xObjArr[i].idField.setValue('Error')
 
-            var htmlOutput = HtmlService.createHtmlOutput('<p>Error for ' + (i + 1)  + ' of ' + (len + 1) + '</p>').setWidth(250).setHeight(75);
+            var htmlOutput = HtmlService.createHtmlOutput('<p>Error for ' + (i + 1) + ' of ' + (len + 1) + '</p>').setWidth(250).setHeight(75);
             SpreadsheetApp.getUi().showModalDialog(htmlOutput, 'Progress');
         }
 

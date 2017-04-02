@@ -114,8 +114,8 @@ function customHeadSetter(range, data, col) {
     //take passed in range and only overwrite the fields if a value is present in the model
     for (var i = 0; i < fields.length; i++) {
         //get cell and offset by one column very iteration
-        var cell = range.getCell( 1, i + 1)
-        //set heading
+        var cell = range.getCell(1, i + 1)
+            //set heading
         cell.setValue('Custom Field ' + (i + 1) + '\n' + fields[i].Name).setWrap(true);
         //get column and offset every iteration and set background
         var column = col.offset(0, i)

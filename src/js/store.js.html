@@ -7,29 +7,32 @@ This holds all the information about the selected template layout. Future versio
 
 */
 
-let model = {
+
+function Store (){
     //All current user data is stored here and is cleared on disconnect or timeout
     //TODO Timeout function
-    userData: {
+    this.userData = {
         currentUser: {
             url: '',
             userName: '',
-            api_key: ''
+            api_key: '',
         },
+        currentUserRoleId: '',
         projects: [],
         projUserWNum: []
     },
     //Template data, can be used to populate all artifact templates
-    templateData: {
+    this.templateData = {
         currentProjectName: '',
         //hard coded on load
-        currentProjectNumber: 1,
+        currentProjectNumber: '',
         currentArtifactName: '',
         //hard coded on load
         currentArtifactId: 1,
         isTemplateLoaded: false,
         //Requirements template
         requirements: {
+            accessPermission: [1,2],
             standardTitleRange: 'A1:M1',
             customTitleRange: 'N1:AQ1',
             requireNumberFields: ['H'],
@@ -103,4 +106,16 @@ let model = {
         }
     }
 }
+
+let model = new Store;
+
+model.reset = function(){
+    model = new Store;
+}
+
 </script>
+
+
+
+
+
