@@ -1,36 +1,41 @@
 <script>
 /*
-These scripts build the model for the selected artifact
+The .js.html files will be bundled inline into the .html file on load
 
-Error popups are also located here
+These scripts build the model for the selected artifact and project
+
+Error pop-ups are also located here
 */
 
 function init() {
     //turn on ajax spinner
     $('#js--loader').toggleClass('hidden');
 
+    //call server side function to get projects
+    //this also serves as an authentication check, if the user credentials aren't correct it will throw a network error
     google.script.run.withSuccessHandler(projectSuccess).withFailureHandler(errorNetwork).getProjects(model.userData.currentUser);
 
+    //on success this function will parse the received project data
     function projectSuccess(projects) {
-        //clear projects user data
-        model.userData.projects = [];
-        //store project data
+
+        //map through and store project data
         projects.map(function(project) {
             let projArr = [project.ProjectId, project.Name];
+            //store project data [id , name]
             model.userData.projects.push(projArr);
         });
-        //get userdata and customfields....needs a better name
-        //updateData();
 
-        //populate project fields
+        //populate html project dropdown menu
         populateFields();
     }
 
+    //this function is called on successful log in after the projects have been received
     function populateFields() {
-        //clear project drop down in case of reload
+        //clear project drop down
         $('#js--project').html('');
 
-        //add first item to dropdown menu
+        //add first default item to dropdown menu
+        //this is also used to check if a project has been selected
         let selectOption = $('<option></option>');
         selectOption.text('Select a Project');
         $('#js--project').append(selectOption);
@@ -42,24 +47,28 @@ function init() {
                 option.text(proj[1]);
                 $('#js--project').append(option);
             })
-            //close auth window
+
+        //close auth window
         $('#js--auth').hasClass('open') ? $('#js--auth').toggleClass('open') : null;
 
         //turn off ajax spinner
         $('#js--loader').hasClass('hidden') ? null : $('#js--loader').toggleClass('hidden');
 
-
+        //server side 'slide up' pop-up window (aka 'toast') notifying user on success
         google.script.run.success('Projects loaded');
     }
 }
 
+//This function updates the user info for the selected project and artifact
+//this function is called only when the `load` button is pressed.
 function updateData() {
     //turn on ajax spinner
     $('#js--loader').toggleClass('hidden');
-    //call google function to load user data
-    //default project number hard coded to one on load
+
+    //call google function to load project users data
     google.script.run.withSuccessHandler(userSuccess).withFailureHandler(errorNetwork).getUsers(model.userData.currentUser, model.templateData.currentProjectNumber)
 
+    //parses user data on successful fetch
     function userSuccess(users) {
         //clear old values
         model.userData.projUserWNum = [];
@@ -69,26 +78,33 @@ function updateData() {
             let first = user.FirstName;
             let last = user.LastName;
             let full = '';
-            //check to see if middle names exist
+            //concat user name data into proper format
+            //check to see if middle name exists
             if (user.MiddleInitial) {
                 let middle = user.MiddleInitial;
                 full = first + ' ' + middle + ' ' + last;
             } else {
                 full = first + ' ' + last;
             }
+            //add name and id to data model [id, name]
             model.userData.projUserWNum.push([num, full]);
 
-            //populate user dropdowns
+            //populate user dropdowns model arrays
             model.templateData.requirements.dropdowns['Owner'] = model.userData.projUserWNum;
             model.templateData.requirements.dropdowns['Author'] = model.userData.projUserWNum;
 
+            //Log current user role id to current user data object
             if (model.userData.currentUser.userName == user.UserName) {
                 model.userData.currentUserRoleId = user.ProjectRoleId
-                console.log(model.userData.currentUserRoleId);
             }
         })
+
+        //check user role against allowed user roles
+        //if permission is correct continue along the callback chain
         if (model.templateData.requirements.accessPermission.includes(model.userData.currentUserRoleId)) {
             getCustomFields();
+
+        //if permission is not correct pop up a warning and do nothing
         } else {
             google.script.run.okWarn('You do not have the correct permissions to access this artifact');
             //turn off ajax spinner
@@ -96,12 +112,16 @@ function updateData() {
         }
     }
 
-
+    //get all custom fields
     function getCustomFields() {
+        //call server side fetch for project custom fields
         google.script.run.withSuccessHandler(customSuccess).withFailureHandler(errorNetwork)
             .getCustoms(model.userData.currentUser, model.templateData.currentProjectNumber, model.templateData.currentArtifactId);
 
+        //called on successful custom field fetch
         function customSuccess(data) {
+            //assign unparsed data to data object
+            //these values are parsed later depending on function needs
             model.templateData.requirements.customFields = data;
             getComponentsValues();
         }
