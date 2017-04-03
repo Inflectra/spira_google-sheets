@@ -11,6 +11,7 @@ This holds all the information about the selected template layout. Future versio
 function Store (){
     //All current user data is stored here and is cleared on disconnect or timeout
     //TODO Timeout function
+    this.reset = modelReset,
     this.userData = {
         currentUser: {
             url: '',
@@ -19,16 +20,24 @@ function Store (){
         },
         currentUserRoleId: '',
         projects: [],
-        projUserWNum: []
+        projUserWNum: [],
+        artifacts: [
+            [1, 'Requirement'],
+            [2, 'Test Case'],
+            [3, 'Incident'],
+            [4, 'Release'],
+            [5, 'Test Run'],
+            [6, 'Task'],
+            [7, 'Test Step'],
+            [8, 'Test Set']
+        ]
     },
     //Template data, can be used to populate all artifact templates
     this.templateData = {
         currentProjectName: '',
-        //hard coded on load
         currentProjectNumber: '',
         currentArtifactName: '',
-        //hard coded on load
-        currentArtifactId: 1,
+        currentArtifactId: '',
         isTemplateLoaded: false,
         //Requirements template
         requirements: {
@@ -109,8 +118,8 @@ function Store (){
 
 let model = new Store;
 
-model.reset = function(){
-    model = new Store;
+function modelReset(){
+   model = new Store;
 }
 
 </script>

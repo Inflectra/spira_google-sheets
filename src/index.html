@@ -85,13 +85,21 @@ This is the HTML that the user sees when the app launched and the sidebar is ope
         </div>
         <div class="select-section">
             <label >Artifact:
-                <select  id="js--artifact" disabled>
-                    <option value="requirements">Requirements</option>
-                    <option value="test_cases">Test Cases</option>
+                <select  id="js--artifact">
+                    <option value="Select an Artifact">Select an Artifact</option>
+                    <option value="Requirement">Requirements</option>
+                    <option value="Test Case" disabled>Test Case</option>
+                    <option value="Incident" disabled>Incident</option>
+                    <option value="Release" disabled>Release</option>
+                    <option value="Test Run" disabled>Test Run</option>
+                    <option value="Task" disabled>Task</option>
+                    <option value="Test Step" disabled>Test Step</option>
+                    <option value="Test Set" disabled>Test Set</option>
                 </select>
             </label>
         </div>
         <div class="container" id="buttons-mid">
+            <button id="js--data" >Load Data</button>
             <button id="js--template" >Load Template</button>
             <button id="js--save" >Save</button>
         </div>

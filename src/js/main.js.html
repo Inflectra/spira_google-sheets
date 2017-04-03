@@ -7,27 +7,27 @@ JQuery click handlers for the main view
 
 
 //dev only
-$('#dev--stubs').change(function(e){
+$('#dev--stubs').change(function(e) {
 
-    if (e.target.value == 'admin'){
+    if (e.target.value == 'admin') {
         $('#js--url').val('https://demo.spiraservice.net/christopher-abramson');
         $('#js--userName').val('administrator');
         $('#js--password').val('{2AE93998-6849-4132-80F6-3C9981A7CB96}');
 
     }
-    if (e.target.value == 'manager'){
+    if (e.target.value == 'manager') {
         $('#js--url').val('https://demo.spiraservice.net/christopher-abramson');
         $('#js--userName').val('bernardtyler');
-        $('#js--password').val('{33A8D13A-A474-47C3-B50D-94243A7D1E92}');
+        $('#js--password').val('{3505CB3E-3ECA-482F-98C7-782158D61B75}');
 
     }
-    if (e.target.value == 'dev'){
+    if (e.target.value == 'dev') {
         $('#js--url').val('https://demo.spiraservice.net/christopher-abramson');
         $('#js--userName').val('joesmith');
         $('#js--password').val('{7911E6B3-2C9E-4837-8B4E-96F3E2B37EFC}');
 
     }
-    if (e.target.value == 'none'){
+    if (e.target.value == 'none') {
         $('#js--url').val('https://demo.spiraservice.net/christopher-abramson');
         $('#js--userName').val('amycribbins');
         $('#js--password').val('{7C8F9525-1A16-4FFB-8C7E-15A0DC3A641F}');
@@ -36,7 +36,6 @@ $('#dev--stubs').change(function(e){
 })
 
 $('#js--logIn').click(function() {
-    var reset = model;
     //get user data from input fields and store in user data object
     model.userData.currentUser.url = $('#js--url').val();
     model.userData.currentUser.userName = $('#js--userName').val();
@@ -45,36 +44,36 @@ $('#js--logIn').click(function() {
     init();
 });
 
-$('#js--cancel').click(function(){
+$('#js--cancel').click(function() {
     //clear input field values
     $('#js--url, #js--userName, #js--password').val('');
 });
 
-$('#js--disconnect').click(function(){
+$('#js--disconnect').click(function() {
     google.script.run.withSuccessHandler(userChoice).warn();
 
     function userChoice(bool) {
         if (bool) {
             //clear spreadsheet
             google.script.run.clearAll();
+
             //display log-in page
             $('#js--auth').toggleClass('open');
-            isTemplateLoaded = false;
-            //clear model user values
-            model.userData.currentUser.url = '';
-            model.userData.currentUser.userName = '';
-            model.userData.currentUser.API_KEY = '';
+
+            //clear data model
+            model.reset();
+
             //clear input fields
             $('#js--url, #js--userName, #js--password').val('');
         }
     }
 });
 
-$('#js--template').click(function(){
+$('#js--template').click(function() {
     //get selected artifact and project
     let artifactName = $('#js--artifact option:selected').text();
     let projName = $('#js--project option:selected').text();
-        //get and store project number for future calls
+    //get and store project number for future calls
     let projNum = 0;
     for (let i = 0; i < model.userData.projects.length; i++) {
         model.userData.projects[i][1] === projName ? projNum = model.userData.projects[i][0] : null;
@@ -100,7 +99,7 @@ $('#js--template').click(function(){
     }
 });
 
-$('#js--import').click(function(){
+$('#js--import').click(function() {
 
     if (model.templateData.isTemplateLoaded) {
         google.script.run.withSuccessHandler(importSuccess).withFailureHandler(errorNetwork).importer(model.userData.currentUser);
@@ -114,7 +113,7 @@ $('#js--import').click(function(){
 
 });
 
-$('#js--export').click(function(){
+$('#js--export').click(function() {
     if (model.templateData.isTemplateLoaded) {
         // toggle on spinner
         $('#js--loader').toggleClass('hidden');
@@ -131,7 +130,7 @@ $('#js--export').click(function(){
     }
 });
 
-$('#js--save').click(function(){
+$('#js--save').click(function() {
     if (model.templateData.isTemplateLoaded) {
         //toggle spinner on
         $('#js--loader').toggleClass('hidden');
@@ -147,7 +146,7 @@ $('#js--save').click(function(){
     }
 });
 
-$('#js--clear').click(function(){
+$('#js--clear').click(function() {
     //warn that data will be erased
     google.script.run.withSuccessHandler(userChoice).warn();
 
@@ -156,64 +155,57 @@ $('#js--clear').click(function(){
     }
 
 });
-//variables for select dropdown values
-let prevProj,
-    prevArti;
 
-//on click this stores the current values of the dropdown menus for
-//...recall if the user decides not to change the fields.
-$('#js--artifact, #js--project').click(function(e){
-    prevProj = $('#js--project option:selected');
-    prevArti = $('#js--artifact option:selected');
-})
 
-$('#js--project').change(function(e) {
-    //stores new dropdown value
-    let newProj = e.target.value;
-    //warn the user data will be erased
-    google.script.run.withSuccessHandler(userChoice).warn();
+$('#js--data').click(function() {
+    let proj = $('#js--project option:selected').val();
+    let arti = $('#js--artifact option:selected').val();
 
-    function userChoice(bool) {
-        if (bool){
-            google.script.run.clearAll();
-            model.userData.projects.map(function(proj){
-                if (proj[1] === newProj){
-                    model.templateData.currentProjectName = newProj;
-                    model.templateData.currentProjectNumber = proj[0];
-                }
-            });
-            console.log(model);
-            updateData();
-        } else {
-            console.log(prevProj[0]);
-            //sets the select dropdown back to the original value if the user says no
-            prevProj[0].selected = true;
+    if (proj === 'Select a Project' || arti === 'Select an Artifact') {
+        google.script.run.okWarn('You must select a Project and an Artifact.');
+    } else {
+        //warn the user data will be erased
+        google.script.run.withSuccessHandler(userChoice).warn();
+
+        function userChoice(bool) {
+            if (bool){
+                google.script.run.clearAll();
+                model.userData.artifacts.map(function(artifact) {
+                    if (artifact[1] === arti) {
+                        model.templateData.currentArtifactName = arti;
+                        model.templateData.currentArtifactId = artifact[0];
+                    }
+                });
+                model.userData.projects.map(function(project) {
+                    if (project[1] === proj) {
+                        model.templateData.currentProjectName = proj;
+                        model.templateData.currentProjectNumber = project[0];
+                    }
+                });
+
+                updateData();
+            }
         }
     }
 
 });
 
-$('#js--artifact').change(function(e) {
-     //TODO add change artifact functionality
-});
 
 var authHelp = false
 
-$('.js--help').click(function(){
-  $('#js--helpPage').toggleClass('open hidden')
- if ( $('#js--auth').hasClass('open') ) {
-   authHelp = true;
-   $('#js--auth').toggle('open');
- }
+$('.js--help').click(function() {
+    $('#js--helpPage').toggleClass('open hidden')
+    if ($('#js--auth').hasClass('open')) {
+        authHelp = true;
+        $('#js--auth').toggle('open');
+    }
 })
 
-$('#js--helpClose').click(function(){
-  $('#js--helpPage').toggleClass('open hidden');
-  if (authHelp){
-    $('#js--auth').toggle('open');
-  }
-  authHelp = false;
+$('#js--helpClose').click(function() {
+    $('#js--helpPage').toggleClass('open hidden');
+    if (authHelp) {
+        $('#js--auth').toggle('open');
+    }
+    authHelp = false;
 })
-
-
 </script>

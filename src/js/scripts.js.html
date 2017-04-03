@@ -42,7 +42,7 @@ function init() {
                 option.text(proj[1]);
                 $('#js--project').append(option);
             })
-        //close auth window
+            //close auth window
         $('#js--auth').hasClass('open') ? $('#js--auth').toggleClass('open') : null;
 
         //turn off ajax spinner
@@ -54,6 +54,8 @@ function init() {
 }
 
 function updateData() {
+    //turn on ajax spinner
+    $('#js--loader').toggleClass('hidden');
     //call google function to load user data
     //default project number hard coded to one on load
     google.script.run.withSuccessHandler(userSuccess).withFailureHandler(errorNetwork).getUsers(model.userData.currentUser, model.templateData.currentProjectNumber)
@@ -80,16 +82,17 @@ function updateData() {
             model.templateData.requirements.dropdowns['Owner'] = model.userData.projUserWNum;
             model.templateData.requirements.dropdowns['Author'] = model.userData.projUserWNum;
 
-            if(model.userData.currentUser.userName == user.UserName){
-              model.userData.currentUserRoleId = user.ProjectRoleId
-              console.log(model.userData.currentUserRoleId);
+            if (model.userData.currentUser.userName == user.UserName) {
+                model.userData.currentUserRoleId = user.ProjectRoleId
+                console.log(model.userData.currentUserRoleId);
             }
         })
-        if(model.templateData.requirements.accessPermission.includes(model.userData.currentUserRoleId) ){
-          getCustomFields();
+        if (model.templateData.requirements.accessPermission.includes(model.userData.currentUserRoleId)) {
+            getCustomFields();
         } else {
-          console.log('disconnect');
-          disconnect();
+            google.script.run.okWarn('You do not have the correct permissions to access this artifact');
+            //turn off ajax spinner
+            $('#js--loader').toggleClass('hidden');
         }
     }
 
@@ -162,23 +165,4 @@ function errorImpExp(err) {
 function errorUnk(err) {
     errorPopUp(err, 'unk');
 }
-
-function disconnect(){
-  google.script.run.okWarn('You do not have the correct permissions to access this artifact');
-  //display log-in page
-  $('#js--auth').toggleClass('open');
-  //toggle spinner off
-  //$('#js--loader').toggleClass('hidden');
-  isTemplateLoaded = false;
-  //clear model user values
-  model.userData.currentUser.url = '';
-  model.userData.currentUser.userName = '';
-  model.userData.currentUser.API_KEY = '';
-  //clear input fields
-  $('#js--url, #js--userName, #js--password').val('');
-}
-
-
-
-
 </script>
