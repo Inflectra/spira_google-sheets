@@ -33,12 +33,18 @@ function templateLoader(data) {
 
     //get range for requirement numbers and set color
     //color set to grey to denote unwritable field
-    var reqIdRange = sheet.getRange('A3:A200');
+    var reqIdRange = sheet.getRange('A3:A400');
     reqIdRange.setBackground('#a6a6a6');
 
     //set customfield cells as grey if inactive
-    var customCellRange = sheet.getRange('N3:AQ200');
+    var customCellRange = sheet.getRange('N3:AQ400');
     customCellRange.setBackground('#a6a6a6');
+
+    //unsupported fields also colored grey
+    for(var i = 0; i < data.requirements.unsupported.length; i++){
+      var column = sheet.getRange(data.requirements.unsupported[i]);
+        column.setBackground('#a6a6a6')
+    }
 
     //set column A to present a warning if the user tries to write in a value
     var protection = reqIdRange.protect().setDescription('Exported items must not have a requirement number');
@@ -117,7 +123,7 @@ function customHeadSetter(range, data, col) {
         var cell = range.getCell( 1, i + 1)
         //set heading
         cell.setValue('Custom Field ' + (i + 1) + '\n' + fields[i].Name).setWrap(true);
-        //get column and offset every iteration and set background
+        //get column and offset (move to the right) every iteration and set background
         var column = col.offset(0, i)
         column.setBackground('#fff');
     }

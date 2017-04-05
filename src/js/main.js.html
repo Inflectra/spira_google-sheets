@@ -7,39 +7,17 @@ JQuery click handlers for the main view
 
 
 //dev only
-$('#dev--stubs').change(function(e) {
-
-    if (e.target.value == 'admin') {
+$('#dev--stubs').click(function (){
         $('#js--url').val('https://demo.spiraservice.net/christopher-abramson');
         $('#js--userName').val('administrator');
         $('#js--password').val('{2AE93998-6849-4132-80F6-3C9981A7CB96}');
-
-    }
-    if (e.target.value == 'manager') {
-        $('#js--url').val('https://demo.spiraservice.net/christopher-abramson');
-        $('#js--userName').val('bernardtyler');
-        $('#js--password').val('{3505CB3E-3ECA-482F-98C7-782158D61B75}');
-
-    }
-    if (e.target.value == 'dev') {
-        $('#js--url').val('https://demo.spiraservice.net/christopher-abramson');
-        $('#js--userName').val('joesmith');
-        $('#js--password').val('{7911E6B3-2C9E-4837-8B4E-96F3E2B37EFC}');
-
-    }
-    if (e.target.value == 'none') {
-        $('#js--url').val('https://demo.spiraservice.net/christopher-abramson');
-        $('#js--userName').val('amycribbins');
-        $('#js--password').val('{7C8F9525-1A16-4FFB-8C7E-15A0DC3A641F}');
-
-    }
 })
 
 $('#js--logIn').click(function() {
     //get user data from input fields and store in user data object
     model.userData.currentUser.url = $('#js--url').val();
     model.userData.currentUser.userName = $('#js--userName').val();
-    model.userData.currentUser.api_key = '&api-key=' + encodeURIComponent($('#js--password').val());
+    model.userData.currentUser.api_key = btoa( '&api-key=' + encodeURIComponent($('#js--password').val()) );
     //run init function, starts building data model
     init();
 });
@@ -61,10 +39,16 @@ $('#js--disconnect').click(function() {
             $('#js--auth').toggleClass('open');
 
             //clear data model
-            model.reset();
+            modelReset();
 
             //clear input fields
             $('#js--url, #js--userName, #js--password').val('');
+
+            //disable template button
+            $('#js--template').prop('disabled', true);
+
+            //reset artifacts drop down
+            $("#js--artifact option[value='Select an Artifact']").attr('selected', 'selected');
         }
     }
 });
@@ -189,6 +173,12 @@ $('#js--data').click(function() {
     }
 
 });
+
+
+$('#js--artifact').change(function(){
+    let value = $('#js--artifact option:selected').val();
+    console.log(value);
+    });
 
 
 var authHelp = false

@@ -7,36 +7,6 @@ All Google App Script (GAS) files are bundled by the engine at start up so any n
 
 */
 
-
-//Mock values for development
-//var stubUser = {
-//    url: 'https://demo.spiraservice.net/christopher-abramson',
-//    userName: 'administrator',
-//    api_key: '&api-key=' + encodeURIComponent('{2AE93998-6849-4132-80F6-3C9981A7CB96}')
-//}
-
-//permission 6
-//var stubUser = {
-//    url: 'https://demo.spiraservice.net/christopher-abramson',
-//    userName: 'amycribbins',
-//    api_key: '&api-key=' + encodeURIComponent('{7C8F9525-1A16-4FFB-8C7E-15A0DC3A641F}')
-//}
-
-//permission 4 & 5
-//var stubUser = {
-//    url: 'https://demo.spiraservice.net/christopher-abramson',
-//    userName: 'joesmith',
-//    api_key: '&api-key=' + encodeURIComponent('{7911E6B3-2C9E-4837-8B4E-96F3E2B37EFC}')
-//}
-
-//permission 3
-//var stubUser = {
-//    url: 'https://demo.spiraservice.net/christopher-abramson',
-//    userName: 'bernardtyler',
-//    api_key: '&api-key=' + encodeURIComponent('{33A8D13A-A474-47C3-B50D-94243A7D1E92}')
-//}
-
-
 //App script boilerplate install function
 //opens app on install
 function onInstall(e) {
@@ -103,9 +73,12 @@ function getComponents(currentUser, proj) {
 
 //Fetch function uses Googles built in fetch api
 function fetcher(currentUser, fetcherURL) {
+    var decoded = Utilities.base64Decode(currentUser.api_key);
+    var APIKEY = Utilities.newBlob(decoded).getDataAsString();
     //build URL from args
     //this must be changed if using mock values in development
-    var URL = currentUser.url + fetcherURL + currentUser.userName + currentUser.api_key;
+
+    var URL = currentUser.url + fetcherURL + currentUser.userName + APIKEY;
     //set MIME type
     var init = { 'content-type': 'application/json' };
     //call Google fetch function
@@ -123,7 +96,7 @@ function error(type) {
     } else if (type == 'unk') {
         okWarn('Unkown error. Please try again later or contact your system administrator');
     } else {
-        okWarn('Network error. Please check your username, url, and password.');
+        okWarn('Network error. Please check your username, url, and password. If correct make sure you have the correct permissions.');
     }
 }
 

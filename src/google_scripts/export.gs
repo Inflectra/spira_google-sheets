@@ -81,6 +81,8 @@ function exporter(data) {
             //TODO add requirements and components
             if (i === 3.0) { xObj['ReleaseId'] = mapper(cell, reqs.dropdowns['Version Number']) }
 
+            //The type property is currently bugged in the API
+            //All are hard coded to id = 1 for 'feature'
             if (i === 4.0) { cell = mapper(cell, reqs.dropdowns['Type']) }
 
             if (i === 5.0) { xObj['ImportanceId'] = mapper(cell, reqs.dropdowns['Importance']) }
@@ -111,9 +113,12 @@ function exporter(data) {
             xObj['ProjectName'] = data.templateData.currentProjectName;
 
             xObjArr.push(xObj);
+
+
         }
 
         xObjArr = parentChildSetter(xObjArr);
+
 
     }
 
@@ -161,10 +166,14 @@ function exporter(data) {
 }
 
 function requirementExportCall(body, projNum, currentUser, posNum) {
+    //encryption
+    var decoded = Utilities.base64Decode(currentUser.api_key);
+    var APIKEY = Utilities.newBlob(decoded).getDataAsString();
+
     //unique url for requirement POST
     var fetcherURL = '/services/v5_0/RestService.svc/projects/' + projNum + '/requirements/indent/' + posNum + '?username=';
     //build URL for fetch
-    var URL = stubUser.url + fetcherURL + stubUser.userName + stubUser.api_key;
+    var URL = currentUser.url + fetcherURL + currentUser.userName + APIKEY;
     //POST headers
     var init = {
         'method': 'post',
@@ -260,7 +269,22 @@ function customFiller(cell, data, users) {
     }
 
 
-    if (data.CustomPropertyTypeName == 'MultiList') {}
+    if (data.CustomPropertyTypeName == 'MultiList') {
+        //TODO add some sort of multiList functionality
+        //currently 4/2017 Google app script does not support multi select on google sheets
+
+        //single item exported
+        var listArray = [];
+        var len = data.CustomList.Values.length;
+        //loop through custom list and match name to cell value
+        for (var i = 0; i < len; i++) {
+            if (cell == data.CustomList.Values[i].Name) {
+                //assign list value number to integer
+                listArray.push(data.CustomList.Values[i].CustomPropertyValueId)
+                prop['IntegerListValue'] = listArray;
+            }
+        }
+    }
 
     if (data.CustomPropertyTypeName == 'User') {
         var len = users.length
@@ -303,7 +327,7 @@ function parentChildSetter(arr) {
         }
 
         if (arr[i].indentCount == 0) {
-            arr[i].positionNumber = -20;
+            arr[i].positionNumber = -10;
             //reset count variable
             count = 0;
         }

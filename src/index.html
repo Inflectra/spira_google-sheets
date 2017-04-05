@@ -50,13 +50,8 @@ This is the HTML that the user sees when the app launched and the sidebar is ope
                 <button  id="js--cancel">Cancel</button>
                 <button class="js--help">Help</button>
             </div>
-            <select id="dev--stubs">
-                <option value="blank">--select--</option>
-                <option value="admin">sys admin</option>
-                <option value="manager">manger</option>
-                <option value="dev">dev/tester</option>
-                <option value="none">none</option>
-            </select>
+            <button id="dev--stubs">dev</button>
+
             <a href="https://www.inflectra.com" target="_blank">
                 <img src="https://financesonline.com/uploads/2014/11/spirateam-logo.jpg" id="logo--bottom" >
             </a>
@@ -72,6 +67,7 @@ This is the HTML that the user sees when the app launched and the sidebar is ope
             <h3 >Import / Export Wizard</h3>
             <img src="https://www.inflectra.com/Images/ApplicationIcons/SpiraTeam-Icon.png" id="logo--top" >
         </header>
+        <small id="js--loggedInAs"></small>
         <div class="container" id="buttons-top">
             <button class="js--help">Help</button>
             <button id="js--disconnect" >Disconnect</button>
@@ -100,7 +96,7 @@ This is the HTML that the user sees when the app launched and the sidebar is ope
         </div>
         <div class="container" id="buttons-mid">
             <button id="js--data" >Load Data</button>
-            <button id="js--template" >Load Template</button>
+            <button id="js--template" disabled="true" >Load Template</button>
             <button id="js--save" >Save</button>
         </div>
         <div class="row justify-content-around" id="buttons-bottom">
@@ -115,6 +111,7 @@ This is the HTML that the user sees when the app launched and the sidebar is ope
     <?!= include('store.js') ?>
     <?!= include('main.js') ?>
     <?!= include('scripts.js') ?>
+
 </body>
 
 </html>

@@ -4,14 +4,40 @@
 Data Model
 
 This holds all the information about the selected template layout. Future versions of this program can add their artifact to the `templateData` object.
-
+function(){ model = new Store }
 */
 
+
+
+function modelReset(){
+   model.userData = {
+        currentUser: {
+            url: '',
+            userName: '',
+            api_key: '',
+        },
+        currentUserRoleId: '',
+        projects: [],
+        projUserWNum: [],
+        artifacts: [
+            [1, 'Requirement'],
+            [2, 'Test Case'],
+            [3, 'Incident'],
+            [4, 'Release'],
+            [5, 'Test Run'],
+            [6, 'Task'],
+            [7, 'Test Step'],
+            [8, 'Test Set']
+        ]
+    };
+}
 
 function Store (){
     //All current user data is stored here and is cleared on disconnect or timeout
     //TODO Timeout function
-    this.reset = modelReset,
+
+    //this reset method throws an error on export **occasionally** for some reason I believe it is a google app script bug of some kind, it would be my preferred way of resetting the model data. Suggest troubleshooting in next version.
+    //this.resetAll = modelReset,
     this.userData = {
         currentUser: {
             url: '',
@@ -41,6 +67,7 @@ function Store (){
         isTemplateLoaded: false,
         //Requirements template
         requirements: {
+            unsupported: ['L3:L400', 'M3:M400'],
             accessPermission: [1,2],
             standardTitleRange: 'A1:M1',
             customTitleRange: 'N1:AQ1',
@@ -64,7 +91,7 @@ function Store (){
                 ['Owner', 'j'],
                 ['Components', 'k']
             ],
-            headings: ['Requirement Id', 'Requirement Name', 'Requirement Description', 'Release Version', 'Type', 'Importance', 'Status', 'Estimate', 'Author', 'Owner', 'Component', 'Linked Requirements', 'Comment', 'CUS-01', 'CUS-02', 'CUS-03', 'CUS-04', 'CUS-05', 'CUS-06', 'CUS-07', 'CUS-08', 'CUS-09', 'CUS-10', 'CUS-11', 'CUS-12', 'CUS-13', 'CUS-14', 'CUS-15', 'CUS-16', 'CUS-17', 'CUS-18', 'CUS-19', 'CUS-20', 'CUS-21', 'CUS-22', 'CUS-23', 'CUS-24', 'CUS-25', 'CUS-26', 'CUS-27', 'CUS-28', 'CUS-29', 'CUS-30'],
+            headings: ['Requirement Id', 'Requirement Name', 'Requirement Description', 'Release Version', 'Type', 'Importance', 'Status', 'Estimate', 'Author', 'Owner', 'Component', 'Linked Requirements \nCurrently not supported', 'Comment \nCurrently not supported', 'CUS-01', 'CUS-02', 'CUS-03', 'CUS-04', 'CUS-05', 'CUS-06', 'CUS-07', 'CUS-08', 'CUS-09', 'CUS-10', 'CUS-11', 'CUS-12', 'CUS-13', 'CUS-14', 'CUS-15', 'CUS-16', 'CUS-17', 'CUS-18', 'CUS-19', 'CUS-20', 'CUS-21', 'CUS-22', 'CUS-23', 'CUS-24', 'CUS-25', 'CUS-26', 'CUS-27', 'CUS-28', 'CUS-29', 'CUS-30'],
             JSON_headings: ["RequirementId", "Name", "Description", "ReleaseVersionNumber", "RequirementTypeId", "ImportanceName", "StatusName", "EstimatePoints", "AuthorName", "OwnerName", "ComponentName"],
             sizes: [
                 [1, 100],
@@ -83,14 +110,15 @@ function Store (){
             dropdowns: {
                 //***BUG*** API will not accept a type, always assigns `feature`.
                 //This has been corrected and will be merged in next API release.
+                //changing ids to sequential numbers will restore standard functionality
                 'Type': [
-                    [1, 'Package'],
-                    [2, 'Design Element'],
-                    [3, 'Feature'],
-                    [4, 'Need'],
+                    [-1, 'Package'],
+                    [1, 'Need'],
+                    [2, 'Feature'],
+                    [3, 'Use Case'],
+                    [4, 'User Story'],
                     [5, 'Quality'],
-                    [6, 'Use Case'],
-                    [7, 'User Story']
+                    [6, 'Design Element']
                 ],
                 'Importance': [
                     [1, '1 - Critical'],
@@ -107,8 +135,8 @@ function Store (){
                     [6, 'Rejected'],
                     [7, 'Under Review'],
                     [8, 'Obsolete'],
-                    [9, 'Completed'],
-                    [10, 'Tested']
+                    [9, 'Tested'],
+                    [10, 'Completed']
                 ]
             },
             customFields: []
@@ -118,9 +146,6 @@ function Store (){
 
 let model = new Store;
 
-function modelReset(){
-   model = new Store;
-}
 
 </script>
 

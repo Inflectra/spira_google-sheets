@@ -15,6 +15,7 @@ function init() {
     //this also serves as an authentication check, if the user credentials aren't correct it will throw a network error
     google.script.run.withSuccessHandler(projectSuccess).withFailureHandler(errorNetwork).getProjects(model.userData.currentUser);
 
+
     //on success this function will parse the received project data
     function projectSuccess(projects) {
 
@@ -48,6 +49,8 @@ function init() {
                 $('#js--project').append(option);
             })
 
+        //displays the current logged in user name
+        $('#js--loggedInAs').html('Logged in as: ' + model.userData.currentUser.userName)
         //close auth window
         $('#js--auth').hasClass('open') ? $('#js--auth').toggleClass('open') : null;
 
@@ -56,6 +59,8 @@ function init() {
 
         //server side 'slide up' pop-up window (aka 'toast') notifying user on success
         google.script.run.success('Projects loaded');
+
+
     }
 }
 
@@ -95,7 +100,12 @@ function updateData() {
 
             //Log current user role id to current user data object
             if (model.userData.currentUser.userName == user.UserName) {
-                model.userData.currentUserRoleId = user.ProjectRoleId
+                //TODO access customized role id to lock out users without access
+                //currently the app will allow any user to attempt to post any artifact to a project they have access to.
+                //model.userData.currentUserRoleId = user.ProjectRoleId
+
+                //all access granted
+                model.userData.currentUserRoleId = 1;
             }
         })
 
@@ -163,6 +173,9 @@ function updateData() {
             $('#js--loader').hasClass('hidden') ? null : $('#js--loader').toggleClass('hidden');
             //success notification
             google.script.run.success('User data loaded');
+
+            //enables template button
+            $('#js--template').prop('disabled', false);
         }
     }
 }
