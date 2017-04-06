@@ -88,7 +88,7 @@ function fetcher(currentUser, fetcherURL) {
     //call Google fetch function
     var response = UrlFetchApp.fetch(URL, init);
     //returns parsed JSON
-    //unparsed response contains error codes if needed
+    //unparsed response contains error codes if needed but if the call fails google catches the error in the `withFailureHandler` method.
     return JSON.parse(response);
 }
 

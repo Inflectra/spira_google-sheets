@@ -21,6 +21,9 @@ function exporter(data) {
     //shorten variable
     var reqs = data.templateData.requirements;
 
+    var htmlOutput = HtmlService.createHtmlOutput('<p>Preparing your data for export!</p>').setWidth(250).setHeight(75);
+    SpreadsheetApp.getUi().showModalDialog(htmlOutput, 'Progress');
+
     //loop through and collect number of rows that contain data
     while (isRowEmpty === false) {
         //select row
@@ -113,56 +116,48 @@ function exporter(data) {
             xObj['ProjectName'] = data.templateData.currentProjectName;
 
             xObjArr.push(xObj);
-
-
         }
 
         xObjArr = parentChildSetter(xObjArr);
-
-
     }
-
-
 
     // set up to individually add each requirement to spirateam
     // maybe there's a way to bulk add them instead of individual calls?
     var testArr = []
     var isError = null;
+    var errorLog = [];
     var len = xObjArr.length
     for (var i = 0; i < len; i++) {
         //stringify
         var JSON_body = JSON.stringify(xObjArr[i]);
 
-        //testArr.push(JSON_body);
-        //testArr.push(xObjArr[i])
         //send JSON to export function
         var response = requirementExportCall(JSON_body, data.templateData.currentProjectNumber, data.userData.currentUser, xObjArr[i].positionNumber);
+
 
         if (response.getResponseCode() === 200) {
             response = JSON.parse(response.getContentText())
 
             responses.push(response.RequirementId)
-                //set returned ID
+            //set returned ID
             xObjArr[i].idField.setValue(response.RequirementId)
 
-            var htmlOutput = HtmlService.createHtmlOutput('<p>' + (i + 1) + ' of ' + (len + 1) + ' sent!</p>').setWidth(250).setHeight(75);
-            SpreadsheetApp.getUi().showModalDialog(htmlOutput, 'Progress');
+            htmlOutputSuccess = HtmlService.createHtmlOutput('<p>' + (i + 1) + ' of ' + (len) + ' sent!</p>').setWidth(250).setHeight(75);
+            SpreadsheetApp.getUi().showModalDialog(htmlOutputSuccess, 'Progress');
         } else {
+            errorLog.push( response.getContentText());
             isError = true;
-            responses.push('error')
             //set returned ID
-            xObjArr[i].idField.setValue('Error')
+            //removed by request can be added back if wanted in future versions
+            //xObjArr[i].idField.setValue('Error')
 
-            var htmlOutput = HtmlService.createHtmlOutput('<p>Error for ' + (i + 1)  + ' of ' + (len + 1) + '</p>').setWidth(250).setHeight(75);
+            //Sets error HTML
+            htmlOutput = HtmlService.createHtmlOutput('<p>Error for ' + (i + 1)  + ' of ' + (len) + '</p>').setWidth(250).setHeight(75);
             SpreadsheetApp.getUi().showModalDialog(htmlOutput, 'Progress');
         }
-
     }
-
-
-
-    return [responses, isError];
-    //return testArr;
+    //return the error flag and array with error text reponses
+    return [isError, errorLog];
 }
 
 function requirementExportCall(body, projNum, currentUser, posNum) {

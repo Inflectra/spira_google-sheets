@@ -104,10 +104,17 @@ $('#js--export').click(function() {
     }
 
     function exportSuccess(data) {
+        let errorArr = data[1];
+
+        if (errorArr.length){
+            errorArr.map(function(error){
+                console.log(error);
+            })
+        }
         //toggle off spinner
         $('#js--loader').toggleClass('hidden');
-        google.script.run.exportSuccess(data[1]);
-        console.log(data);
+        google.script.run.exportSuccess(data[0]);
+
     }
 });
 
