@@ -1,229 +1,116 @@
-<script>
-/*
-The .js.html files will be bundled inline into the .html file on load
+<!DOCTYPE html>
+<html>
 
-These scripts build the model for the selected artifact and project
+<head>
+    <base target="_top">
+    <link rel="stylesheet" href="https://ssl.gstatic.com/docs/script/css/add-ons1.css">
+    <?!= include('styles.css') ?>
+</head>
 
-Error pop-ups are also located here
-*/
+<body>
+    <!--
+Main view
 
-function init() {
-    //turn on ajax spinner
-    $('#js--loader').toggleClass('hidden');
+This is the HTML that the user sees when the app launched and the sidebar is opened.
 
-    //call server side function to get projects
-    //this also serves as an authentication check, if the user credentials aren't correct it will throw a network error
-    google.script.run.withSuccessHandler(projectSuccess).withFailureHandler(errorNetwork).getProjects(model.userData.currentUser);
+`< ?!= include(X)? >` are template inserts for modularity and the entire document will be bundled together with inline CSS and JavaScript on deployment
 
+-->
+    <!--help page-->
+    <div class="slide-out transition hidden" id="js--helpPage">
+        <header class="container">
+            <h3 >Import / Export Wizard</h3>
+            <img src="https://www.inflectra.com/Images/ApplicationIcons/SpiraTeam-Icon.png" id="logo--top" >
+        </header>
+        <h3>Help Page</h3>
+        <p>{Todo add: help information}</p>
+        <button id="js--helpClose">Close</button>
+    </div>
+    <!--auth page-->
+    <div class="slide-out transition open" id="js--auth">
+        <header class="container">
+            <h3 >Import / Export Wizard</h3>
+            <img src="https://www.inflectra.com/Images/ApplicationIcons/SpiraTeam-Icon.png" id="logo--top" >
+        </header>
+        <p>Please enter the information used to access your server</p>
+        <div class="container" id="auth-fields">
+            <label >Spira URL:
+                <input type="text" name="URL" placeholder="SpiraTeam URL" class="urlInput" id="js--url" />
+            </label>
+            <label >User Name:
+                <input type="text" name="user-name" placeholder="User Name" class="userNameInput" id="js--userName" />
+            </label>
+            <label >Password:
+                <input type="password" name="password" placeholder="Password" class="passwordInput" id="js--password" />
+            </label>
+        </div>
+        <footer >
+            <div class="container">
+                <button class="action" id="js--logIn">Log In</button>
+                <button  id="js--cancel">Cancel</button>
+                <button class="js--help">Help</button>
+            </div>
+            <button id="dev--stubs">dev</button>
 
-    //on success this function will parse the received project data
-    function projectSuccess(projects) {
+            <a href="https://www.inflectra.com" target="_blank">
+                <img src="https://financesonline.com/uploads/2014/11/spirateam-logo.jpg" id="logo--bottom" >
+            </a>
+        </footer>
+    </div>
+    <!--spinner-->
+    <div id='js--loader' class='spinner-holder hidden'>
+        <div class="loader"></div>
+    </div>
+    <!--main screen-->
+    <div class="main">
+        <header class="container">
+            <h3 >Import / Export Wizard</h3>
+            <img src="https://www.inflectra.com/Images/ApplicationIcons/SpiraTeam-Icon.png" id="logo--top" >
+        </header>
+        <small id="js--loggedInAs"></small>
+        <div class="container" id="buttons-top">
+            <button class="js--help">Help</button>
+            <button id="js--disconnect" >Disconnect</button>
+            <button  id="js--clear">Clear</button>
+        </div>
+        <div class="select-section">
+            <label >Projects:
+                <select  id="js--project">
+                    <!--aysnc populated -->
+                </select>
+            </label>
+        </div>
+        <div class="select-section">
+            <label >Artifact:
+                <select  id="js--artifact" disabled="true">
+                    <option value="Select an Artifact">Select an Artifact</option>
+                    <option value="Requirement">Requirements</option>
+                    <option value="Test Case" disabled="true">Test Case</option>
+                    <option value="Incident" disabled="true">Incident</option>
+                    <option value="Release" disabled="true">Release</option>
+                    <option value="Test Run" disabled="true">Test Run</option>
+                    <option value="Task" disabled="true">Task</option>
+                    <option value="Test Step" disabled="true">Test Step</option>
+                    <option value="Test Set" disabled="true">Test Set</option>
+                </select>
+            </label>
+        </div>
+        <div class="container" id="buttons-mid">
+            <button id="js--template" disabled="true" >Load Template</button>
+            <button id="js--save" >Save</button>
+        </div>
+        <div class="row justify-content-around" id="buttons-bottom">
+            <button  id="js--import" disabled="true">Import from SpiraTeam</button>
+            <button  id="js--export" disabled="true">Send to SpiraTeam</button>
+        </div>
+    </div>
+    <!--Jquery-->
+    <script src="https://code.jquery.com/jquery-3.1.1.slim.min.js" integrity="sha256-/SIrNqv8h6QGKDuNoLGA4iret+kyesCkHGzVUUV0shc=" crossorigin="anonymous"></script>
+    <!--user agent modules-->
+    <?!= include('store.js') ?>
+    <?!= include('main.js') ?>
+    <?!= include('scripts.js') ?>
 
-        //map through and store project data
-        projects.map(function(project) {
-            let projArr = [project.ProjectId, project.Name];
-            //store project data [id , name]
-            model.userData.projects.push(projArr);
-        });
+</body>
 
-        //populate html project dropdown menu
-        populateFields();
-    }
-
-    //this function is called on successful log in after the projects have been received
-    function populateFields() {
-        //clear project drop down
-        $('#js--project').html('');
-
-        //add first default item to dropdown menu
-        //this is also used to check if a project has been selected
-        let selectOption = $('<option></option>');
-        selectOption.text('Select a Project');
-        $('#js--project').append(selectOption);
-
-        //populate projects drop down
-        model.userData.projects.map(proj => {
-                let option = $('<option></option>');
-                option.attr('value', proj[1]);
-                option.text(proj[1]);
-                $('#js--project').append(option);
-            })
-
-        //displays the current logged in user name
-        $('#js--loggedInAs').html('Logged in as: ' + model.userData.currentUser.userName)
-        //close auth window
-        $('#js--auth').hasClass('open') ? $('#js--auth').toggleClass('open') : null;
-
-        //turn off ajax spinner
-        $('#js--loader').hasClass('hidden') ? null : $('#js--loader').toggleClass('hidden');
-
-        //server side 'slide up' pop-up window (aka 'toast') notifying user on success
-        google.script.run.success('Projects loaded');
-
-
-    }
-}
-
-function projectAndArtifactSetter() {
-    let proj = $('#js--project option:selected').val();
-    let arti = $('#js--artifact option:selected').val();
-
-    model.userData.artifacts.map(function(artifact) {
-        if (artifact[1] === arti) {
-            model.templateData.currentArtifactName = arti;
-            model.templateData.currentArtifactId = artifact[0];
-        }
-    });
-    model.userData.projects.map(function(project) {
-        if (project[1] === proj) {
-            model.templateData.currentProjectName = proj;
-            model.templateData.currentProjectNumber = project[0];
-        }
-    });
-
-    updateData();
-}
-
-//This function updates the user info for the selected project and artifact
-//this function is called only when the `load` button is pressed.
-function updateData() {
-    //turn on ajax spinner
-    $('#js--loader').toggleClass('hidden');
-
-    //call google function to load project users data
-    google.script.run.withSuccessHandler(userSuccess).withFailureHandler(errorNetwork).getUsers(model.userData.currentUser, model.templateData.currentProjectNumber)
-
-    //parses user data on successful fetch
-    function userSuccess(users) {
-        //clear old values
-        model.userData.projUserWNum = [];
-        //map through user obj and assign names
-        users.map(user => {
-            let num = user.UserId;
-            let first = user.FirstName;
-            let last = user.LastName;
-            let full = '';
-            //concat user name data into proper format
-            //check to see if middle name exists
-            if (user.MiddleInitial) {
-                let middle = user.MiddleInitial;
-                full = first + ' ' + middle + ' ' + last;
-            } else {
-                full = first + ' ' + last;
-            }
-            //add name and id to data model [id, name]
-            model.userData.projUserWNum.push([num, full]);
-
-            //populate user dropdowns model arrays
-            model.templateData.requirements.dropdowns['Owner'] = model.userData.projUserWNum;
-            model.templateData.requirements.dropdowns['Author'] = model.userData.projUserWNum;
-
-            //Log current user role id to current user data object
-            if (model.userData.currentUser.userName == user.UserName) {
-                //TODO access customized role id to lock out users without access
-                //currently the app will allow any user to attempt to post any artifact to a project they have access to.
-                //model.userData.currentUserRoleId = user.ProjectRoleId
-
-                //all access granted
-                model.userData.currentUserRoleId = 1;
-            }
-        })
-
-        //check user role against allowed user roles
-        //if permission is correct continue along the callback chain
-        if (model.templateData.requirements.accessPermission.includes(model.userData.currentUserRoleId)) {
-            getCustomFields();
-
-        //if permission is not correct pop up a warning and do nothing
-        } else {
-            google.script.run.okWarn('You do not have the correct permissions to access this artifact');
-            //turn off ajax spinner
-            $('#js--loader').toggleClass('hidden');
-        }
-    }
-
-    //get all custom fields
-    function getCustomFields() {
-        //call server side fetch for project custom fields
-        google.script.run.withSuccessHandler(customSuccess).withFailureHandler(errorNetwork)
-            .getCustoms(model.userData.currentUser, model.templateData.currentProjectNumber, model.templateData.currentArtifactId);
-
-        //called on successful custom field fetch
-        function customSuccess(data) {
-            //assign unparsed data to data object
-            //these values are parsed later depending on function needs
-            model.templateData.requirements.customFields = data;
-            getComponentsValues();
-        }
-    }
-
-    function getComponentsValues() {
-        google.script.run.withSuccessHandler(componentSuccess).withFailureHandler(errorNetwork).getComponents(model.userData.currentUser, model.templateData.currentProjectNumber);
-
-        function componentSuccess(data) {
-            var arr = [];
-            data.map(function(data) {
-                arr.push([data.ComponentId, data.Name])
-            })
-            model.templateData.requirements.components = arr;
-
-            model.templateData.requirements.dropdowns['Components'] = model.templateData.requirements.components;
-
-            getReleasesValues();
-        }
-    }
-
-    function getReleasesValues() {
-        google.script.run.withSuccessHandler(releaseSuccess).withFailureHandler(errorNetwork).getReleases(model.userData.currentUser, model.templateData.currentProjectNumber);
-
-        function releaseSuccess(data) {
-            var arr = [];
-            console.log(data)
-            data.map(function(data) {
-                arr.push([data.ReleaseId, data.FullName])
-            })
-
-            model.templateData.requirements.releases = arr;
-
-            model.templateData.requirements.dropdowns['Version Number'] = model.templateData.requirements.releases;
-
-            getTemplate();
-            //success notification
-            google.script.run.success('User data loaded');
-        }
-    }
-
-    function getTemplate(){
-      google.script.run.withSuccessHandler(templateSuccess).withFailureHandler(errorUnk).templateLoader(model.templateData);
-
-            function templateSuccess(data) {
-              model.templateData.isTemplateLoaded = true;
-              google.script.run.success('Template loaded successfully.');
-              //turn off ajax spinner if it's on
-              $('#js--loader').hasClass('hidden') ? null : $('#js--loader').toggleClass('hidden');
-
-              //enable the send to spira button
-              $('#js--export').prop('disabled', false);
-            }
-    }
-}
-
-
-function errorPopUp(err, type) {
-    google.script.run.error(type);
-    $('#js--loader').hasClass('hidden') ? null : $('#js--loader').toggleClass('hidden');
-    console.log(err);
-}
-
-function errorNetwork(err) {
-    errorPopUp(err);
-}
-
-function errorImpExp(err) {
-    errorPopUp(err, 'impExp');
-}
-
-function errorUnk(err) {
-    errorPopUp(err, 'unk');
-}
-</script>
+</html>
