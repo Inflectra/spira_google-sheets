@@ -64,6 +64,26 @@ function init() {
     }
 }
 
+function projectAndArtifactSetter() {
+    let proj = $('#js--project option:selected').val();
+    let arti = $('#js--artifact option:selected').val();
+
+    model.userData.artifacts.map(function(artifact) {
+        if (artifact[1] === arti) {
+            model.templateData.currentArtifactName = arti;
+            model.templateData.currentArtifactId = artifact[0];
+        }
+    });
+    model.userData.projects.map(function(project) {
+        if (project[1] === proj) {
+            model.templateData.currentProjectName = proj;
+            model.templateData.currentProjectNumber = project[0];
+        }
+    });
+
+    updateData();
+}
+
 //This function updates the user info for the selected project and artifact
 //this function is called only when the `load` button is pressed.
 function updateData() {
@@ -167,16 +187,24 @@ function updateData() {
 
             model.templateData.requirements.dropdowns['Version Number'] = model.templateData.requirements.releases;
 
-            console.log(model);
-
-            //turn off ajax spinner if it's on
-            $('#js--loader').hasClass('hidden') ? null : $('#js--loader').toggleClass('hidden');
+            getTemplate();
             //success notification
             google.script.run.success('User data loaded');
-
-            //enables template button
-            $('#js--template').prop('disabled', false);
         }
+    }
+
+    function getTemplate(){
+      google.script.run.withSuccessHandler(templateSuccess).withFailureHandler(errorUnk).templateLoader(model.templateData);
+
+            function templateSuccess(data) {
+              model.templateData.isTemplateLoaded = true;
+              google.script.run.success('Template loaded successfully.');
+              //turn off ajax spinner if it's on
+              $('#js--loader').hasClass('hidden') ? null : $('#js--loader').toggleClass('hidden');
+
+              //enable the send to spira button
+              $('#js--export').prop('disabled', false);
+            }
     }
 }
 

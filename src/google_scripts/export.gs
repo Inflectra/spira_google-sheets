@@ -150,7 +150,7 @@ function exporter(data) {
         } else {
             isError = true;
             responses.push('error')
-                //set returned ID
+            //set returned ID
             xObjArr[i].idField.setValue('Error')
 
             var htmlOutput = HtmlService.createHtmlOutput('<p>Error for ' + (i + 1)  + ' of ' + (len + 1) + '</p>').setWidth(250).setHeight(75);

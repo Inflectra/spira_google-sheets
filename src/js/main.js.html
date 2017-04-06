@@ -46,6 +46,7 @@ $('#js--disconnect').click(function() {
 
             //disable template button
             $('#js--template').prop('disabled', true);
+            $('#js--artifact').prop('disabled', true);
 
             //reset artifacts drop down
             $("#js--artifact option[value='Select an Artifact']").attr('selected', 'selected');
@@ -54,32 +55,28 @@ $('#js--disconnect').click(function() {
 });
 
 $('#js--template').click(function() {
-    //get selected artifact and project
-    let artifactName = $('#js--artifact option:selected').text();
-    let projName = $('#js--project option:selected').text();
-    //get and store project number for future calls
-    let projNum = 0;
-    for (let i = 0; i < model.userData.projects.length; i++) {
-        model.userData.projects[i][1] === projName ? projNum = model.userData.projects[i][0] : null;
-    }
+    // //get selected artifact and project
+    // let artifactName = $('#js--artifact option:selected').text();
+    // let projName = $('#js--project option:selected').text();
+    // //get and store project number for future calls
+    // let projNum = 0;
+    // for (let i = 0; i < model.userData.projects.length; i++) {
+    //     model.userData.projects[i][1] === projName ? projNum = model.userData.projects[i][0] : null;
+    // }
 
-    //store variables
-    model.templateData.currentArtifactName = artifactName;
-    model.templateData.currentProjectNumber = projNum;
-    model.templateData.currentProjectName = projName;
-    console.log(model.templateData.currentArtifactName);
+    // //store variables
+    // model.templateData.currentArtifactName = artifactName;
+    // model.templateData.currentProjectNumber = projNum;
+    // model.templateData.currentProjectName = projName;
+    // console.log(model.templateData.currentArtifactName);
 
     //warn the user data will be erased
     google.script.run.withSuccessHandler(userChoice).warn();
 
     //if yes run template loader script
     function userChoice(bool) {
-        bool ? google.script.run.withSuccessHandler(templateSuccess).withFailureHandler(errorUnk).templateLoader(model.templateData) : null;
-    }
-
-    function templateSuccess(data) {
-        model.templateData.isTemplateLoaded = true;
-        google.script.run.success('Template loaded successfully.');
+        google.script.run.clearAll();
+        projectAndArtifactSetter()
     }
 });
 
@@ -140,45 +137,25 @@ $('#js--clear').click(function() {
 
 });
 
-
-$('#js--data').click(function() {
-    let proj = $('#js--project option:selected').val();
-    let arti = $('#js--artifact option:selected').val();
-
-    if (proj === 'Select a Project' || arti === 'Select an Artifact') {
-        google.script.run.okWarn('You must select a Project and an Artifact.');
+$('#js--project').change(function(e){
+    if (e.target.value === 'Select a Project'){
+        $('#js--artifact').prop('disabled', true);
+        $('#js--template').prop('disabled', true);
     } else {
-        //warn the user data will be erased
-        google.script.run.withSuccessHandler(userChoice).warn();
-
-        function userChoice(bool) {
-            if (bool){
-                google.script.run.clearAll();
-                model.userData.artifacts.map(function(artifact) {
-                    if (artifact[1] === arti) {
-                        model.templateData.currentArtifactName = arti;
-                        model.templateData.currentArtifactId = artifact[0];
-                    }
-                });
-                model.userData.projects.map(function(project) {
-                    if (project[1] === proj) {
-                        model.templateData.currentProjectName = proj;
-                        model.templateData.currentProjectNumber = project[0];
-                    }
-                });
-
-                updateData();
-            }
+        $('#js--artifact').prop('disabled', false);
+        if ( $('#js--artifact option:selected').val() !== 'Select an Artifact'){
+          $('#js--template').prop('disabled', false)
         }
     }
-
 });
 
-
-$('#js--artifact').change(function(){
-    let value = $('#js--artifact option:selected').val();
-    console.log(value);
-    });
+$('#js--artifact').change(function(e){
+    if (e.target.value === 'Select an Artifact'){
+        $('#js--template').prop('disabled', true);
+    } else {
+        $('#js--template').prop('disabled', false);
+    }
+});
 
 
 var authHelp = false

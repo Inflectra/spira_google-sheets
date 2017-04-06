@@ -7,6 +7,8 @@ All Google App Script (GAS) files are bundled by the engine at start up so any n
 
 */
 
+
+
 //App script boilerplate install function
 //opens app on install
 function onInstall(e) {
@@ -73,11 +75,13 @@ function getComponents(currentUser, proj) {
 
 //Fetch function uses Googles built in fetch api
 function fetcher(currentUser, fetcherURL) {
+
+    //google base 64 encoded string utils
     var decoded = Utilities.base64Decode(currentUser.api_key);
     var APIKEY = Utilities.newBlob(decoded).getDataAsString();
+
     //build URL from args
     //this must be changed if using mock values in development
-
     var URL = currentUser.url + fetcherURL + currentUser.userName + APIKEY;
     //set MIME type
     var init = { 'content-type': 'application/json' };
@@ -110,7 +114,7 @@ function success(string) {
 //Alert pop up for data clear warning
 function warn() {
     var ui = SpreadsheetApp.getUi();
-    var response = ui.alert('This will erase all unsaved changes. Continue?', ui.ButtonSet.YES_NO);
+    var response = ui.alert('All data on current tab will be deleted. Continue?', ui.ButtonSet.YES_NO);
 
     //returns with user choice
     if (response == ui.Button.YES) {
