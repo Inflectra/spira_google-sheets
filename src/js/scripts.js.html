@@ -7,6 +7,7 @@ These scripts build the model for the selected artifact and project
 Error pop-ups are also located here
 */
 
+//initializing function, this function is called on a log in attempt
 function init() {
     //turn on ajax spinner
     $('#js--loader').toggleClass('hidden');
@@ -26,7 +27,7 @@ function init() {
             model.userData.projects.push(projArr);
         });
 
-        //populate html project dropdown menu
+        //populate project dropdown select menu
         populateFields();
     }
 
@@ -36,7 +37,7 @@ function init() {
         $('#js--project').html('');
 
         //add first default item to dropdown menu
-        //this is also used to check if a project has been selected
+        //this is value is also used to check if a project has been selected in other functions
         let selectOption = $('<option></option>');
         selectOption.text('Select a Project');
         $('#js--project').append(selectOption);
@@ -50,7 +51,8 @@ function init() {
             })
 
         //displays the current logged in user name
-        $('#js--loggedInAs').html('Logged in as: ' + model.userData.currentUser.userName)
+        $('#js--loggedInAs').html('Logged in as: ' + model.userData.currentUser.userName);
+
         //close auth window
         $('#js--auth').hasClass('open') ? $('#js--auth').toggleClass('open') : null;
 
@@ -64,10 +66,13 @@ function init() {
     }
 }
 
+//this function sets the model data for project and artifact when the template function is launched
 function projectAndArtifactSetter() {
+    //store dropdown values
     let proj = $('#js--project option:selected').val();
     let arti = $('#js--artifact option:selected').val();
 
+    //map through model arrays to assign ids to selected values
     model.userData.artifacts.map(function(artifact) {
         if (artifact[1] === arti) {
             model.templateData.currentArtifactName = arti;
@@ -84,8 +89,9 @@ function projectAndArtifactSetter() {
     updateData();
 }
 
-//This function updates the user info for the selected project and artifact
-//this function is called only when the `load` button is pressed.
+//This function updates the user info for the selected project and artifact.
+//this function also calls the create template function after all data has been properly received
+//this function will throw an error if the user does not have the proper permissions
 function updateData() {
     //turn on ajax spinner
     $('#js--loader').toggleClass('hidden');
@@ -124,7 +130,7 @@ function updateData() {
                 //currently the app will allow any user to attempt to post any artifact to a project they have access to.
                 //model.userData.currentUserRoleId = user.ProjectRoleId
 
-                //all access granted
+                //*******all access granted***********
                 model.userData.currentUserRoleId = 1;
             }
         })
@@ -162,11 +168,15 @@ function updateData() {
 
         function componentSuccess(data) {
             var arr = [];
+            //map through component data object
             data.map(function(data) {
+                //push id and name into array
                 arr.push([data.ComponentId, data.Name])
             })
+            //assign array to data model
             model.templateData.requirements.components = arr;
 
+            //assign values to dropdown data
             model.templateData.requirements.dropdowns['Components'] = model.templateData.requirements.components;
 
             getReleasesValues();
@@ -178,21 +188,28 @@ function updateData() {
 
         function releaseSuccess(data) {
             var arr = [];
+            //map through release data object
             data.map(function(data) {
+                //collect id and name
                 arr.push([data.ReleaseId, data.FullName])
             })
 
+            //assign collected data to model
             model.templateData.requirements.releases = arr;
 
+            //assign values to model drop down data
             model.templateData.requirements.dropdowns['Version Number'] = model.templateData.requirements.releases;
 
+            //call main template function
             getTemplate();
-            //success notification
+
+            //all user data loaded, call success notification
             google.script.run.success('User data loaded');
         }
     }
 
     function getTemplate(){
+      //call server side template function
       google.script.run.withSuccessHandler(templateSuccess).withFailureHandler(errorUnk).templateLoader(model.templateData);
 
             function templateSuccess(data) {
@@ -207,6 +224,12 @@ function updateData() {
     }
 }
 
+/*
+Error functions
+
+All of these functions call a server side popup with various args, most args are the HTTPResponse objects from the `withFailureHandler` promise.
+
+*/
 
 function errorPopUp(err, type) {
     google.script.run.error(type);

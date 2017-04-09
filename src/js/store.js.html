@@ -3,13 +3,16 @@
 
 Data Model
 
-This holds all the information about the selected template layout. Future versions of this program can add their artifact to the `templateData` object.
-function(){ model = new Store }
+This holds all the information about the user and all template configuration information. Future versions of this program can add their artifact to the `templateData` object.
+
 */
 
 
-
+//This is a hack to reset the data, see below for more details.
 function modelReset(){
+   // model = new Store;
+
+   //hack
    model.userData = {
         currentUser: {
             url: '',
@@ -36,7 +39,7 @@ function Store (){
     //All current user data is stored here and is cleared on disconnect or timeout
     //TODO Timeout function
 
-    //this reset method throws an error on export **occasionally** for some reason I believe it is a google app script bug of some kind, it would be my preferred way of resetting the model data. Suggest troubleshooting in next version.
+    //this reset method throws an error on export **occasionally** for some reason, I believe it is a google app script bug of some kind, it would be my preferred way of resetting the model data. Suggest troubleshooting in next version.
     //this.resetAll = modelReset,
     this.userData = {
         currentUser: {
@@ -108,9 +111,6 @@ function Store (){
                 [13, 400]
             ],
             dropdowns: {
-                //***BUG*** API will not accept a type, always assigns `feature`.
-                //This has been corrected and will be merged in next API release.
-                //changing ids to sequential numbers will restore standard functionality
                 'Type': [
                     [-1, 'Package'],
                     [1, 'Need'],
@@ -144,8 +144,8 @@ function Store (){
     }
 }
 
+//model becomes a new instance of the data store preserving the immutability of the primary data object.
 let model = new Store;
-
 
 </script>
 

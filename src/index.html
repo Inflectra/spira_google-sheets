@@ -22,9 +22,9 @@ This is the HTML that the user sees when the app launched and the sidebar is ope
             <h3 >Import / Export Wizard</h3>
             <img src="https://www.inflectra.com/Images/ApplicationIcons/SpiraTeam-Icon.png" id="logo--top" >
         </header>
-        <h3>Help Page</h3>
-        <p>{Todo add: help information}</p>
+        <!-- help button and module for help page -->
         <button id="js--helpClose">Close</button>
+        <?!= include('help') ?>
     </div>
     <!--auth page-->
     <div class="slide-out transition open" id="js--auth">
@@ -50,6 +50,8 @@ This is the HTML that the user sees when the app launched and the sidebar is ope
                 <button  id="js--cancel">Cancel</button>
                 <button class="js--help">Help</button>
             </div>
+
+            <!-- Dev mock login data button. For developement only -->
             <button id="dev--stubs">dev</button>
 
             <a href="https://www.inflectra.com" target="_blank">
@@ -81,6 +83,7 @@ This is the HTML that the user sees when the app launched and the sidebar is ope
             </label>
         </div>
         <div class="select-section">
+            <!-- hardcoded artifact choices, all are disabled until they're developed -->
             <label >Artifact:
                 <select  id="js--artifact" disabled="true">
                     <option value="Select an Artifact">Select an Artifact</option>

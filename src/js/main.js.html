@@ -28,8 +28,10 @@ $('#js--cancel').click(function() {
 });
 
 $('#js--disconnect').click(function() {
+    //warn user that all tab data will be lost. Returns true or false
     google.script.run.withSuccessHandler(userChoice).warn();
 
+    //gets a true or false value promise from google
     function userChoice(bool) {
         if (bool) {
             //clear spreadsheet
@@ -44,92 +46,92 @@ $('#js--disconnect').click(function() {
             //clear input fields
             $('#js--url, #js--userName, #js--password').val('');
 
-            //disable template button
+            //disable template button and artifact dropdown
             $('#js--template').prop('disabled', true);
             $('#js--artifact').prop('disabled', true);
 
-            //reset artifacts drop down
+            //reset artifacts drop down to 'Select an Artifact'
             $("#js--artifact option[value='Select an Artifact']").attr('selected', 'selected');
         }
     }
 });
 
 $('#js--template').click(function() {
-    // //get selected artifact and project
-    // let artifactName = $('#js--artifact option:selected').text();
-    // let projName = $('#js--project option:selected').text();
-    // //get and store project number for future calls
-    // let projNum = 0;
-    // for (let i = 0; i < model.userData.projects.length; i++) {
-    //     model.userData.projects[i][1] === projName ? projNum = model.userData.projects[i][0] : null;
-    // }
-
-    // //store variables
-    // model.templateData.currentArtifactName = artifactName;
-    // model.templateData.currentProjectNumber = projNum;
-    // model.templateData.currentProjectName = projName;
-    // console.log(model.templateData.currentArtifactName);
-
     //warn the user data will be erased
     google.script.run.withSuccessHandler(userChoice).warn();
 
-    //if yes run template loader script
+    //gets a true or false from a google promise
     function userChoice(bool) {
+        //clear tab data
         google.script.run.clearAll();
         projectAndArtifactSetter()
     }
 });
 
 $('#js--import').click(function() {
+    //this can be reimplemented in future versions but all code related to importing artifact data is commented out.
 
-    if (model.templateData.isTemplateLoaded) {
-        google.script.run.withSuccessHandler(importSuccess).withFailureHandler(errorNetwork).importer(model.userData.currentUser);
-    } else {
-        google.script.run.noTemplate();
-    }
+    // if (model.templateData.isTemplateLoaded) {
+    //     google.script.run.withSuccessHandler(importSuccess).withFailureHandler(errorNetwork).importer(model.userData.currentUser);
+    // } else {
+    //     google.script.run.noTemplate();
+    // }
 
-    function importSuccess() {
-        google.script.run.success('Data loaded successfully.');
-    }
+    // function importSuccess() {
+    //     google.script.run.success('Data loaded successfully.');
+    // }
 
 });
 
 $('#js--export').click(function() {
+    //check that template is loaded
+    //edge case check.
     if (model.templateData.isTemplateLoaded) {
         // toggle on spinner
         $('#js--loader').toggleClass('hidden');
+        //call export function
         google.script.run.withFailureHandler(errorImpExp).withSuccessHandler(exportSuccess).exporter(model);
     } else {
+        //if no template popup a warning
         google.script.run.noTemplate();
     }
 
     function exportSuccess(data) {
+        //Array holds the error responses
         let errorArr = data[1];
 
+        //if errors present
         if (errorArr.length){
+            //log all errors to the console.
             errorArr.map(function(error){
                 console.log(error);
             })
         }
         //toggle off spinner
         $('#js--loader').toggleClass('hidden');
+        //runs the export success function, passes a boolean flag, if there are errors the flag is true.
         google.script.run.exportSuccess(data[0]);
 
     }
 });
 
 $('#js--save').click(function() {
+    //check to see if there is a template present
+    //edge case check
     if (model.templateData.isTemplateLoaded) {
         //toggle spinner on
         $('#js--loader').toggleClass('hidden');
+        //call save function
         google.script.run.withFailureHandler(errorUnk).withSuccessHandler(saveSuccess).save();
     } else {
+        //if no template popup a warning
         google.script.run.noTemplate();
     }
 
     function saveSuccess() {
         // toggle spinner off
         $('#js--loader').toggleClass('hidden');
+        //notify on success
         google.script.run.success('Sheet saved in new tab.');
     }
 });
@@ -139,16 +141,21 @@ $('#js--clear').click(function() {
     google.script.run.withSuccessHandler(userChoice).warn();
 
     function userChoice(bool) {
+        //clear all data
         bool ? google.script.run.clearAll() : null;
     }
 
 });
 
+//handles enabling or disabling dropdown fields depending on the correct values
 $('#js--project').change(function(e){
+    //if the project field has not been selected all other selected buttons are disabled
     if (e.target.value === 'Select a Project'){
         $('#js--artifact').prop('disabled', true);
         $('#js--template').prop('disabled', true);
     } else {
+        //if project has been selected check to see if artifacts have been selected already
+        //if so enable the template button as well
         $('#js--artifact').prop('disabled', false);
         if ( $('#js--artifact option:selected').val() !== 'Select an Artifact'){
           $('#js--template').prop('disabled', false)
@@ -156,6 +163,7 @@ $('#js--project').change(function(e){
     }
 });
 
+//handles enabling the template button if the artifact drop down is properly selected.
 $('#js--artifact').change(function(e){
     if (e.target.value === 'Select an Artifact'){
         $('#js--template').prop('disabled', true);
@@ -164,9 +172,10 @@ $('#js--artifact').change(function(e){
     }
 });
 
-
+//Auth screen flag for help screen logic
 var authHelp = false
 
+//opens the help page and closes the auth page if open
 $('.js--help').click(function() {
     $('#js--helpPage').toggleClass('open hidden')
     if ($('#js--auth').hasClass('open')) {
@@ -175,6 +184,7 @@ $('.js--help').click(function() {
     }
 })
 
+//closes the help page and if necessary reopens the auth page
 $('#js--helpClose').click(function() {
     $('#js--helpPage').toggleClass('open hidden');
     if (authHelp) {

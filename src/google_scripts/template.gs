@@ -4,7 +4,7 @@ Template creation function (.gs)
 
 This function creates a template based on the model template data (TODO: currently only creates requirements template)
 
-@param {object}: data model
+Takes the entire data model as an argument
 */
 
 
@@ -20,18 +20,19 @@ function templateLoader(data) {
     //shorten variable
     var dropdownColumnAssignments = data.requirements.dropdownColumnAssignments;
 
-    //set sheet name to model name
+    //set sheet (tab) name to model name
     sheet.setName(data.currentProjectName + ' - ' + data.currentArtifactName);
 
     //set heading colors and font colors for standard and custom ranges
     var stdColorRange = sheet.getRange(data.requirements.standardRange);
     stdColorRange.setBackground('#073642');
     stdColorRange.setFontColor('#fff');
+
     var cusColorRange = sheet.getRange(data.requirements.customRange);
     cusColorRange.setBackground('#1398b9');
     cusColorRange.setFontColor('#fff');
 
-    //get range for requirement numbers and set color
+    //get range for artifact ids and set color
     //color set to grey to denote unwritable field
     var reqIdRange = sheet.getRange('A3:A400');
     reqIdRange.setBackground('#a6a6a6');
@@ -41,8 +42,8 @@ function templateLoader(data) {
     customCellRange.setBackground('#a6a6a6');
 
     //unsupported fields also colored grey
-    for(var i = 0; i < data.requirements.unsupported.length; i++){
-      var column = sheet.getRange(data.requirements.unsupported[i]);
+    for (var i = 0; i < data.requirements.unsupported.length; i++) {
+        var column = sheet.getRange(data.requirements.unsupported[i]);
         column.setBackground('#a6a6a6')
     }
 
@@ -55,14 +56,14 @@ function templateLoader(data) {
     sheet.getRange(data.requirements.standardTitleRange).merge().setValue("Requirements Standard Fields").setHorizontalAlignment("center");
     sheet.getRange(data.requirements.customTitleRange).merge().setValue("Custom Fields").setHorizontalAlignment("center");
 
-    //append headings to sheet
+    //append standard column headings to sheet
     sheet.appendRow(data.requirements.headings)
 
     //set custom headings if they exist
     //pass in custom field range, data model, and custom column to be used for background coloring
     customHeadSetter(sheet.getRange(data.requirements.customHeaders), data, sheet.getRange(data.requirements.customColumnLength));
 
-    //loop through model sizes data and set columns to correct width
+    //loop through model size data and set columns to correct width
     for (var i = 0; i < data.requirements.sizes.length; i++) {
         sheet.setColumnWidth(data.requirements.sizes[i][0], data.requirements.sizes[i][1]);
     }
@@ -84,7 +85,7 @@ function templateLoader(data) {
 
         //set range to entire column excluding top two rows (offset)
         var cell = SpreadsheetApp.getActive().getRange(letter + ':' + letter).offset(2, 0);
-        //require list of values as dropdown and entered values
+        //require list of values as a dropdown
         //require value in list: list variable is from the model, true shows dropdown arrow
         //allow invalid set to false does not allow invalid entries
         var rule = SpreadsheetApp.newDataValidation().requireValueInList(list, true).setAllowInvalid(false).build();
@@ -105,9 +106,7 @@ function templateLoader(data) {
 /*
 Custom header setter function
 
-@params {range}: google range value i.e (A1:B2)
-@params {object}: template data model
-@params {range}: google range value
+Takes a range of cells, the data model and a column range as arguments
 */
 
 //Sets headings for custom fields
@@ -120,8 +119,8 @@ function customHeadSetter(range, data, col) {
     //take passed in range and only overwrite the fields if a value is present in the model
     for (var i = 0; i < fields.length; i++) {
         //get cell and offset by one column very iteration
-        var cell = range.getCell( 1, i + 1)
-        //set heading
+        var cell = range.getCell(1, i + 1)
+            //set heading and wrap text to fit
         cell.setValue('Custom Field ' + (i + 1) + '\n' + fields[i].Name).setWrap(true);
         //get column and offset (move to the right) every iteration and set background
         var column = col.offset(0, i)
@@ -132,8 +131,9 @@ function customHeadSetter(range, data, col) {
 /*
 Custom content setter function
 
-@params {range}: google range value i.e (A1:B2)
-@params {object}: template data model
+Sets the data validation rules for the custom fields
+
+Takes a range of cells and the data model as arguments.
 */
 
 //Sets dropdown and validation content for custom fields
@@ -152,9 +152,11 @@ function customContentSetter(range, data) {
             var cell = range.getCell(1, i + 1);
 
             //get column range (x : x)
+            //gets the column letter of the selected cell, i.e 'F'
             var column = columnRanger(cell);
 
             //set number only data validation
+            //must be a valid number greater than -1 (also excludes 1.1.0 style numbers)
             var rule = SpreadsheetApp.newDataValidation().requireNumberGreaterThan(-1).setAllowInvalid(false).setHelpText('Must be a positive integer').build();
             column.setDataValidation(rule);
         }
@@ -187,37 +189,51 @@ function customContentSetter(range, data) {
         //check if field matches {5: date}
         if (customs[i].CustomPropertyTypeId == 5) {
             var cell = range.getCell(1, i + 1);
+
+            //gets the column letter of the selected cell, i.e 'F'
             var column = columnRanger(cell);
+
             //set number only data validation
             var rule = SpreadsheetApp.newDataValidation().requireDate().setAllowInvalid(false).setHelpText('Must be a valid date').build();
             column.setDataValidation(rule);
         }
-        //List and MultiList
+
+        //List {6} and MultiList {7}
         if (customs[i].CustomPropertyTypeId == 6 || customs[i].CustomPropertyTypeId == 7) {
             var list = [];
+            //loop through the custom list values and push into our holder array
             for (var j = 0; j < customs[i].CustomList.Values.length; j++) {
                 list.push(customs[i].CustomList.Values[j].Name);
             }
+            //get the first cell in the column
             var cell = range.getCell(1, i + 1);
+
+            //get the top and bottom of the range i.e (A1:A200)
             var cellsTop = cell.getA1Notation();
             var cellsEnd = cell.offset(200, 0).getA1Notation();
             var column = SpreadsheetApp.getActive().getRange(cellsTop + ':' + cellsEnd);
 
+            //assign dropdowns and do not allow entries outside of the supplied list
             var rule = SpreadsheetApp.newDataValidation().requireValueInList(list, true).setAllowInvalid(false).build();
             column.setDataValidation(rule);
         }
+
         //users
         if (customs[i].CustomPropertyTypeId == 8) {
+            //loop through list of users and assign them to a holder array
             var list = [];
             var len = users.length;
             for (var j = 0; j < len; j++) {
                 list.push(users[j][1]);
             }
+
+            //get the top and bottom of the range i.e (A1:A200)
             var cell = range.getCell(1, i + 1);
             var cellsTop = cell.getA1Notation();
             var cellsEnd = cell.offset(200, 0).getA1Notation();
             var column = SpreadsheetApp.getActive().getRange(cellsTop + ':' + cellsEnd);
 
+            //assign dropdowns and do not allow entries outside of the supplied list
             var rule = SpreadsheetApp.newDataValidation().requireValueInList(list, true).setAllowInvalid(false).build();
             column.setDataValidation(rule);
         }
@@ -225,6 +241,7 @@ function customContentSetter(range, data) {
 
 }
 
+//supplies the column of the current cell
 function columnRanger(cell) {
     //get the column
     var col = cell.getColumn();

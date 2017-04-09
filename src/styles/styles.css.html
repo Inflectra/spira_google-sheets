@@ -1,12 +1,25 @@
 <style>
-/*main and utility styles--------------------------------------*/
+/*
+
+Main styles these will be bundled inline on load.
+
+*/
+
+
+
+
+/*
+********************
+main and utility styles
+********************
+*/
 
 body {
     background-color: white;
-    overflow-x: hidden;
-    overflow-y: none;
     font-family: Arial;
     height: 100vh;
+    overflow-x: hidden;
+    overflow-y: none;
     width: 100vw;
 }
 
@@ -21,15 +34,15 @@ body {
 }
 
 #logo--top {
-    width: 75px;
     height: 75px;
+    width: 75px;
 }
 
 #logo--bottom {
-    width: 100px;
-    height: 35px;
     float: right;
+    height: 35px;
     padding: 20px 10px;
+    width: 100px;
 }
 
 .hidden {
@@ -40,26 +53,27 @@ body {
     overflow: auto;
 }
 
+/*
+********************
+auth and help screen styles
+********************
+*/
 
-/*auth and help screen styles--------------------------------------------*/
 
 #js--auth {
-    position: relative;
     background-color: white;
-    z-index: 100;
-    right: -520px;
     height: 500px;
-
+    position: relative;
+    right: -520px;
+    z-index: 100;
 }
 
 #js--helpPage {
-    position: relative;
     background-color: white;
-    z-index: 1000;
-    right: -520px;
     height: 550px;
-
-
+    position: relative;
+    right: -520px;
+    z-index: 1000;
 }
 
 header {
@@ -67,9 +81,9 @@ header {
 }
 
 header h3 {
-    width: 188px;
-    text-align: center;
     padding-top: 14px;
+    text-align: center;
+    width: 188px;
 }
 
 #js--auth p {
@@ -116,18 +130,21 @@ footer .container {
 }
 
 .transition {
-    -webkit-transition: right 0.3s ease-out;
     /* Chrome 1-25, Safari 3.2+ */
-    -moz-transition: right 0.3s ease-out;
+    -webkit-transition: right 0.3s ease-out;
     /* Firefox 4-15 */
-    -o-transition: right 0.3s ease-out;
+    -moz-transition: right 0.3s ease-out;
     /* Opera 10.50–12.00 */
-    transition: right 0.3s ease-out;
+    -o-transition: right 0.3s ease-out;
     /* Chrome 26, Firefox 16+, IE 10+, Opera 12.10+ */
+    transition: right 0.3s ease-out;
 }
 
-
-/*main screen styles------------------------------------------*/
+/*
+********************
+main screen styles
+********************
+*/
 
 .main {
     position: absolute;
@@ -152,8 +169,11 @@ footer .container {
     margin-top: 38px;
 }
 
-
-/*loading screen styles-----------------------------------------*/
+/*
+********************
+loading screen styles
+********************
+*/
 
 .spinner-holder {
     background-color: rgba(191, 191, 191, 0.4);
