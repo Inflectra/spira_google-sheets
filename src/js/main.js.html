@@ -7,17 +7,17 @@ JQuery click handlers for the main view
 
 
 //dev only
-$('#dev--stubs').click(function (){
-        $('#js--url').val('https://demo.spiraservice.net/christopher-abramson');
-        $('#js--userName').val('administrator');
-        $('#js--password').val('{2AE93998-6849-4132-80F6-3C9981A7CB96}');
+$('#dev--stubs').click(function() {
+    $('#js--url').val('https://demo.spiraservice.net/christopher-abramson');
+    $('#js--userName').val('administrator');
+    $('#js--password').val('{2AE93998-6849-4132-80F6-3C9981A7CB96}');
 })
 
 $('#js--logIn').click(function() {
     //get user data from input fields and store in user data object
     model.userData.currentUser.url = $('#js--url').val();
     model.userData.currentUser.userName = $('#js--userName').val();
-    model.userData.currentUser.api_key = btoa( '&api-key=' + encodeURIComponent($('#js--password').val()) );
+    model.userData.currentUser.api_key = btoa('&api-key=' + encodeURIComponent($('#js--password').val()));
     //run init function, starts building data model
     init();
 });
@@ -101,9 +101,9 @@ $('#js--export').click(function() {
         let errorArr = data[1];
 
         //if errors present
-        if (errorArr.length){
+        if (errorArr.length) {
             //log all errors to the console.
-            errorArr.map(function(error){
+            errorArr.map(function(error) {
                 console.log(error);
             })
         }
@@ -148,24 +148,24 @@ $('#js--clear').click(function() {
 });
 
 //handles enabling or disabling dropdown fields depending on the correct values
-$('#js--project').change(function(e){
+$('#js--project').change(function(e) {
     //if the project field has not been selected all other selected buttons are disabled
-    if (e.target.value === 'Select a Project'){
+    if (e.target.value === 'Select a Project') {
         $('#js--artifact').prop('disabled', true);
         $('#js--template').prop('disabled', true);
     } else {
         //if project has been selected check to see if artifacts have been selected already
         //if so enable the template button as well
         $('#js--artifact').prop('disabled', false);
-        if ( $('#js--artifact option:selected').val() !== 'Select an Artifact'){
-          $('#js--template').prop('disabled', false)
+        if ($('#js--artifact option:selected').val() !== 'Select an Artifact') {
+            $('#js--template').prop('disabled', false)
         }
     }
 });
 
 //handles enabling the template button if the artifact drop down is properly selected.
-$('#js--artifact').change(function(e){
-    if (e.target.value === 'Select an Artifact'){
+$('#js--artifact').change(function(e) {
+    if (e.target.value === 'Select an Artifact') {
         $('#js--template').prop('disabled', true);
     } else {
         $('#js--template').prop('disabled', false);
@@ -191,5 +191,25 @@ $('#js--helpClose').click(function() {
         $('#js--auth').toggle('open');
     }
     authHelp = false;
+})
+
+//Help page click handlers
+//toggle hidden state for each of the help divs
+$('#help--login').click(function() {
+    $('#logging-in-text').toggleClass('hidden');
+    $('#main-text').hasClass('hidden') ? null : $('#main-text').toggleClass('hidden');
+    $('#entries-text').hasClass('hidden') ? null : $('#entries-text').toggleClass('hidden');
+})
+
+$('#help--main').click(function() {
+    $('#main-text').toggleClass('hidden');
+    $('#logging-in-text').hasClass('hidden') ? null : $('#logging-in-text').toggleClass('hidden');
+    $('#entries-text').hasClass('hidden') ? null : $('#entries-text').toggleClass('hidden');
+})
+
+$('#help--entries').click(function() {
+    $('#entries-text').toggleClass('hidden');
+    $('#main-text').hasClass('hidden') ? null : $('#main-text').toggleClass('hidden');
+    $('#logging-in-text').hasClass('hidden') ? null : $('#logging-in-text').toggleClass('hidden');
 })
 </script>
