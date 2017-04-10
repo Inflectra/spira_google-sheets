@@ -199,17 +199,27 @@ $('#help--login').click(function() {
     $('#logging-in-text').toggleClass('hidden');
     $('#main-text').hasClass('hidden') ? null : $('#main-text').toggleClass('hidden');
     $('#entries-text').hasClass('hidden') ? null : $('#entries-text').toggleClass('hidden');
+    $('#custom-text').hasClass('hidden') ? null : $('#custom-text').toggleClass('hidden');
 })
 
 $('#help--main').click(function() {
     $('#main-text').toggleClass('hidden');
     $('#logging-in-text').hasClass('hidden') ? null : $('#logging-in-text').toggleClass('hidden');
     $('#entries-text').hasClass('hidden') ? null : $('#entries-text').toggleClass('hidden');
+    $('#custom-text').hasClass('hidden') ? null : $('#custom-text').toggleClass('hidden');
 })
 
 $('#help--entries').click(function() {
     $('#entries-text').toggleClass('hidden');
     $('#main-text').hasClass('hidden') ? null : $('#main-text').toggleClass('hidden');
     $('#logging-in-text').hasClass('hidden') ? null : $('#logging-in-text').toggleClass('hidden');
+    $('#custom-text').hasClass('hidden') ? null : $('#custom-text').toggleClass('hidden');
+})
+
+$('#help--customs').click(function() {
+    $('#custom-text').toggleClass('hidden');
+    $('#main-text').hasClass('hidden') ? null : $('#main-text').toggleClass('hidden');
+    $('#logging-in-text').hasClass('hidden') ? null : $('#logging-in-text').toggleClass('hidden');
+    $('#entries-text').hasClass('hidden') ? null : $('#entries-text').toggleClass('hidden');
 })
 </script>
