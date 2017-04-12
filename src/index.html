@@ -19,7 +19,7 @@ This is the HTML that the user sees when the app launched and the sidebar is ope
     <!--help page-->
     <div class="slide-out transition hidden" id="js--helpPage">
         <header class="container">
-            <h3 >Import / Export Wizard</h3>
+            <h3>SpiraTeam Sheets Integration Tool</h3>
             <img src="https://www.inflectra.com/Images/ApplicationIcons/SpiraTeam-Icon.png" id="logo--top" >
         </header>
         <!-- help button and module for help page -->
@@ -29,21 +29,22 @@ This is the HTML that the user sees when the app launched and the sidebar is ope
     <!--auth page-->
     <div class="slide-out transition open" id="js--auth">
         <header class="container">
-            <h3 >Import / Export Wizard</h3>
+            <h3>SpiraTeam Sheets Integration Tool</h3>
             <img src="https://www.inflectra.com/Images/ApplicationIcons/SpiraTeam-Icon.png" id="logo--top" >
         </header>
-        <p>Please enter the information used to access your server</p>
+        <p>Please enter the information used to access your server.</p>
         <div class="container" id="auth-fields">
             <label >Spira URL:
-                <input type="text" name="URL" placeholder="SpiraTeam URL" class="urlInput" id="js--url" />
+                <input type="text" name="URL" placeholder="https://<your-site-name>.com" class="urlInput" id="js--url" />
             </label>
             <label >User Name:
                 <input type="text" name="user-name" placeholder="User Name" class="userNameInput" id="js--userName" />
             </label>
-            <label >Password:
-                <input type="password" name="password" placeholder="Password" class="passwordInput" id="js--password" />
+            <label >RSS Token:
+                <input type="password" name="password" placeholder="{your-RSS-Token}" class="passwordInput" id="js--password" />
             </label>
         </div>
+        <p>The RSS token can be generated from your 'My Profile' screen inside SpiraTeam. For further assistance contact your system administrator</p>
         <footer >
             <div class="container">
                 <button class="action" id="js--logIn">Log In</button>
@@ -52,7 +53,7 @@ This is the HTML that the user sees when the app launched and the sidebar is ope
             </div>
 
             <!-- Dev mock login data button. For developement only -->
-            <button id="dev--stubs">dev</button>
+            <button id="dev--stubs" class=''>dev</button>
 
             <a href="https://www.inflectra.com" target="_blank">
                 <img src="https://financesonline.com/uploads/2014/11/spirateam-logo.jpg" id="logo--bottom" >
@@ -66,7 +67,7 @@ This is the HTML that the user sees when the app launched and the sidebar is ope
     <!--main screen-->
     <div class="main">
         <header class="container">
-            <h3 >Import / Export Wizard</h3>
+            <h3>SpiraTeam Sheets Integration Tool</h3>
             <img src="https://www.inflectra.com/Images/ApplicationIcons/SpiraTeam-Icon.png" id="logo--top" >
         </header>
         <small id="js--loggedInAs"></small>
@@ -106,6 +107,9 @@ This is the HTML that the user sees when the app launched and the sidebar is ope
             <button  id="js--import" disabled="true">Import from SpiraTeam</button>
             <button  id="js--export" disabled="true">Send to SpiraTeam</button>
         </div>
+        <a href="https://www.inflectra.com" target="_blank">
+            <img src="https://financesonline.com/uploads/2014/11/spirateam-logo.jpg" id="logo--bottom" >
+        </a>
     </div>
     <!--Jquery-->
     <script src="https://code.jquery.com/jquery-3.1.1.slim.min.js" integrity="sha256-/SIrNqv8h6QGKDuNoLGA4iret+kyesCkHGzVUUV0shc=" crossorigin="anonymous"></script>
