@@ -62,9 +62,11 @@ $('#js--template').click(function() {
 
     //gets a true or false from a google promise
     function userChoice(bool) {
-        //clear tab data
-        google.script.run.clearAll();
-        projectAndArtifactSetter()
+        if(bool){
+            //clear tab data
+            google.script.run.clearAll();
+            projectAndArtifactSetter();
+        }
     }
 });
 
@@ -128,11 +130,14 @@ $('#js--save').click(function() {
         google.script.run.noTemplate();
     }
 
-    function saveSuccess() {
-        // toggle spinner off
+    function saveSuccess(bool) {
+        // toggle spinner off on yes or no from popup dialog
         $('#js--loader').toggleClass('hidden');
-        //notify on success
-        google.script.run.success('Sheet saved in new tab.');
+
+        if(bool){
+            //notify on success
+            google.script.run.success('Sheet saved in new tab.');
+        }
     }
 });
 
