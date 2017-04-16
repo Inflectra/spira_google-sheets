@@ -13,9 +13,9 @@ The add-on runs using the Google App Script Engine so all of the files must be d
 The easiest path is to simply create a new Google App Script project and import all of the downloaded files, then you may test the code in an IDE-like test environment.
 
 
-##Usage
+## Usage
 You must have a SpiraTeam® account with the proper permissions to utilize this app. For usage instructions reference the SpiraTeam® documentation located at [SpiraTeam® Product Add-ons and Downloads](https://www.inflectra.com/SpiraTest/Downloads.aspx#ImportTools).
 
-##License
+## License
 
 
