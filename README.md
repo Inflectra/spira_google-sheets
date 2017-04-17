@@ -4,7 +4,7 @@ The web-based interface of SpiraTeam® is ideal for creating and managing requir
 
 To simplify this task  we’ve created a Google sheets add-on for SpiraTeam® that can export requirements, test cases, test steps and incidents from a generated spreadsheet into SpiraTeam®.
 
-<!-- ![SpiraTeam Google Sheets Integration Screenshot](spira_google-sheets/src/assets/screenshots) -->
+![SpiraTeam Google Sheets Integration Screenshot](/spira_google-sheets/src/assets/screenshots/STGSIGithubScreenshot.png)
 
 
 ## Installation
@@ -16,6 +16,6 @@ The easiest path is to simply create a new Google App Script project and import 
 ## Usage
 You must have a SpiraTeam® account with the proper permissions to utilize this app. For usage instructions reference the SpiraTeam® documentation located at [SpiraTeam® Product Add-ons and Downloads](https://www.inflectra.com/SpiraTest/Downloads.aspx#ImportTools).
 
-## License
+
 
 
