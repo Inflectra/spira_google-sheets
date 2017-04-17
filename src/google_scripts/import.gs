@@ -1,3 +1,15 @@
+/*
+
+Import function
+
+This function was initially started and abandoned as the project goals were realigned.
+
+Everything listed below can be safely removed and or modified without effecting the codebase.
+
+*/
+
+
+
 //import function, basic for now
 //stretch goal is to have this as a useful import
 function importer(currentUser, data){

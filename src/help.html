@@ -1,0 +1,172 @@
+
+<h3>Quick Help Guide</h3>
+<div id='help-header'>
+<div>
+  <button id="help--login">Logging In</button>
+  <button id="help--main">Main</button>
+  </div>
+  <div>
+  <button id="help--entries">Accepted values</button>
+  <button id="help--customs">Custom Field values</button>
+  </div>
+</div>
+
+<div id="logging-in-text" class="hidden">
+    <h4>Logging into SpiraTeam</h4>
+    <ol>
+        <li>
+            <p><b>Enter your SpiraTeam URL</b></p>
+            <small>Please enter the web address that you use to access SpiraTeam® in your browser. This is usually of the form 'http://(hostname)/SpiraTeam'. Make sure that you remove any suffixes from the address (e.g. Default.aspx)</small>
+        </li>
+        <li>
+            <p><b>Enter your user name</b></p>
+            <small>
+                Please enter the user name you use to log in to SpiraTeam. (Not Case Sensitive)
+            </small>
+        </li>
+        <li>
+            <p><b>Enter your RSS token</b></p>
+            <small> Please enter your RSS token including the curly braces i.e {ExampleRSS}</small>
+        </li>
+    </ol>
+</div>
+<div id="main-text" class="hidden">
+    <h4>User Interface and Buttons</h4>
+    <ul>
+        <li>
+            <p><b>Help</b></p>
+            <small>This button will open an in app help menu with basic functionality information.</small>
+        </li>
+        <li>
+            <p><b>Disconnect</b></p>
+            <small>This button will close your connection with SpiraTeam and clear your data. WARNING: your spreadsheet data will be erased as a security measure on disconnect.</small>
+        </li>
+        <li>
+            <p><b>Clear</b></p>
+            <small>This button will clear the contents of your current tab including the template.</small>
+        </li>
+        <li>
+            <p><b>Projects</b></p>
+            <small>Select a project from the menu.</small>
+        </li>
+        <li>
+            <p><b>Artifacts</b></p>
+            <small>Select an artifact from the menu.</small>
+        </li>
+        <li>
+            <p><b>Load Template</b></p>
+            <small>Click this button to generate the template for the project and artifact you’ve selected.</small>
+        </li>
+        <li>
+            <p><b>Save</b></p>
+            <small>Clicking this button will save your current spreadsheet information into a new tab.</small>
+        </li>
+        <li>
+            <p><b>Send to SpiraTeam</b></p>
+            <small>This button will send your properly formatted data to SpiraTeam and it will be added to the current project.</small>
+        </li>
+        <li>
+            <p><b>Import to SpiraTeam</b></p>
+            <small><em>Not Currently Supported</em></small>
+        </li>
+    </ul>
+</div>
+<div id="entries-text" class="hidden">
+    <h4>Requirement Standard Field values</h4>
+    <ul>
+        <li>
+            <p><b>Requirement Id</b></p>
+            <small>Stores the id of the item. This field should be left blank when sending data to SpiraTeam</small>
+        </li>
+        <li>
+            <p><b>Requirement Name</b></p>
+            <small><b>**Required Field** </b>The name of the item. This field supports indentation, add a “ > “ symbol to indicate how the items in the artifact hierarchy are organized.</small>
+            <pre>
+            Example:
+            Item 1
+            >Item 2 child of item 1
+            >Item 3 child of item 1
+            >>Item 4 child of item 3
+            </pre>
+        </li>
+        <li>
+            <p><b>Requirement Description</b></p>
+            <small>Long description of the item. Rich text is available through HTML tags.</small>
+        </li>
+        <li>
+            <p><b>Release Version</b></p>
+            <small>Select a release/iteration from the menu.</small>
+        </li>
+        <li>
+            <p><b>Type</b></p>
+            <small><b>**Required Field** </b>Select the type from the menu.</small>
+        </li>
+        <li>
+            <p><b>Importance</b></p>
+            <small>Assign the importance/priority from the menu.</small>
+        </li>
+        <li>
+            <p><b>Status</b></p>
+            <small>Select the status from the menu.</small>
+        </li>
+        <li>
+            <p><b>Estimate</b></p>
+            <small>The estimate in points for the item</small>
+        </li>
+        <li>
+            <p><b>Author</b></p>
+            <small>Select a user from the menu.</small>
+        </li>
+        <li>
+            <p><b>Owner</b></p>
+            <small>Select a user from the menu.</small>
+        </li>
+        <li>
+            <p><b>Component</b></p>
+            <small>Select a component from the menu.</small>
+        </li>
+        <li>
+            <p><b>Linked Requirements</b></p>
+            <small><em>Not Currently Supported</em></small>
+        </li>
+        <li>
+            <p><b>Comment</b></p>
+            <small><em>Not Currently Supported</em></small>
+        </li>
+    </ul>
+</div>
+<div id="custom-text" class="hidden">
+    <h4>Custom Field Entries</h4>
+    <ul>
+        <li>
+            <p><b>Text</b></p>
+            <small>Enter any text. Include HTML tags for rich text.</small>
+        </li>
+        <li>
+            <p><b>Decimal</b></p>
+            <small>Enter any positive number.</small>
+        </li>
+        <li>
+            <p><b>Integer</b></p>
+            <small>Enter a non-decimal number.</small>
+        </li>
+        <li>
+            <p><b>Date</b></p>
+            <small>Enter the date in any standard format.</small>
+        </li>
+        <li>
+            <p><b>List</b></p>
+            <small>Select a value from the dropdown list.</small>
+        </li>
+        <li>
+            <p><b>MultiList</b></p>
+            <small>Select an item from the provided list. <em>This is not currently supported</em></small>
+        </li>
+        <li>
+            <p><b>User</b></p>
+            <small>Select a name from the list of users</small>
+        </li>
+
+  </ul>
+</div>
+

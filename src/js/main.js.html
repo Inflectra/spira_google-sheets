@@ -1,284 +1,231 @@
 <script>
-function errorPopUp(err, type){
-  google.script.run.error(type);
-   $('#js--loader').hasClass('hidden') ? null : $('#js--loader').toggleClass('hidden');
-   console.log(err);
-}
+/*
 
-function errorNetwork(err){
-  errorPopUp(err);
-  }
+JQuery click handlers for the main view
 
-function errorImpExp(err){
-  errorPopUp(err, 'impExp');
-  }
-
-function errorUnk(err){
-  errorPopUp(err, 'unk');
-  }
-
-function updateData() {
-    //call google function to load user data
-    //default project number hard coded to one on load
-    google.script.run.withSuccessHandler(userSuccess).withFailureHandler(errorNetwork).getUsers(model.userData.currentUser, model.templateData.currentProjectNumber)
-
-    function userSuccess(users) {
-        //clear old values
-        model.userData.projUsers = [];
-        model.userData.projUserWNum = [];
-        //map through user obj and assign names
-        users.map(user => {
-            let num = user.UserId;
-            let first = user.FirstName;
-            let last = user.LastName;
-            let full = '';
-                //check to see if middle names exist
-            if (user.MiddleInitial) {
-                let middle = user.MiddleInitial;
-                full = first + ' ' + middle + ' ' + last;
-            } else {
-                full = first + ' ' + last;
-            }
-            model.userData.projUsers.push(full);
-            model.userData.projUserWNum.push([num, full]);
-
-            //populate user dropdowns
-            model.templateData.requirements.dropdowns['Owner'] = model.userData.projUsers;
-            model.templateData.requirements.dropdowns['Author'] = model.userData.projUsers;
-        })
-        getCustomFields();
-    }
+*/
 
 
-    function getCustomFields() {
-        google.script.run.withSuccessHandler(customSuccess).withFailureHandler(errorNetwork)
-            .getCustoms(model.userData.currentUser, model.templateData.currentProjectNumber, model.templateData.currentArtifactId);
-
-        function customSuccess(data) {
-            model.templateData.requirements.customFields = data;
-            console.log(data);
-            //turn off ajax spinner if it's on
-            $('#js--loader').hasClass('hidden') ? null : $('#js--loader').toggleClass('hidden');
-            //success notification
-            google.script.run.success('User data loaded');
-        }
-    }
-}
-
-function init() {
-    //turn on ajax spinner
-    $('#js--loader').toggleClass('hidden');
-
-    google.script.run.withSuccessHandler(projectSuccess).withFailureHandler(errorNetwork).getProjects(model.userData.currentUser);
-
-    function projectSuccess(projects) {
-        //clear projects user data
-        model.userData.projects = [];
-        //store project data
-        projects.map(function(project) {
-            let projArr = [project.ProjectId, project.Name];
-            model.userData.projects.push(projArr);
-        });
-        //get userdata and customfields....needs a better name
-        updateData();
-        //populate fields
-        populateFields();
-    }
-
-    function populateFields() {
-        //clear project drop down in case of reload
-        $('#js--project').html('');
-        //populate projects drop down
-        model.userData.projects.map(proj => {
-                let option = $('<option></option>');
-                option.attr('value', proj[1]);
-                option.text(proj[1]);
-                $('#js--project').append(option);
-            })
-            //close auth window if open
-        $('#js--auth').hasClass('open') ? $('#js--auth').removeClass('open') : null;
-
-        google.script.run.success('Projects loaded');
-    }
-}
+//dev only
+//fill in mock values and uncomment the `dev` button on the index page for easy log in values in development
+//$('#dev--stubs').click(function() {
+//    $('#js--url').val('');
+//    $('#js--userName').val('');
+//    $('#js--password').val('');
+//})
 
 $('#js--logIn').click(function() {
     //get user data from input fields and store in user data object
     model.userData.currentUser.url = $('#js--url').val();
     model.userData.currentUser.userName = $('#js--userName').val();
-    model.userData.currentUser.api_key = '&api-key=' + encodeURIComponent($('#js--password').val())
-    console.log(model.userData.currentUser);
+    model.userData.currentUser.api_key = btoa('&api-key=' + encodeURIComponent($('#js--password').val()));
+    //run init function, starts building data model
     init();
 });
 
-$('#js--cancel').click(function(){
+$('#js--cancel').click(function() {
     //clear input field values
     $('#js--url, #js--userName, #js--password').val('');
 });
 
-$('#js--disconnect').click(function(){
+$('#js--disconnect').click(function() {
+    //warn user that all tab data will be lost. Returns true or false
     google.script.run.withSuccessHandler(userChoice).warn();
 
+    //gets a true or false value promise from google
     function userChoice(bool) {
         if (bool) {
             //clear spreadsheet
             google.script.run.clearAll();
+
             //display log-in page
             $('#js--auth').toggleClass('open');
-            isTemplateLoaded = false;
-            //clear model user values
-            model.userData.currentUser.url = '';
-            model.userData.currentUser.userName = '';
-            model.userData.currentUser.API_KEY = '';
+
+            //clear data model
+            modelReset();
+
             //clear input fields
             $('#js--url, #js--userName, #js--password').val('');
+
+            //disable template button and artifact dropdown
+            $('#js--template').prop('disabled', true);
+            $('#js--artifact').prop('disabled', true);
+
+            //reset artifacts drop down to 'Select an Artifact'
+            $("#js--artifact option[value='Select an Artifact']").attr('selected', 'selected');
         }
     }
 });
 
-$('#js--template').click(function(){
-    //get selected artifact and project
-    let artifactName = $('#js--artifact option:selected').text();
-    let projName = $('#js--project option:selected').text();
-        //get and store project number for future calls
-    let projNum = 0;
-    for (let i = 0; i < model.userData.projects.length; i++) {
-        model.userData.projects[i][1] === projName ? projNum = model.userData.projects[i][0] : null;
-    }
-
-    //store variables
-    model.templateData.currentArtifactName = artifactName;
-    model.templateData.currentProjectNumber = projNum;
-    model.templateData.currentProjectName = projName;
-    console.log(model.templateData.currentArtifactName);
-
+$('#js--template').click(function() {
     //warn the user data will be erased
     google.script.run.withSuccessHandler(userChoice).warn();
 
-    //if yes run template loader script
+    //gets a true or false from a google promise
     function userChoice(bool) {
-        bool ? google.script.run.withSuccessHandler(templateSuccess).withFailureHandler(errorUnk).templateLoader(model.templateData) : null;
-    }
-
-    function templateSuccess(data) {
-        model.templateData.isTemplateLoaded = true;
-        google.script.run.success('Template loaded successfully.');
+        if(bool){
+            //clear tab data
+            google.script.run.clearAll();
+            projectAndArtifactSetter();
+        }
     }
 });
 
-$('#js--import').click(function(){
+$('#js--import').click(function() {
+    //this can be reimplemented in future versions but all code related to importing artifact data is commented out.
 
-    if (model.templateData.isTemplateLoaded) {
-        google.script.run.withSuccessHandler(importSuccess).withFailureHandler(errorNetwork).importer(model.userData.currentUser);
-    } else {
-        google.script.run.noTemplate();
-    }
+    // if (model.templateData.isTemplateLoaded) {
+    //     google.script.run.withSuccessHandler(importSuccess).withFailureHandler(errorNetwork).importer(model.userData.currentUser);
+    // } else {
+    //     google.script.run.noTemplate();
+    // }
 
-    function importSuccess() {
-        google.script.run.success('Data loaded successfully.');
-    }
+    // function importSuccess() {
+    //     google.script.run.success('Data loaded successfully.');
+    // }
 
 });
 
-$('#js--export').click(function(){
+$('#js--export').click(function() {
+    //check that template is loaded
+    //edge case check.
     if (model.templateData.isTemplateLoaded) {
         // toggle on spinner
         $('#js--loader').toggleClass('hidden');
+        //call export function
         google.script.run.withFailureHandler(errorImpExp).withSuccessHandler(exportSuccess).exporter(model);
     } else {
+        //if no template popup a warning
         google.script.run.noTemplate();
     }
 
     function exportSuccess(data) {
+        //Array holds the error responses
+        let errorArr = data[1];
+
+        //if errors present
+        if (errorArr.length) {
+            //log all errors to the console.
+            errorArr.map(function(error) {
+                console.log(error);
+            })
+        }
         //toggle off spinner
         $('#js--loader').toggleClass('hidden');
-        google.script.run.exportSuccess(data[1]);
-        console.log(data);
+        //runs the export success function, passes a boolean flag, if there are errors the flag is true.
+        google.script.run.exportSuccess(data[0]);
+
     }
 });
 
-$('#js--save').click(function(){
+$('#js--save').click(function() {
+    //check to see if there is a template present
+    //edge case check
     if (model.templateData.isTemplateLoaded) {
         //toggle spinner on
         $('#js--loader').toggleClass('hidden');
+        //call save function
         google.script.run.withFailureHandler(errorUnk).withSuccessHandler(saveSuccess).save();
     } else {
+        //if no template popup a warning
         google.script.run.noTemplate();
     }
 
-    function saveSuccess() {
-        // toggle spinner off
+    function saveSuccess(bool) {
+        // toggle spinner off on yes or no from popup dialog
         $('#js--loader').toggleClass('hidden');
-        google.script.run.success('Sheet saved in new tab.');
+
+        if(bool){
+            //notify on success
+            google.script.run.success('Sheet saved in new tab.');
+        }
     }
 });
 
-$('#js--clear').click(function(){
+$('#js--clear').click(function() {
     //warn that data will be erased
     google.script.run.withSuccessHandler(userChoice).warn();
 
     function userChoice(bool) {
+        //clear all data
         bool ? google.script.run.clearAll() : null;
     }
 
 });
-//variables for select dropdown values
-let prevProj,
-    prevArti;
 
-//on click this stores the current values of the dropdown menus for
-//...recall if the user decides not to change the fields.
-$('#js--artifact, #js--project').click(function(e){
-    prevProj = $('#js--project option:selected');
-    prevArti = $('#js--artifact option:selected');
-})
-
+//handles enabling or disabling dropdown fields depending on the correct values
 $('#js--project').change(function(e) {
-    //stores new dropdown value
-    let newProj = e.target.value;
-    //warn the user data will be erased
-    google.script.run.withSuccessHandler(userChoice).warn();
-
-    function userChoice(bool) {
-        if (bool){
-            google.script.run.clearAll();
-            model.userData.projects.map(function(proj){
-                if (proj[1] === newProj){
-                    model.templateData.currentProjectName = newProj;
-                    model.templateData.currentProjectNumber = proj[0];
-                }
-            });
-            updateData();
-        } else {
-            console.log(prevProj[0]);
-            //sets the select dropdown back to the original value if the user says no
-            prevProj[0].selected = true;
+    //if the project field has not been selected all other selected buttons are disabled
+    if (e.target.value === 'Select a Project') {
+        $('#js--artifact').prop('disabled', true);
+        $('#js--template').prop('disabled', true);
+    } else {
+        //if project has been selected check to see if artifacts have been selected already
+        //if so enable the template button as well
+        $('#js--artifact').prop('disabled', false);
+        if ($('#js--artifact option:selected').val() !== 'Select an Artifact') {
+            $('#js--template').prop('disabled', false)
         }
     }
-
 });
 
+//handles enabling the template button if the artifact drop down is properly selected.
 $('#js--artifact').change(function(e) {
-     //TODO add change artifact functionality
+    if (e.target.value === 'Select an Artifact') {
+        $('#js--template').prop('disabled', true);
+    } else {
+        $('#js--template').prop('disabled', false);
+    }
 });
 
+//Auth screen flag for help screen logic
 var authHelp = false
 
-$('.js--help').click(function(){
-  $('#js--helpPage').toggleClass('open hidden')
- if ( $('#js--auth').hasClass('open') ) {
-   authHelp = true;
-   $('#js--auth').toggle('open');
- }
+//opens the help page and closes the auth page if open
+$('.js--help').click(function() {
+    $('#js--helpPage').toggleClass('open hidden')
+    if ($('#js--auth').hasClass('open')) {
+        authHelp = true;
+        $('#js--auth').toggle('open');
+    }
 })
 
-$('#js--helpClose').click(function(){
-  $('#js--helpPage').toggleClass('open hidden');
-  if (authHelp){
-    $('#js--auth').toggle('open');
-  }
-  authHelp = false;
+//closes the help page and if necessary reopens the auth page
+$('#js--helpClose').click(function() {
+    $('#js--helpPage').toggleClass('open hidden');
+    if (authHelp) {
+        $('#js--auth').toggle('open');
+    }
+    authHelp = false;
 })
 
+//Help page click handlers
+//toggle hidden state for each of the help divs
+$('#help--login').click(function() {
+    $('#logging-in-text').toggleClass('hidden');
+    $('#main-text').hasClass('hidden') ? null : $('#main-text').toggleClass('hidden');
+    $('#entries-text').hasClass('hidden') ? null : $('#entries-text').toggleClass('hidden');
+    $('#custom-text').hasClass('hidden') ? null : $('#custom-text').toggleClass('hidden');
+})
 
+$('#help--main').click(function() {
+    $('#main-text').toggleClass('hidden');
+    $('#logging-in-text').hasClass('hidden') ? null : $('#logging-in-text').toggleClass('hidden');
+    $('#entries-text').hasClass('hidden') ? null : $('#entries-text').toggleClass('hidden');
+    $('#custom-text').hasClass('hidden') ? null : $('#custom-text').toggleClass('hidden');
+})
+
+$('#help--entries').click(function() {
+    $('#entries-text').toggleClass('hidden');
+    $('#main-text').hasClass('hidden') ? null : $('#main-text').toggleClass('hidden');
+    $('#logging-in-text').hasClass('hidden') ? null : $('#logging-in-text').toggleClass('hidden');
+    $('#custom-text').hasClass('hidden') ? null : $('#custom-text').toggleClass('hidden');
+})
+
+$('#help--customs').click(function() {
+    $('#custom-text').toggleClass('hidden');
+    $('#main-text').hasClass('hidden') ? null : $('#main-text').toggleClass('hidden');
+    $('#logging-in-text').hasClass('hidden') ? null : $('#logging-in-text').toggleClass('hidden');
+    $('#entries-text').hasClass('hidden') ? null : $('#entries-text').toggleClass('hidden');
+})
 </script>

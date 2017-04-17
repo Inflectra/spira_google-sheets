@@ -19,39 +19,44 @@ This is the HTML that the user sees when the app launched and the sidebar is ope
     <!--help page-->
     <div class="slide-out transition hidden" id="js--helpPage">
         <header class="container">
-            <h3 class="">Import / Export Wizard</h3>
-            <img src="https://www.inflectra.com/Images/ApplicationIcons/SpiraTeam-Icon.png" id="logo--top" class="">
+            <h3>SpiraTeam Google Sheets Integration</h3>
+            <img src="https://files.inflectra.com/google/sheets/spira_icon.png" id="logo--top" >
         </header>
-        <h3>Help Page</h3>
-        <p>{Todo add: help information}</p>
+        <!-- help button and module for help page -->
         <button id="js--helpClose">Close</button>
+        <?!= include('help') ?>
     </div>
     <!--auth page-->
     <div class="slide-out transition open" id="js--auth">
         <header class="container">
-            <h3 class="">Import / Export Wizard</h3>
-            <img src="https://www.inflectra.com/Images/ApplicationIcons/SpiraTeam-Icon.png" id="logo--top" class="">
+            <h3>SpiraTeam Google Sheets Integration</h3>
+            <img src="https://files.inflectra.com/google/sheets/spira_icon.png" id="logo--top" >
         </header>
-        <p>Please enter the information used to access your server</p>
+        <p>Please enter the information used to access your server.</p>
         <div class="container" id="auth-fields">
-            <label class="">Spira URL:
-                <input type="text" name="URL" placeholder="SpiraTeam URL" class="urlInput" id="js--url" />
+            <label >Spira URL:
+                <input type="text" name="URL" placeholder="https://<your-site-name>.com" class="urlInput" id="js--url" />
             </label>
-            <label class="">User Name:
+            <label >User Name:
                 <input type="text" name="user-name" placeholder="User Name" class="userNameInput" id="js--userName" />
             </label>
-            <label class="">Password:
-                <input type="password" name="password" placeholder="Password" class="passwordInput" id="js--password" />
+            <label >RSS Token:
+                <input type="password" name="password" placeholder="{Your-RSS-Token}" class="passwordInput" id="js--password" />
             </label>
         </div>
-        <footer class="">
+        <p>The RSS token can be generated from your 'My Profile' screen inside SpiraTeam. For further assistance contact your system administrator</p>
+        <footer >
             <div class="container">
                 <button class="action" id="js--logIn">Log In</button>
-                <button class="" id="js--cancel">Cancel</button>
+                <button  id="js--cancel">Cancel</button>
                 <button class="js--help">Help</button>
             </div>
+
+            <!-- Dev mock login data button. For developement only -->
+            <!-- <button id="dev--stubs" class=''>dev</button> -->
+
             <a href="https://www.inflectra.com" target="_blank">
-                <img src="https://financesonline.com/uploads/2014/11/spirateam-logo.jpg" id="logo--bottom" class="">
+                <img src="https://files.inflectra.com/google/sheets/by_inflectra.png" id="logo--bottom" >
             </a>
         </footer>
     </div>
@@ -62,43 +67,57 @@ This is the HTML that the user sees when the app launched and the sidebar is ope
     <!--main screen-->
     <div class="main">
         <header class="container">
-            <h3 class="">Import / Export Wizard</h3>
-            <img src="https://www.inflectra.com/Images/ApplicationIcons/SpiraTeam-Icon.png" id="logo--top" class="">
+            <h3>SpiraTeam Google Sheets Integration</h3>
+            <img src="https://files.inflectra.com/google/sheets/spira_icon.png" id="logo--top" >
         </header>
+        <small id="js--loggedInAs"></small>
         <div class="container" id="buttons-top">
             <button class="js--help">Help</button>
-            <button id="js--disconnect" class="">Disconnect</button>
+            <button id="js--disconnect" >Disconnect</button>
+            <button  id="js--clear">Clear</button>
         </div>
         <div class="select-section">
-            <label class="">Projects:
-                <select class="" id="js--project">
+            <label >Projects:
+                <select  id="js--project">
                     <!--aysnc populated -->
                 </select>
             </label>
         </div>
         <div class="select-section">
-            <label class="">Artifact:
-                <select class="" id="js--artifact" disabled>
-                    <option value="requirements">Requirements</option>
-                    <option value="test_cases">Test Cases</option>
+            <!-- hardcoded artifact choices, all are disabled until they're developed -->
+            <label >Artifact:
+                <select  id="js--artifact" disabled="true">
+                    <option value="Select an Artifact">Select an Artifact</option>
+                    <option value="Requirement">Requirements</option>
+                    <option value="Test Case" disabled="true">Test Case</option>
+                    <option value="Incident" disabled="true">Incident</option>
+                    <option value="Release" disabled="true">Release</option>
+                    <option value="Test Run" disabled="true">Test Run</option>
+                    <option value="Task" disabled="true">Task</option>
+                    <option value="Test Step" disabled="true">Test Step</option>
+                    <option value="Test Set" disabled="true">Test Set</option>
                 </select>
             </label>
         </div>
         <div class="container" id="buttons-mid">
-            <button id="js--template" class="">Load Template</button>
-            <button id="js--save" class="">Save</button>
+            <button id="js--template" disabled="true" >Load Template</button>
+            <button id="js--save" >Save</button>
         </div>
         <div class="row justify-content-around" id="buttons-bottom">
-            <button class="" id="js--import" disabled>Import from SpiraTeam</button>
-            <button class="" id="js--export">Send to SpiraTeam</button>
-            <button class="" id="js--clear">Clear</button>
+            <button  id="js--import" disabled="true">Import from SpiraTeam</button>
+            <button  id="js--export" disabled="true">Send to SpiraTeam</button>
         </div>
+        <a href="https://www.inflectra.com" target="_blank">
+            <img src="https://files.inflectra.com/google/sheets/by_inflectra.png" id="logo--bottom" >
+        </a>
     </div>
     <!--Jquery-->
     <script src="https://code.jquery.com/jquery-3.1.1.slim.min.js" integrity="sha256-/SIrNqv8h6QGKDuNoLGA4iret+kyesCkHGzVUUV0shc=" crossorigin="anonymous"></script>
     <!--user agent modules-->
     <?!= include('store.js') ?>
     <?!= include('main.js') ?>
+    <?!= include('scripts.js') ?>
+
 </body>
 
 </html>
