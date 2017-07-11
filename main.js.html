@@ -1,18 +1,22 @@
 <script>
 /*
-
+*******
 JQuery click handlers for the main view
-
+*******
 */
+
 
 
 //dev only
 //fill in mock values and uncomment the `dev` button on the index page for easy log in values in development
-//$('#dev--stubs').click(function() {
-//    $('#js--url').val('');
-//    $('#js--userName').val('');
-//    $('#js--password').val('');
-//})
+
+$('#dev--stubs').click(function() {
+    $('#js--url').val('https://demo.spiraservice.net/gettingstarted');
+    $('#js--userName').val('administrator');
+    $('#js--password').val('{B84053DE-3615-44D6-9B8C-662AD36459BF}');
+})
+// END of dev only
+
 
 $('#js--logIn').click(function() {
     //get user data from input fields and store in user data object
@@ -134,7 +138,7 @@ $('#js--save').click(function() {
     function saveSuccess(bool) {
         // toggle spinner off on yes or no from popup dialog
         $('#js--loader').toggleClass('hidden');
-
+        
         if(bool){
             //notify on success
             google.script.run.success('Sheet saved in new tab.');

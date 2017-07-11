@@ -193,11 +193,11 @@ function save() {
 
         //copy tab to current spreadsheet in new tab
         sheet.copyTo(destination);
-
+      
         //returns true to que success popup
         return true;
     } else {
-        //returns false to ignore success popup
+        //returns false to ignore success popup     
         return false;
     }
 }
