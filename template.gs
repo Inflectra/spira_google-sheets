@@ -16,19 +16,20 @@ function templateLoader(data) {
     //select open file and select first tab
     var spreadSheet = SpreadsheetApp.getActiveSpreadsheet();
     var sheet = spreadSheet.getSheets()[0];
+    var artifactData = data[data.currentArtifactName];
 
     //shorten variable
-    var dropdownColumnAssignments = data.requirements.dropdownColumnAssignments;
+    var dropdownColumnAssignments = artifactData.dropdownColumnAssignments;
 
     //set sheet (tab) name to model name
     sheet.setName(data.currentProjectName + ' - ' + data.currentArtifactName);
 
     //set heading colors and font colors for standard and custom ranges
-    var stdColorRange = sheet.getRange(data.requirements.standardRange);
+    var stdColorRange = sheet.getRange(artifactData.standardRange);
     stdColorRange.setBackground('#073642');
     stdColorRange.setFontColor('#fff');
 
-    var cusColorRange = sheet.getRange(data.requirements.customRange);
+    var cusColorRange = sheet.getRange(artifactData.customRange);
     cusColorRange.setBackground('#1398b9');
     cusColorRange.setFontColor('#fff');
 
@@ -42,8 +43,8 @@ function templateLoader(data) {
     customCellRange.setBackground('#a6a6a6');
 
     //unsupported fields also colored grey
-    for (var i = 0; i < data.requirements.unsupported.length; i++) {
-        var column = sheet.getRange(data.requirements.unsupported[i]);
+    for (var i = 0; i < artifactData.unsupported.length; i++) {
+        var column = sheet.getRange(artifactData.unsupported[i]);
         column.setBackground('#a6a6a6')
     }
 
@@ -53,23 +54,23 @@ function templateLoader(data) {
     protection.setWarningOnly(true);
 
     //set title range and center
-    sheet.getRange(data.requirements.standardTitleRange).merge().setValue("Requirements Standard Fields").setHorizontalAlignment("center");
-    sheet.getRange(data.requirements.customTitleRange).merge().setValue("Custom Fields").setHorizontalAlignment("center");
+    sheet.getRange(artifactData.standardTitleRange).merge().setValue("Standard Fields").setHorizontalAlignment("center");
+    sheet.getRange(artifactData.customTitleRange).merge().setValue("Custom Fields").setHorizontalAlignment("center");
 
     //append standard column headings to sheet
-    sheet.appendRow(data.requirements.headings)
+    sheet.appendRow(artifactData.headings)
 
     //set custom headings if they exist
     //pass in custom field range, data model, and custom column to be used for background coloring
-    customHeadSetter(sheet.getRange(data.requirements.customHeaders), data, sheet.getRange(data.requirements.customColumnLength));
+    customHeadSetter(sheet.getRange(artifactData.customHeaders), data, sheet.getRange(artifactData.customColumnLength));
 
     //loop through model size data and set columns to correct width
-    for (var i = 0; i < data.requirements.sizes.length; i++) {
-        sheet.setColumnWidth(data.requirements.sizes[i][0], data.requirements.sizes[i][1]);
+    for (var i = 0; i < artifactData.sizes.length; i++) {
+        sheet.setColumnWidth(artifactData.sizes[i][0], artifactData.sizes[i][1]);
     }
 
     //main custom field function assigns type, dropdowns, datavalidation etc. See function for details.
-    customContentSetter(sheet.getRange(data.requirements.customCellRange), data)
+    customContentSetter(sheet.getRange(artifactData.customCellRange), data)
 
     //loop through dropdowns model data
     for (var i = 0; i < dropdownColumnAssignments.length; i++) {
@@ -79,8 +80,8 @@ function templateLoader(data) {
         //array that will hold dropdown values
         var list = [];
         //loop through 2D arrays and form standard array
-        for (var j = 0; j < data.requirements.dropdowns[name].length; j++) {
-            list.push(data.requirements.dropdowns[name][j][1])
+        for (var j = 0; j < artifactData.dropdowns[name].length; j++) {
+            list.push(artifactData.dropdowns[name][j][1])
         }
 
         //set range to entire column excluding top two rows (offset)
@@ -91,10 +92,34 @@ function templateLoader(data) {
         var rule = SpreadsheetApp.newDataValidation().requireValueInList(list, true).setAllowInvalid(false).build();
         cell.setDataValidation(rule);
     }
+  
+  
+  
+    //loop through dropdowns Users model data
+    for (var i = 0; i < dropdownUserColumnAssignments.length; i++) {
+        //variable assignment from dropdown object
+        var letter = dropdownUserColumnAssignments[i][1];
+        //array that will hold dropdown values
+        var list = [];
+        //loop through 2D arrays and form standard array
+        for (var j = 0; j < data.projectUsers.length; j++) {
+            list.push(data.projectUsers[j][1])
+        }
+
+        //set range to entire column excluding top two rows (offset)
+        var cell = SpreadsheetApp.getActive().getRange(letter + ':' + letter).offset(2, 0);
+        //require list of values as a dropdown
+        //require value in list: list variable is from the model, true shows dropdown arrow
+        //allow invalid set to false does not allow invalid entries
+        var rule = SpreadsheetApp.newDataValidation().requireValueInList(list, true).setAllowInvalid(false).build();
+        cell.setDataValidation(rule);
+    }
+  
+  
     //loop through data model
     //set 'number only' columns to only accept numbers
-    for (var i = 0; i < data.requirements.requireNumberFields.length; i++) {
-        var colLetter = data.requirements.requireNumberFields[i];
+    for (var i = 0; i < artifactData.requireNumberFields.length; i++) {
+        var colLetter = artifactData.requireNumberFields[i];
         var column = SpreadsheetApp.getActive().getRange(colLetter + ':' + colLetter);
         //does not allow negative numbers or non-integers
         //sets a tooltip explaining cell rules

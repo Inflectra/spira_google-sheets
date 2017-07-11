@@ -69,22 +69,18 @@ function init() {
 //this function sets the model data for project and artifact when the template function is launched
 function projectAndArtifactSetter() {
     //store dropdown values
-    let proj = $('#js--project option:selected').val();
-    let arti = $('#js--artifact option:selected').val();
+    let projectDropdownVal = $('#js--project option:selected').val();
+    let artifactDropdownVal = $('#js--artifact option:selected').val();
 
     //map through model arrays to assign ids to selected values
-    model.userData.artifacts.map(function(artifact) {
-        if (artifact[1] === arti) {
-            model.templateData.currentArtifactName = arti;
-            model.templateData.currentArtifactId = artifact[0];
-        }
-    });
-    model.userData.projects.map(function(project) {
-        if (project[1] === proj) {
-            model.templateData.currentProjectName = proj;
-            model.templateData.currentProjectNumber = project[0];
-        }
-    });
+    let artifactSelected = model.userData.artifacts.filter(function(artifact) {return artifact.name == artifactDropdownVal})[0];
+    let projectSelected = model.userData.projects.filter(function(project) {return project[1] == projectDropdownVal})[0];
+    
+    model.templateData.currentArtifactName = artifactSelected.name;
+    model.templateData.currentArtifactId = artifactSelected.id;
+    
+    model.templateData.currentProjectName = projectSelected[1];
+    model.templateData.currentProjectNumber = projectSelected[0];
 
     updateData();
 }
@@ -120,9 +116,8 @@ function updateData() {
             //add name and id to data model [id, name]
             model.userData.projUserWNum.push([num, full]);
 
-            //populate user dropdowns model arrays
-            model.templateData.requirements.dropdowns['Owner'] = model.userData.projUserWNum;
-            model.templateData.requirements.dropdowns['Author'] = model.userData.projUserWNum;
+            //populate user dropdowns model arrays into the templateData for [id, name]
+            model.templateData.projectUsers.push([num, full]);
 
             //Log current user role id to current user data object
             if (model.userData.currentUser.userName == user.UserName) {
