@@ -154,9 +154,73 @@ function updateData() {
             //assign unparsed data to data object
             //these values are parsed later depending on function needs
             model.templateData.requirements.customFields = data;
-            getComponentsValues();
+            getAuthor();
         }
     }
+    
+    function getAuthor(){
+    //call server for username values
+    google.script.run.withSuccessHandler(authorSuccess).withFailureHandler(errorNetwork).getUsers(model.userData.currentUser, model.templateData.currentProjectNumber);
+    
+    function authorSuccess(data) {
+    
+    var arr = [];
+    data.map(function(data){
+    arr.push([data.AuthorId, data.FullName])
+    })
+    
+    model.templateData.requirements.authors = arr;
+    
+    model.templateData.requirements.dropdowns ['Author'] = model.templateData.requirements.authors;
+    
+    
+    getOwner();
+    
+    google.script.run.success('User data loaded');
+    
+    
+    
+    }
+
+    
+    
+    
+    }
+    
+        function getOwner(){
+    //call server for username values
+    google.script.run.withSuccessHandler(authorSuccess).withFailureHandler(errorNetwork).getUsers(model.userData.currentUser, model.templateData.currentProjectNumber);
+    
+    function authorSuccess(data) {
+    
+    var arr = [];
+    data.map(function(data){
+    arr.push([data.AuthorId, data.FullName])
+    })
+    
+    model.templateData.requirements.authors = arr;
+    
+    model.templateData.requirements.dropdowns ['Owner'] = model.templateData.requirements.authors;
+    
+    
+    getComponentsValues();
+    
+    google.script.run.success('User data loaded');
+    
+    
+    
+    }
+
+    
+    
+    
+    }
+    
+    
+    
+    
+    
+    
 
     function getComponentsValues() {
         google.script.run.withSuccessHandler(componentSuccess).withFailureHandler(errorNetwork).getComponents(model.userData.currentUser, model.templateData.currentProjectNumber);

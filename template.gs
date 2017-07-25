@@ -82,6 +82,7 @@ function templateLoader(data) {
         //loop through 2D arrays and form standard array
         for (var j = 0; j < artifactData.dropdowns[name].length; j++) {
             list.push(artifactData.dropdowns[name][j][1])
+          
         }
 
         //set range to entire column excluding top two rows (offset)
@@ -94,27 +95,7 @@ function templateLoader(data) {
     }
   
   
-  
-    //loop through dropdowns Users model data
-    for (var i = 0; i < dropdownUserColumnAssignments.length; i++) {
-        //variable assignment from dropdown object
-        var letter = dropdownUserColumnAssignments[i][1];
-        //array that will hold dropdown values
-        var list = [];
-        //loop through 2D arrays and form standard array
-        for (var j = 0; j < data.projectUsers.length; j++) {
-            list.push(data.projectUsers[j][1])
-        }
-
-        //set range to entire column excluding top two rows (offset)
-        var cell = SpreadsheetApp.getActive().getRange(letter + ':' + letter).offset(2, 0);
-        //require list of values as a dropdown
-        //require value in list: list variable is from the model, true shows dropdown arrow
-        //allow invalid set to false does not allow invalid entries
-        var rule = SpreadsheetApp.newDataValidation().requireValueInList(list, true).setAllowInvalid(false).build();
-        cell.setDataValidation(rule);
-    }
-  
+ 
   
     //loop through data model
     //set 'number only' columns to only accept numbers
