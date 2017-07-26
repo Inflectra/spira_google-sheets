@@ -72,6 +72,7 @@ function projectAndArtifactSetter() {
     let projectDropdownVal = $('#js--project option:selected').val();
     let artifactDropdownVal = $('#js--artifact option:selected').val();
 
+
     //map through model arrays to assign ids to selected values
     let artifactSelected = model.userData.artifacts.filter(function(artifact) {return artifact.name == artifactDropdownVal})[0];
     let projectSelected = model.userData.projects.filter(function(project) {return project[1] == projectDropdownVal})[0];
@@ -230,7 +231,7 @@ function updateData() {
             //map through component data object
             data.map(function(data) {
                 //push id and name into array
-                arr.push([data.ComponentId, data.Name])
+                arr.push([data.ComponentId, data.FullName])
             })
             //assign array to data model
             model.templateData.requirements.components = arr;
@@ -250,7 +251,7 @@ function updateData() {
             //map through release data object
             data.map(function(data) {
                 //collect id and name
-                arr.push([data.ReleaseId, data.FullName])
+                arr.push([data.ReleaseId, data.Name])
             })
 
             //assign collected data to model
