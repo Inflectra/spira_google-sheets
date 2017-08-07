@@ -262,19 +262,19 @@ function Store (){
             unsupported: [],
             accessPermission: [1,2],
             standardTitleRange: 'A1:L1',
-            customTitleRange: 'M1:AQ1',
+            customTitleRange: 'O1:AQ1',
             requireNumberFields: ['J','K'],
             editableRange: 'A3:AP3',
-            standardRange: 'A1:L2',
-            customRange: 'M1:AQ2',
-            customHeaders: 'M2:AQ2',
-            customColumnLength: 'M3:N200',
+            standardRange: 'A1:N2',
+            customRange: 'O1:AQ2',
+            customHeaders: 'O2:AQ2',
+            customColumnLength: 'O3:N200',
             cellRange: 'A3:L3',
-            customCellRange: 'M3:AQ3',
+            customCellRange: 'O3:AQ3',
             cellRangeLength: 42,
             components: [],
             releases: [],
-            headings: [,
+            headings: [, 
             'Task Id', 
             'Task Name',
             'Task Description', 
@@ -294,9 +294,10 @@ function Store (){
              dropdownColumnAssignments:  [
               
 
-              ['Type', 'e'],
-              ['Priority', 'f'],
-              ['Status', 'a']
+              ['Type', 'f'],
+              ['Priority', 'g'],
+              ['Status', 'l'],
+              ['Progress', 'h']
                 ],
                  sizes: [
                 [1, 100],
@@ -335,6 +336,16 @@ function Store (){
                     [2, '2 - High'],
                     [3, '3 - Medium'],
                     [4, '4 - Low']
+                
+                
+                ],
+                
+                    'Progress': [
+                    [1, 'Not Started'],
+                    [2, 'Starting Late'],
+                    [3, 'On Schedule'],
+                    [4, 'Running Late'],
+                    [5, 'Completed']
                 
                 
                 ]

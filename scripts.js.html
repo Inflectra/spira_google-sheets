@@ -177,19 +177,21 @@ function updateData() {
     function getAuthor(){
     //call server for username values
  
-google.script.run.withSuccessHandler(authorSuccess).withFailureHandler(errorNetwork).getUsers(model.userData.currentUser, model.templateData.currentProjectNumber);
+google.script.run.withSuccessHandler(authorSuccess).withFailureHandler(errorNetwork).
+getUsers(model.userData.currentUser, model.templateData.currentProjectNumber, model.templateData.currentArtifact);
     
     function authorSuccess(data) {
     
     var arr = [];
     // map through Author data object
     data.map(function(data){
+
     // push data onto array
     arr.push([data.AuthorId, data.FullName])
     })
     
     // assign array to model data    
-    model.templateData.requirements.authors = arr;
+    model.templateData.projectUsers = arr;
     
 
     
@@ -253,6 +255,7 @@ google.script.run.withSuccessHandler(authorSuccess).withFailureHandler(errorNetw
             var arr = [];
             //map through component data object
             data.map(function(data) {
+    
                 //push id and name into array
                 arr.push([data.ComponentId, data.FullName])
             })
@@ -260,7 +263,7 @@ google.script.run.withSuccessHandler(authorSuccess).withFailureHandler(errorNetw
             model.templateData.requirements.components = arr;
 
             //assign values to dropdown data
-            model.templateData.requirements.dropdowns['Components'] = model.templateData.requirements.components;
+            model.templateData.requirements.dropdowns['Components'] = arr;
 
             getReleasesValues();
         }
