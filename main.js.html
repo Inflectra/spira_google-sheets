@@ -11,10 +11,10 @@ JQuery click handlers for the main view
 //fill in mock values and uncomment the `dev` button on the index page for easy log in values in development
 
 $('#dev--stubs').click(function() {
-    $('#js--url').val('https://demo.spiraservice.net/gettingstarted');
+    $('#js--url').val('https://demo.spiraservice.net/oluwatoni');
     $('#js--userName').val('administrator');
-    $('#js--password').val('{B84053DE-3615-44D6-9B8C-662AD36459BF}');
-})
+    $('#js--password').val('{8323528B-5A45-4FD9-867C-82BF7194EF4F}');
+});
 // END of dev only
 
 
@@ -62,15 +62,23 @@ $('#js--disconnect').click(function() {
 });
 
 $('#js--template').click(function() {
+    
     //warn the user data will be erased
     google.script.run.withSuccessHandler(userChoice).warn();
-
     //gets a true or false from a google promise
     function userChoice(bool) {
         if(bool){
-            //clear tab data
-            google.script.run.clearAll();
-            projectAndArtifactSetter();
+          //clear tab data
+          google.script.run.clearAll();
+          //set artifact equal to the artifact from the dropdown
+          var artifact = $("js--artifact").value;
+           if (artifact == 'tasks') {
+              alert('yay!');
+              return
+            } else {
+              alert(artifact);
+              projectAndArtifactSetter();
+            }
         }
     }
 });

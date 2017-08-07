@@ -8,6 +8,10 @@ Error pop-ups are also located here
 */
 
 //initializing function, this function is called on a log in attempt
+
+
+
+
 function init() {
     //turn on ajax spinner
     $('#js--loader').toggleClass('hidden');
@@ -23,6 +27,7 @@ function init() {
         //map through and store project data
         projects.map(function(project) {
             let projArr = [project.ProjectId, project.Name];
+           
             //store project data [id , name]
             model.userData.projects.push(projArr);
         });
@@ -72,6 +77,7 @@ function projectAndArtifactSetter() {
     let projectDropdownVal = $('#js--project option:selected').val();
     let artifactDropdownVal = $('#js--artifact option:selected').val();
 
+
     //map through model arrays to assign ids to selected values
     let artifactSelected = model.userData.artifacts.filter(function(artifact) {return artifact.name == artifactDropdownVal})[0];
     let projectSelected = model.userData.projects.filter(function(project) {return project[1] == projectDropdownVal})[0];
@@ -81,7 +87,6 @@ function projectAndArtifactSetter() {
     
     model.templateData.currentProjectName = projectSelected[1];
     model.templateData.currentProjectNumber = projectSelected[0];
-
     updateData();
 }
 
@@ -89,18 +94,21 @@ function projectAndArtifactSetter() {
 //this function also calls the create template function after all data has been properly received
 //this function will throw an error if the user does not have the proper permissions
 function updateData() {
+
     //turn on ajax spinner
     $('#js--loader').toggleClass('hidden');
 
     //call google function to load project users data
+    
     google.script.run.withSuccessHandler(userSuccess).withFailureHandler(errorNetwork).getUsers(model.userData.currentUser, model.templateData.currentProjectNumber)
-
+    
     //parses user data on successful fetch
     function userSuccess(users) {
         //clear old values
         model.userData.projUserWNum = [];
         //map through user obj and assign names
         users.map(user => {
+      
             let num = user.UserId;
             let first = user.FirstName;
             let last = user.LastName;
@@ -112,7 +120,9 @@ function updateData() {
                 full = first + ' ' + middle + ' ' + last;
             } else {
                 full = first + ' ' + last;
+             
             }
+            
             //add name and id to data model [id, name]
             model.userData.projUserWNum.push([num, full]);
 
@@ -128,23 +138,28 @@ function updateData() {
                 //*******all access granted***********
                 model.userData.currentUserRoleId = 1;
             }
+            
         })
 
         //check user role against allowed user roles
         //if permission is correct continue along the callback chain
         if (model.templateData.requirements.accessPermission.includes(model.userData.currentUserRoleId)) {
             getCustomFields();
+           
 
         //if permission is not correct pop up a warning and do nothing
         } else {
+       
             google.script.run.okWarn('You do not have the correct permissions to access this artifact');
             //turn off ajax spinner
             $('#js--loader').toggleClass('hidden');
         }
     }
-
+    
     //get all custom fields
+
     function getCustomFields() {
+    alert("attempting to get custom fields")
         //call server side fetch for project custom fields
         google.script.run.withSuccessHandler(customSuccess).withFailureHandler(errorNetwork)
             .getCustoms(model.userData.currentUser, model.templateData.currentProjectNumber, model.templateData.currentArtifactId);
@@ -154,9 +169,82 @@ function updateData() {
             //assign unparsed data to data object
             //these values are parsed later depending on function needs
             model.templateData.requirements.customFields = data;
-            getComponentsValues();
+         
+            getAuthor();
         }
     }
+    
+    function getAuthor(){
+    //call server for username values
+ 
+google.script.run.withSuccessHandler(authorSuccess).withFailureHandler(errorNetwork).getUsers(model.userData.currentUser, model.templateData.currentProjectNumber);
+    
+    function authorSuccess(data) {
+    
+    var arr = [];
+    // map through Author data object
+    data.map(function(data){
+    // push data onto array
+    arr.push([data.AuthorId, data.FullName])
+    })
+    
+    // assign array to model data    
+    model.templateData.requirements.authors = arr;
+    
+
+    
+    // assign values to dropdown data 
+    model.templateData.requirements.dropdowns['Author'] = arr;
+    
+    getOwner();
+    
+    }
+
+    
+
+    
+    
+    
+    }
+    
+        function getOwner(){
+    //call server for username values
+    google.script.run.withSuccessHandler(authorSuccess).withFailureHandler(errorNetwork).getUsers(model.userData.currentUser, model.templateData.currentProjectNumber);
+    
+    function authorSuccess(data) {
+    
+    var arr = [];
+    //map through Author data object
+    data.map(function(data){
+    // push data onto array
+    arr.push([data.AuthorId, data.FullName])
+    })
+    // assign array to data model
+    model.templateData.requirements.authors = arr;
+
+    
+    //assign values to dropdown data 
+    model.templateData.requirements.dropdowns['Owner'] = arr;
+    
+    
+    getComponentsValues();
+    
+    google.script.run.success('User data loaded');
+    
+    
+    
+    }
+
+    
+    
+    
+    }
+    
+    
+    
+    
+    
+    
 
     function getComponentsValues() {
         google.script.run.withSuccessHandler(componentSuccess).withFailureHandler(errorNetwork).getComponents(model.userData.currentUser, model.templateData.currentProjectNumber);
@@ -166,7 +254,7 @@ function updateData() {
             //map through component data object
             data.map(function(data) {
                 //push id and name into array
-                arr.push([data.ComponentId, data.Name])
+                arr.push([data.ComponentId, data.FullName])
             })
             //assign array to data model
             model.templateData.requirements.components = arr;
@@ -180,13 +268,15 @@ function updateData() {
 
     function getReleasesValues() {
         google.script.run.withSuccessHandler(releaseSuccess).withFailureHandler(errorNetwork).getReleases(model.userData.currentUser, model.templateData.currentProjectNumber);
+        
 
         function releaseSuccess(data) {
+
             var arr = [];
             //map through release data object
             data.map(function(data) {
                 //collect id and name
-                arr.push([data.ReleaseId, data.FullName])
+                arr.push([data.ReleaseId, data.Name])
             })
 
             //assign collected data to model
