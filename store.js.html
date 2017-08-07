@@ -62,9 +62,6 @@ function Store (){
         ]
     },
     //Template data, can be used to populate all artifact templates
-    
-
-    
     this.templateData = {
         currentProjectName: '',
         currentProjectNumber: '',
@@ -88,7 +85,6 @@ function Store (){
             customCellRange: 'N3:AQ3',
             cellRangeLength: 43,
             components: [],
-            authors: [],
             releases: [],
             dropdownColumnAssignments: [
                 ['Version Number', 'd'],
@@ -174,6 +170,8 @@ function Store (){
                 ]
             },
             customFields: []
+            
+            
         },
         releases: {
             unsupported: ['L3:L400', 'M3:M400'],
@@ -190,6 +188,7 @@ function Store (){
             customCellRange: 'M3:AP3',
             cellRangeLength: 42,
             components: [],
+            releases: [],
             dropdownColumnAssignments: [
                 ['Status', 'e'],
                 ['Type', 'f']
@@ -257,10 +256,96 @@ function Store (){
             },
             customFields: []
         },
+        
+                   tasks : {
            
+            unsupported: ['L3:L400', 'M3:M400'],
+            accessPermission: [1,2],
+            standardTitleRange: 'A1:L1',
+            customTitleRange: 'M1:AP1',
+            requireNumberFields: ['J','K'],
+            editableRange: 'A3:AP3',
+            standardRange: 'A1:L2',
+            customRange: 'M1:AP2',
+            customHeaders: 'M2:AP2',
+            customColumnLength: 'M3:N200',
+            cellRange: 'A3:L3',
+            customCellRange: 'M3:AP3',
+            cellRangeLength: 42,
+            components: [],
+            releases: [],
+            headings: [,
+            'Task Id', 
+            'Task Name',
+            'Task Description', 
+            'Release/Itteration',
+            'Type', 
+            'Priority',
+            'Progress',
+            'Owner',
+            'Requirement',
+            'Creator',
+            'Status', 
+            'Start Date',
+            'End Date',
+            'Folder'
+      ],
+           
+             dropdownColumnAssignments:  [
+              
+              ['Type', 'e'],
+              ['Priority', 'f'],
+              ['Status', 'g']
+                ],
+                 sizes: [
+                [1, 100],
+                [2, 250],
+                [3, 350],
+                [4, 250],
+                [5, 250],
+                [6, 100],
+                [7, 100],
+                [8, 100],
+                [9, 100],
+                [11, 200],
+                [12, 200],
+                [13, 400]
+            ],
+           
+            dropdowns: {
+                'Type': [
+                    [1, 'Development'],
+                    [2, 'Infrastructure'],
+                    [3, 'Management'],
+                    [4, 'Other'],
+                    [5, 'Testing']
+                ],
+                'Status': [
+                    [1, 'Not Started'],
+                    [2, 'In Progress'], 
+                    [3, 'Completed'],
+                    [4, 'Completed'],
+                    [5, 'Blocked'],
+                    [6, 'Deferred']
+                ],
+                
+                'Priority': [
+                    [1, '1 - Critical'],
+                    [2, '2 - High'],
+                    [3, '3 - Medium'],
+                    [4, '4 - Low']
+                
+                
+                ]
+                
+            },
+
+                
+            customFields: []
+   }
+   
+        
     }
-    
-    
 }
 
 //model becomes a new instance of the data store preserving the immutability of the primary data object.

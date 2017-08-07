@@ -62,15 +62,23 @@ $('#js--disconnect').click(function() {
 });
 
 $('#js--template').click(function() {
+    
     //warn the user data will be erased
     google.script.run.withSuccessHandler(userChoice).warn();
-
     //gets a true or false from a google promise
     function userChoice(bool) {
         if(bool){
-            //clear tab data
-            google.script.run.clearAll();
-            projectAndArtifactSetter();
+          //clear tab data
+          google.script.run.clearAll();
+          //set artifact equal to the artifact from the dropdown
+          var artifact = $("js--artifact").value;
+           if (artifact == 'tasks') {
+              alert('yay!');
+              return
+            } else {
+              alert(artifact);
+              projectAndArtifactSetter();
+            }
         }
     }
 });
