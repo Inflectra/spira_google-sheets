@@ -170,72 +170,40 @@ function updateData() {
             //these values are parsed later depending on function needs
             model.templateData.requirements.customFields = data;
          
-            getAuthor();
+            getOwner();
         }
     }
-    
-    function getAuthor(){
-    //call server for username values
- 
-google.script.run.withSuccessHandler(authorSuccess).withFailureHandler(errorNetwork).
-getUsers(model.userData.currentUser, model.templateData.currentProjectNumber, model.templateData.currentArtifact);
-    
-    function authorSuccess(data) {
-    
-    var arr = [];
-    // map through Author data object
-    data.map(function(data){
 
-    // push data onto array
-    arr.push([data.AuthorId, data.FullName])
-    })
-    
-    // assign array to model data    
-    model.templateData.projectUsers = arr;
-    
-
-    
-    // assign values to dropdown data 
-    model.templateData.requirements.dropdowns['Author'] = arr;
-    
-    getOwner();
-    
-    }
-
-    
-
-    
-    
-    
-    }
     
         function getOwner(){
     //call server for username values
-    google.script.run.withSuccessHandler(authorSuccess).withFailureHandler(errorNetwork).getUsers(model.userData.currentUser, model.templateData.currentProjectNumber);
+ google.script.run.withSuccessHandler(authorSuccess).withFailureHandler(errorNetwork).getUsers(model.userData.currentUser, model.templateData.currentProjectNumber);
     
-    function authorSuccess(data) {
+  function authorSuccess(data) {
     
-    var arr = [];
-    //map through Author data object
-    data.map(function(data){
-    // push data onto array
-    arr.push([data.AuthorId, data.FullName])
-    })
-    // assign array to data model
-    model.templateData.requirements.authors = arr;
+ var arr = [];
+   //map through Author data object
+  data.map(function(data){
+ //push data onto array
+   arr.push([data.AuthorId, data.FullName])
+   })
+     //assign array to data model
+   model.templateData.requirements.authors = arr;
 
     
-    //assign values to dropdown data 
-    model.templateData.requirements.dropdowns['Owner'] = arr;
+   // assign values to dropdown data 
+  model.templateData.requirements.dropdowns['Owner'] = arr;
+  
+  model.templateData.requirements.dropdowns['Author'] = arr;
+    
+   
+  getComponentsValues();
+    
+  google.script.run.success('User data loaded');
     
     
-    getComponentsValues();
     
-    google.script.run.success('User data loaded');
-    
-    
-    
-    }
+  }
 
     
     
