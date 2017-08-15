@@ -19,7 +19,7 @@ $('#dev--stubs').click(function() {
 
 
 $('#js--logIn').click(function() {
-alert ("!");
+
     //get user data from input fields and store in user data object
     model.userData.currentUser.url = $('#js--url').val();
     model.userData.currentUser.userName = $('#js--userName').val();
@@ -74,10 +74,10 @@ $('#js--template').click(function() {
           //set artifact equal to the artifact from the dropdown
           var artifact = $("js--artifact").value;
            if (artifact == 'tasks') {
-              alert('yay!');
+              ('yay!');
               return
             } else {
-              alert(artifact);
+              (artifact);
               projectAndArtifactSetter();
             }
         }

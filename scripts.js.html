@@ -159,7 +159,7 @@ function updateData() {
     //get all custom fields
 
     function getCustomFields() {
-    alert("attempting to get custom fields")
+ 
         //call server side fetch for project custom fields
         google.script.run.withSuccessHandler(customSuccess).withFailureHandler(errorNetwork)
             .getCustoms(model.userData.currentUser, model.templateData.currentProjectNumber, model.templateData.currentArtifactId);
