@@ -73,8 +73,9 @@ $('#js--template').click(function() {
           google.script.run.clearAll();
           //set artifact equal to the artifact from the dropdown
           var artifact = $("js--artifact").value;
-           if (artifact == 'tasks') {
-            }
+           if (artifact == 'tasks') {}
+      projectAndArtifactSetter();
+            
         }
     }
 });
