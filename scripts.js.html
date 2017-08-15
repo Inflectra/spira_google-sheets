@@ -169,41 +169,37 @@ function updateData() {
             //assign unparsed data to data object
             //these values are parsed later depending on function needs
             model.templateData.requirements.customFields = data;
-         
-            getOwner();
+             
+             getOwner();
         }
     }
 
-    
-        function getOwner(){
+  function getOwner(){
     //call server for username values
- google.script.run.withSuccessHandler(authorSuccess).withFailureHandler(errorNetwork).getUsers(model.userData.currentUser, model.templateData.currentProjectNumber);
+    google.script.run.withSuccessHandler(authorSuccess).withFailureHandler(errorNetwork).getUsers(model.userData.currentUser, model.templateData.currentProjectNumber);
     
-  function authorSuccess(data) {
+    function authorSuccess(data) {
     
- var arr = [];
-   //map through Author data object
-  data.map(function(data){
- //push data onto array
-   arr.push([data.AuthorId, data.FullName])
-   })
-     //assign array to data model
-   model.templateData.requirements.authors = arr;
-
+    var arr = [];
+    //map through Author data object
+    data.map(function(data){
+    // push data onto array
+    arr.push([data.AuthorId, data.FullName])
+    })
     
-   // assign values to dropdown data 
-  model.templateData.requirements.dropdowns['Owner'] = arr;
-  
-  model.templateData.requirements.dropdowns['Author'] = arr;
+    //assign values to dropdown data 
+    model.templateData.requirements.dropdowns['Owner'] = arr;
+    model.templateData.tasks.dropdowns['Owner'] = arr;
+    model.templateData.requirements.dropdowns['Author'] = arr;
     
-   
-  getComponentsValues();
     
-  google.script.run.success('User data loaded');
+    getComponentsValues();
+    
+    google.script.run.success('User data loaded');
     
     
     
-  }
+    }
 
     
     
@@ -223,7 +219,6 @@ function updateData() {
             var arr = [];
             //map through component data object
             data.map(function(data) {
-    
                 //push id and name into array
                 arr.push([data.ComponentId, data.FullName])
             })
@@ -232,6 +227,7 @@ function updateData() {
 
             //assign values to dropdown data
             model.templateData.requirements.dropdowns['Components'] = arr;
+            console.log ( arr);
 
             getReleasesValues();
         }
@@ -252,10 +248,13 @@ function updateData() {
 
             //assign collected data to model
             model.templateData.requirements.releases = arr;
+         
 
             //assign values to model drop down data
             model.templateData.requirements.dropdowns['Version Number'] = model.templateData.requirements.releases;
-
+            model.templateData.tasks.dropdowns['Version Number'] = model.templateData.requirements.releases;
+         
+         
             //call main template function
             getTemplate();
 

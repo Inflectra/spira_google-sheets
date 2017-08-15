@@ -17,6 +17,7 @@ function templateLoader(data) {
     var spreadSheet = SpreadsheetApp.getActiveSpreadsheet();
     var sheet = spreadSheet.getSheets()[0];
     var artifactData = data[data.currentArtifactName];
+    console.log ('Jimmy' + artifactData);
 
     //shorten variable
     var dropdownColumnAssignments = artifactData.dropdownColumnAssignments;
@@ -82,6 +83,7 @@ function templateLoader(data) {
         //loop through 2D arrays and form standard array
         for (var j = 0; j < artifactData.dropdowns[name].length; j++) {
             list.push(artifactData.dropdowns[name][j][1])
+
           
         }
 
@@ -124,7 +126,7 @@ function customHeadSetter(range, data, col) {
     //loop through model custom fields data
     //take passed in range and only overwrite the fields if a value is present in the model
     for (var i = 0; i < fields.length; i++) {
-        //get cell and offset by one column very iteration
+        //get cell and offset by one column every iteration
         var cell = range.getCell(1, i + 1)
             //set heading and wrap text to fit
         cell.setValue('Custom Field ' + (i + 1) + '\n' + fields[i].Name).setWrap(true);

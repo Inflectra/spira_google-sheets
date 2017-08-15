@@ -30,7 +30,8 @@ function modelReset(){
           {name: 'testRuns', id: 5},
           {name: 'tasks', id: 6},
           {name: 'testSteps', id: 7},
-          {name: 'testSets', id: 8}
+          {name: 'testSets', id: 8},
+          {name: 'testSetsss', id: 9}
         ]
     };
 }
@@ -262,19 +263,18 @@ function Store (){
             unsupported: [],
             accessPermission: [1,2],
             standardTitleRange: 'A1:L1',
-            customTitleRange: 'O1:AQ1',
-            requireNumberFields: ['J','K'],
+            customTitleRange: 'M1:AQ1',
             editableRange: 'A3:AP3',
-            standardRange: 'A1:N2',
-            customRange: 'O1:AQ2',
-            customHeaders: 'O2:AQ2',
-            customColumnLength: 'O3:N200',
+            standardRange: 'A1:L2',
+            customRange: 'M1:AQ2',
+            customHeaders: 'M2:AQ2',
+            customColumnLength: 'M3:N200',
             cellRange: 'A3:L3',
-            customCellRange: 'O3:AQ3',
+            customCellRange: 'M3:AQ3',
             cellRangeLength: 42,
             components: [],
             releases: [],
-            headings: [, 
+            headings: [
             'Task Id', 
             'Task Name',
             'Task Description', 
@@ -291,14 +291,17 @@ function Store (){
             'Folder'
       ],
            
-             dropdownColumnAssignments:  [
-              
-
-              ['Type', 'f'],
-              ['Priority', 'g'],
+          dropdownColumnAssignments:  [
+              ['Type', 'e'],
+              ['Priority', 'f'],
               ['Status', 'l'],
-              ['Progress', 'h']
-                ],
+              ['Owner', 'h'],
+              ['Version Number', 'd'],
+              ['Progress', 'g'],
+              ['Status', 'k']
+              
+             
+            ],
                  sizes: [
                 [1, 100],
                 [2, 250],
@@ -340,7 +343,7 @@ function Store (){
                 
                 ],
                 
-                    'Progress': [
+                'Progress': [
                     [1, 'Not Started'],
                     [2, 'Starting Late'],
                     [3, 'On Schedule'],
@@ -348,7 +351,10 @@ function Store (){
                     [5, 'Completed']
                 
                 
-                ]
+                ],
+                
+               
+                
                 
             },
 
