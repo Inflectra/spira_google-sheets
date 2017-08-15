@@ -73,8 +73,8 @@ $('#js--template').click(function() {
           google.script.run.clearAll();
           //set artifact equal to the artifact from the dropdown
           var artifact = $("js--artifact").value;
-           if (artifact == 'tasks') {}
-      projectAndArtifactSetter();
+        
+           projectAndArtifactSetter();
             
         }
     }
@@ -109,6 +109,7 @@ $('#js--export').click(function() {
     }
 
     function exportSuccess(data) {
+    alert("exporting or attempting to atleast");
         //Array holds the error responses
         let errorArr = data[1];
 
