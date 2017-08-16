@@ -30,7 +30,8 @@ function modelReset(){
           {name: 'testRuns', id: 5},
           {name: 'tasks', id: 6},
           {name: 'testSteps', id: 7},
-          {name: 'testSets', id: 8}
+          {name: 'testSets', id: 8},
+          {name: 'testSetsss', id: 9}
         ]
     };
 }
@@ -263,7 +264,7 @@ function Store (){
             accessPermission: [1,2],
             standardTitleRange: 'A1:L1',
             customTitleRange: 'M1:AQ1',
-            requireNumberFields: ['J','K'],
+           requireNumberFields: ['J','K'],
             editableRange: 'A3:AP3',
             standardRange: 'A1:L2',
             customRange: 'M1:AQ2',
@@ -274,7 +275,7 @@ function Store (){
             cellRangeLength: 42,
             components: [],
             releases: [],
-            headings: [,
+            headings: [
             'Task Id', 
             'Task Name',
             'Task Description', 
@@ -291,13 +292,17 @@ function Store (){
             'Folder'
       ],
            
-             dropdownColumnAssignments:  [
-              
-
+          dropdownColumnAssignments:  [
               ['Type', 'e'],
               ['Priority', 'f'],
-              ['Status', 'a']
-                ],
+              ['Status', 'l'],
+              ['Owner', 'h'],
+              ['Version Number', 'd'],
+              ['Progress', 'g'],
+              ['Status', 'k']
+              
+             
+            ],
                  sizes: [
                 [1, 100],
                 [2, 250],
@@ -337,7 +342,20 @@ function Store (){
                     [4, '4 - Low']
                 
                 
-                ]
+                ],
+                
+                'Progress': [
+                    [1, 'Not Started'],
+                    [2, 'Starting Late'],
+                    [3, 'On Schedule'],
+                    [4, 'Running Late'],
+                    [5, 'Completed']
+                
+                
+                ],
+                
+               
+                
                 
             },
 

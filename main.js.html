@@ -19,6 +19,7 @@ $('#dev--stubs').click(function() {
 
 
 $('#js--logIn').click(function() {
+
     //get user data from input fields and store in user data object
     model.userData.currentUser.url = $('#js--url').val();
     model.userData.currentUser.userName = $('#js--userName').val();
@@ -72,13 +73,9 @@ $('#js--template').click(function() {
           google.script.run.clearAll();
           //set artifact equal to the artifact from the dropdown
           var artifact = $("js--artifact").value;
-           if (artifact == 'tasks') {
-              alert('yay!');
-              return
-            } else {
-              alert(artifact);
-              projectAndArtifactSetter();
-            }
+        
+           projectAndArtifactSetter();
+            
         }
     }
 });
@@ -112,6 +109,7 @@ $('#js--export').click(function() {
     }
 
     function exportSuccess(data) {
+  
         //Array holds the error responses
         let errorArr = data[1];
 

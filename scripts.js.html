@@ -159,7 +159,7 @@ function updateData() {
     //get all custom fields
 
     function getCustomFields() {
-    alert("attempting to get custom fields")
+ 
         //call server side fetch for project custom fields
         google.script.run.withSuccessHandler(customSuccess).withFailureHandler(errorNetwork)
             .getCustoms(model.userData.currentUser, model.templateData.currentProjectNumber, model.templateData.currentArtifactId);
@@ -169,48 +169,15 @@ function updateData() {
             //assign unparsed data to data object
             //these values are parsed later depending on function needs
             model.templateData.requirements.customFields = data;
-         
-            getAuthor();
+             
+             getOwner();
         }
     }
-    
-    function getAuthor(){
-    //call server for username values
- 
-google.script.run.withSuccessHandler(authorSuccess).withFailureHandler(errorNetwork).getUsers(model.userData.currentUser, model.templateData.currentProjectNumber);
-    
-    function authorSuccess(data) {
-    
-    var arr = [];
-    // map through Author data object
-    data.map(function(data){
-    // push data onto array
-    arr.push([data.AuthorId, data.FullName])
-    })
-    
-    // assign array to model data    
-    model.templateData.requirements.authors = arr;
-    
 
-    
-    // assign values to dropdown data 
-    model.templateData.requirements.dropdowns['Author'] = arr;
-    
-    getOwner();
-    
-    }
-
-    
-
-    
-    
-    
-    }
-    
-        function getOwner(){
+  function getOwner(){
     //call server for username values
     google.script.run.withSuccessHandler(authorSuccess).withFailureHandler(errorNetwork).getUsers(model.userData.currentUser, model.templateData.currentProjectNumber);
-    
+
     function authorSuccess(data) {
     
     var arr = [];
@@ -219,12 +186,11 @@ google.script.run.withSuccessHandler(authorSuccess).withFailureHandler(errorNetw
     // push data onto array
     arr.push([data.AuthorId, data.FullName])
     })
-    // assign array to data model
-    model.templateData.requirements.authors = arr;
-
     
     //assign values to dropdown data 
     model.templateData.requirements.dropdowns['Owner'] = arr;
+    model.templateData.tasks.dropdowns['Owner'] = arr;
+    model.templateData.requirements.dropdowns['Author'] = arr;
     
     
     getComponentsValues();
@@ -260,7 +226,8 @@ google.script.run.withSuccessHandler(authorSuccess).withFailureHandler(errorNetw
             model.templateData.requirements.components = arr;
 
             //assign values to dropdown data
-            model.templateData.requirements.dropdowns['Components'] = model.templateData.requirements.components;
+            model.templateData.requirements.dropdowns['Components'] = arr;
+            console.log ( arr);
 
             getReleasesValues();
         }
@@ -268,8 +235,8 @@ google.script.run.withSuccessHandler(authorSuccess).withFailureHandler(errorNetw
 
     function getReleasesValues() {
         google.script.run.withSuccessHandler(releaseSuccess).withFailureHandler(errorNetwork).getReleases(model.userData.currentUser, model.templateData.currentProjectNumber);
-        
-
+      
+   
         function releaseSuccess(data) {
 
             var arr = [];
@@ -281,10 +248,13 @@ google.script.run.withSuccessHandler(authorSuccess).withFailureHandler(errorNetw
 
             //assign collected data to model
             model.templateData.requirements.releases = arr;
+         
 
             //assign values to model drop down data
             model.templateData.requirements.dropdowns['Version Number'] = model.templateData.requirements.releases;
-
+            model.templateData.tasks.dropdowns['Version Number'] = model.templateData.requirements.releases;
+         
+         
             //call main template function
             getTemplate();
 
@@ -294,20 +264,31 @@ google.script.run.withSuccessHandler(authorSuccess).withFailureHandler(errorNetw
     }
 
     function getTemplate(){
+
       //call server side template function
       google.script.run.withSuccessHandler(templateSuccess).withFailureHandler(errorUnk).templateLoader(model.templateData);
 
+
+            
             function templateSuccess(data) {
+           
+     
               model.templateData.isTemplateLoaded = true;
-              google.script.run.success('Template loaded successfully.');
+                  
+
+      
+      
               //turn off ajax spinner if it's on
               $('#js--loader').hasClass('hidden') ? null : $('#js--loader').toggleClass('hidden');
+            
 
               //enable the send to spira button
               $('#js--export').prop('disabled', false);
             }
+             
     }
 }
+
 
 /*
 Error functions
