@@ -177,7 +177,7 @@ function updateData() {
   function getOwner(){
     //call server for username values
     google.script.run.withSuccessHandler(authorSuccess).withFailureHandler(errorNetwork).getUsers(model.userData.currentUser, model.templateData.currentProjectNumber);
-    
+
     function authorSuccess(data) {
     
     var arr = [];
@@ -235,8 +235,8 @@ function updateData() {
 
     function getReleasesValues() {
         google.script.run.withSuccessHandler(releaseSuccess).withFailureHandler(errorNetwork).getReleases(model.userData.currentUser, model.templateData.currentProjectNumber);
-        
-
+      
+   
         function releaseSuccess(data) {
 
             var arr = [];
@@ -264,20 +264,31 @@ function updateData() {
     }
 
     function getTemplate(){
+
       //call server side template function
       google.script.run.withSuccessHandler(templateSuccess).withFailureHandler(errorUnk).templateLoader(model.templateData);
 
+
+            
             function templateSuccess(data) {
+           
+     
               model.templateData.isTemplateLoaded = true;
-              google.script.run.success('Template loaded successfully.');
+                  
+
+      
+      
               //turn off ajax spinner if it's on
               $('#js--loader').hasClass('hidden') ? null : $('#js--loader').toggleClass('hidden');
+            
 
               //enable the send to spira button
               $('#js--export').prop('disabled', false);
             }
+             
     }
 }
+
 
 /*
 Error functions

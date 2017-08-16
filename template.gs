@@ -17,7 +17,7 @@ function templateLoader(data) {
     var spreadSheet = SpreadsheetApp.getActiveSpreadsheet();
     var sheet = spreadSheet.getSheets()[0];
     var artifactData = data[data.currentArtifactName];
-    console.log ('Jimmy' + artifactData);
+    
 
     //shorten variable
     var dropdownColumnAssignments = artifactData.dropdownColumnAssignments;

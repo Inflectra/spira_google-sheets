@@ -121,6 +121,7 @@ function exporter(data, artifactType) {
             xObj['ProjectName'] = data.templateData.currentProjectName;
 
             xObjArr.push(xObj);
+           
         }
 
         xObjArr = parentChildSetter(xObjArr);
