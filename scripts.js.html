@@ -10,8 +10,6 @@ Error pop-ups are also located here
 //initializing function, this function is called on a log in attempt
 
 
-
-
 function init() {
     //turn on ajax spinner
     $('#js--loader').toggleClass('hidden');
@@ -169,7 +167,7 @@ function updateData() {
             //assign unparsed data to data object
             //these values are parsed later depending on function needs
             model.templateData.requirements.customFields = data;
-             
+             console.log('Hello World');
              getOwner();
         }
     }
@@ -189,6 +187,7 @@ function updateData() {
     
     //assign values to dropdown data 
     model.templateData.requirements.dropdowns['Owner'] = arr;
+    //This method can be used to work around requirement hardcodings, a new artifact array must be created in store.js
     model.templateData.tasks.dropdowns['Owner'] = arr;
     model.templateData.requirements.dropdowns['Author'] = arr;
     
@@ -227,7 +226,7 @@ function updateData() {
 
             //assign values to dropdown data
             model.templateData.requirements.dropdowns['Components'] = arr;
-            console.log ( arr);
+
 
             getReleasesValues();
         }
@@ -251,7 +250,7 @@ function updateData() {
          
 
             //assign values to model drop down data
-            model.templateData.requirements.dropdowns['Version Number'] = model.templateData.requirements.releases;
+            model.templateData.requirements.dropdowns['Version Number'] = arr;
             model.templateData.tasks.dropdowns['Version Number'] = model.templateData.requirements.releases;
          
          
