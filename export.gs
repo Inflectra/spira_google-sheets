@@ -1,9 +1,6 @@
 /*
-
 Export functions
-
 The main function takes the entire data model and the artifact type and calls the child function to set various object values before sending the finished objects to SpiraTeam
-
 */
 
 

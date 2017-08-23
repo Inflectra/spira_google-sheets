@@ -18,4 +18,11 @@ You must have a SpiraTeam® account with the proper permissions to utilize this 
 
 
 
+---
+
+Hello,
+
+My name is Toni. I was previously an intern at Inflectra and I was tasked with adding functionality to spira_googlesheets.  I was able to get Inflectra’s Rest API to work in conjunction with google sheets in order to create a task template.  The next goal for this project would be to use Inflectra’s REST API to post this template onto SpiraTeam.  After this is completed the next goal would to be to add more artifact functionality to spira_googlesheets.  One of the difficulties you may face when trying to accomplish this in the current code setup. The program was originally built with requirement artifact functionality in mind. This has led to a number of hard codings throughout the software.  In order to aid in the lifecycle of this software it would be useful to refactor those hard codings out of the software. 
+
+The text editor you will be most likely using is google scripts. This google creation comes with a number of built in functionalities that are called throughout the software. Here is a reference https://developers.google.com/apps-script/overview
 

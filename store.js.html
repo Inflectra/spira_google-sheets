@@ -72,6 +72,7 @@ function Store (){
         projectUsers: [],
         //Requirements template
         requirements: {
+            identification: 'requirements',
             unsupported: ['L3:L400', 'M3:M400'],
             accessPermission: [1,2],
             standardTitleRange: 'A1:M1',
@@ -82,7 +83,7 @@ function Store (){
             customRange: 'N1:AQ2',
             customHeaders: 'N2:AQ2',
             customColumnLength: 'N3:N200',
-            cellRange: 'A3:M3',
+            cellRange: 'A3:L3',
             customCellRange: 'N3:AQ3',
             cellRangeLength: 43,
             components: [],
@@ -94,7 +95,8 @@ function Store (){
                 ['Status', 'g'],
                 ['Author', 'i'],
                 ['Owner', 'j'],
-                ['Components', 'k']
+                ['Components', 'k'],
+                ['StatusId', 'm']
             ],
             dropdownUserColumnAssignments: [
                 ['Author', 'i'],
@@ -126,7 +128,8 @@ function Store (){
             "EstimatePoints", 
             "AuthorName", 
             "OwnerName", 
-            "ComponentName"],
+            "ComponentName",
+            "StatusId"],
             sizes: [
                 [1, 100],
                 [2, 250],
@@ -259,12 +262,12 @@ function Store (){
         },
         
                    tasks : {
-           
+            identification: 'tasks',
             unsupported: [],
             accessPermission: [1,2],
             standardTitleRange: 'A1:L1',
             customTitleRange: 'M1:AQ1',
-           requireNumberFields: ['J','K'],
+           requireNumberFields: ['J'],
             editableRange: 'A3:AP3',
             standardRange: 'A1:L2',
             customRange: 'M1:AQ2',
@@ -291,7 +294,25 @@ function Store (){
             'End Date',
             'Folder'
       ],
+                  JSON_headings: [
+            "TaskId", 
+            "Name", 
+            "Description", 
+            "ReleaseId", 
+            "TaskTypeId", 
+            "ImportanceId", 
+            "TaskStatusId",
+            "StatusName",
+            'AuthorId',
+            "OwnerId",
+            "ComponentId",
+            "EstimatePoints", 
+            "AuthorName", 
+            "OwnerName", 
+            "ComponentName"
            
+            ],
+            
           dropdownColumnAssignments:  [
               ['Type', 'e'],
               ['Priority', 'f'],
@@ -329,7 +350,6 @@ function Store (){
                 'Status': [
                     [1, 'Not Started'],
                     [2, 'In Progress'], 
-                    [3, 'Completed'],
                     [4, 'Completed'],
                     [5, 'Blocked'],
                     [6, 'Deferred']
@@ -355,8 +375,7 @@ function Store (){
                 ],
                 
                
-                
-                
+       
             },
 
                 
