@@ -1,15 +1,273 @@
 <script>
+// The .js.html files will be bundled inline into the .html file on load
+
+
 /*
-The .js.html files will be bundled inline into the .html file on load
+ *
+ * ==================
+ * HTML UI MANAGEMENT
+ * ==================
+ *
+ */
 
-These scripts build the model for the selected artifact and project
+//dev only
+//fill in mock values and uncomment the `dev` button on the index page for easy log in values in development
 
-Error pop-ups are also located here
-*/
+$('#dev--stubs').click(function() {
+    $('#js--url').val('https://demo.spiraservice.net/oluwatoni');
+    $('#js--userName').val('administrator');
+    $('#js--password').val('{8323528B-5A45-4FD9-867C-82BF7194EF4F}');
+});
+// END of dev only
+
+
+$('#js--logIn').click(function() {
+
+    //get user data from input fields and store in user data object
+    model.userData.currentUser.url = $('#js--url').val();
+    model.userData.currentUser.userName = $('#js--userName').val();
+    model.userData.currentUser.api_key = btoa('&api-key=' + encodeURIComponent($('#js--password').val()));
+    //run init function, starts building data model
+    init();
+});
+
+$('#js--cancel').click(function() {
+    //clear input field values
+    $('#js--url, #js--userName, #js--password').val('');
+});
+
+$('#js--disconnect').click(function() {
+    //warn user that all tab data will be lost. Returns true or false
+    google.script.run.withSuccessHandler(userChoice).warn();
+
+    //gets a true or false value promise from google
+    function userChoice(bool) {
+        if (bool) {
+            //clear spreadsheet
+            google.script.run.clearAll();
+
+            //display log-in page
+            $('#js--auth').toggleClass('open');
+
+            //clear data model
+            modelReset();
+
+            //clear input fields
+            $('#js--url, #js--userName, #js--password').val('');
+
+            //disable template button and artifact dropdown
+            $('#js--template').prop('disabled', true);
+            $('#js--artifact').prop('disabled', true);
+
+            //reset artifacts drop down to 'Select an Artifact'
+            $("#js--artifact option[value='Select an Artifact']").attr('selected', 'selected');
+        }
+    }
+});
+
+$('#js--template').click(function() {
+    
+    //warn the user data will be erased
+    google.script.run.withSuccessHandler(userChoice).warn();
+    //gets a true or false from a google promise
+    function userChoice(bool) {
+        if(bool){
+          //clear tab data
+          google.script.run.clearAll();
+          //set artifact equal to the artifact from the dropdown
+          var artifact = $("js--artifact").value;
+        
+           projectAndArtifactSetter();
+            
+        }
+    }
+});
+
+$('#js--import').click(function() {
+    //this can be reimplemented in future versions but all code related to importing artifact data is commented out.
+
+    // if (model.templateData.isTemplateLoaded) {
+    //     google.script.run.withSuccessHandler(importSuccess).withFailureHandler(errorNetwork).importer(model.userData.currentUser);
+    // } else {
+    //     google.script.run.noTemplate();
+    // }
+
+    // function importSuccess() {
+    //     google.script.run.success('Data loaded successfully.');
+    // }
+
+});
+
+$('#js--export').click(function() {
+    //check that template is loaded
+    //edge case check.
+    if (model.templateData.isTemplateLoaded) {
+        // toggle on spinner
+        $('#js--loader').toggleClass('hidden');
+        //call export function
+        google.script.run.withFailureHandler(errorImpExp).withSuccessHandler(exportSuccess).exporter(model);
+    } else {
+        //if no template popup a warning
+        google.script.run.noTemplate();
+    }
+
+    function exportSuccess(data) {
+  
+        //Array holds the error responses
+        let errorArr = data[1];
+
+        //if errors present
+        if (errorArr.length) {
+            //log all errors to the console.
+            errorArr.map(function(error) {
+                console.log(error);
+            })
+        }
+        //toggle off spinner
+        $('#js--loader').toggleClass('hidden');
+        //runs the export success function, passes a boolean flag, if there are errors the flag is true.
+        google.script.run.exportSuccess(data[0]);
+
+    }
+});
+
+$('#js--save').click(function() {
+    //check to see if there is a template present
+    //edge case check
+    if (model.templateData.isTemplateLoaded) {
+        //toggle spinner on
+        $('#js--loader').toggleClass('hidden');
+        //call save function
+        google.script.run.withFailureHandler(errorUnk).withSuccessHandler(saveSuccess).save();
+    } else {
+        //if no template popup a warning
+        google.script.run.noTemplate();
+    }
+
+    function saveSuccess(bool) {
+        // toggle spinner off on yes or no from popup dialog
+        $('#js--loader').toggleClass('hidden');
+        
+        if(bool){
+            //notify on success
+            google.script.run.success('Sheet saved in new tab.');
+        }
+    }
+});
+
+$('#js--clear').click(function() {
+    //warn that data will be erased
+    google.script.run.withSuccessHandler(userChoice).warn();
+
+    function userChoice(bool) {
+        //clear all data
+        bool ? google.script.run.clearAll() : null;
+    }
+
+});
+
+//handles enabling or disabling dropdown fields depending on the correct values
+$('#js--project').change(function(e) {
+    //if the project field has not been selected all other selected buttons are disabled
+    if (e.target.value === 'Select a Project') {
+        $('#js--artifact').prop('disabled', true);
+        $('#js--template').prop('disabled', true);
+    } else {
+        //if project has been selected check to see if artifacts have been selected already
+        //if so enable the template button as well
+        $('#js--artifact').prop('disabled', false);
+        if ($('#js--artifact option:selected').val() !== 'Select an Artifact') {
+            $('#js--template').prop('disabled', false)
+        }
+    }
+});
+
+//handles enabling the template button if the artifact drop down is properly selected.
+$('#js--artifact').change(function(e) {
+    if (e.target.value === 'Select an Artifact') {
+        $('#js--template').prop('disabled', true);
+    } else {
+        $('#js--template').prop('disabled', false);
+    }
+});
+
+//Auth screen flag for help screen logic
+var authHelp = false
+
+//opens the help page and closes the auth page if open
+$('.js--help').click(function() {
+    $('#js--helpPage').toggleClass('open hidden')
+    if ($('#js--auth').hasClass('open')) {
+        authHelp = true;
+        $('#js--auth').toggle('open');
+    }
+})
+
+//closes the help page and if necessary reopens the auth page
+$('#js--helpClose').click(function() {
+    $('#js--helpPage').toggleClass('open hidden');
+    if (authHelp) {
+        $('#js--auth').toggle('open');
+    }
+    authHelp = false;
+})
+
+//Help page click handlers
+//toggle hidden state for each of the help divs
+$('#help--login').click(function() {
+    $('#logging-in-text').toggleClass('hidden');
+    $('#main-text').hasClass('hidden') ? null : $('#main-text').toggleClass('hidden');
+    $('#entries-text').hasClass('hidden') ? null : $('#entries-text').toggleClass('hidden');
+    $('#custom-text').hasClass('hidden') ? null : $('#custom-text').toggleClass('hidden');
+})
+
+$('#help--main').click(function() {
+    $('#main-text').toggleClass('hidden');
+    $('#logging-in-text').hasClass('hidden') ? null : $('#logging-in-text').toggleClass('hidden');
+    $('#entries-text').hasClass('hidden') ? null : $('#entries-text').toggleClass('hidden');
+    $('#custom-text').hasClass('hidden') ? null : $('#custom-text').toggleClass('hidden');
+})
+
+$('#help--entries').click(function() {
+    $('#entries-text').toggleClass('hidden');
+    $('#main-text').hasClass('hidden') ? null : $('#main-text').toggleClass('hidden');
+    $('#logging-in-text').hasClass('hidden') ? null : $('#logging-in-text').toggleClass('hidden');
+    $('#custom-text').hasClass('hidden') ? null : $('#custom-text').toggleClass('hidden');
+})
+
+$('#help--customs').click(function() {
+    $('#custom-text').toggleClass('hidden');
+    $('#main-text').hasClass('hidden') ? null : $('#main-text').toggleClass('hidden');
+    $('#logging-in-text').hasClass('hidden') ? null : $('#logging-in-text').toggleClass('hidden');
+    $('#entries-text').hasClass('hidden') ? null : $('#entries-text').toggleClass('hidden');
+})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
+ *
+ * =================
+ * UTILITY FUNCTIONS
+ * =================
+ *
+ * These scripts build the model for the selected artifact and project
+ * Error pop-ups are also located here
+ *
+ */
+
 
 //initializing function, this function is called on a log in attempt
-
-
 function init() {
     //turn on ajax spinner
     $('#js--loader').toggleClass('hidden');
@@ -290,11 +548,9 @@ function updateData() {
 
 
 /*
-Error functions
-
-All of these functions call a server side popup with various args, most args are the HTTPResponse objects from the `withFailureHandler` promise.
-
-*/
+ * Error functions
+ * All of these functions call a server side popup with various args, most args are the HTTPResponse objects from the `withFailureHandler` promise.
+ */
 
 function errorPopUp(err, type) {
     google.script.run.error(type);
@@ -313,4 +569,11 @@ function errorImpExp(err) {
 function errorUnk(err) {
     errorPopUp(err, 'unk');
 }
+
+
+
+
 </script>
+
+
+
