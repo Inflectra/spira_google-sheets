@@ -103,33 +103,33 @@ function Store (){
                 ['Owner', 'j']
             ],
             headings: [
-            'Requirement Id', 
-            'Requirement Name', 
-            'Requirement Description', 
-            'Release Version', 
-            'Type', 
-            'Importance', 
-            'Status', 
-            'Estimate', 
-            'Author', 
-            'Owner', 
-            'Component', 
-            'Linked Requirements \nCurrently not supported', 
-            'Comment \nCurrently not supported', 
-            'CUS-01', 'CUS-02', 'CUS-03', 'CUS-04', 'CUS-05', 'CUS-06', 'CUS-07', 'CUS-08', 'CUS-09', 'CUS-10', 'CUS-11', 'CUS-12', 'CUS-13', 'CUS-14', 'CUS-15', 'CUS-16', 'CUS-17', 'CUS-18', 'CUS-19', 'CUS-20', 'CUS-21', 'CUS-22', 'CUS-23', 'CUS-24', 'CUS-25', 'CUS-26', 'CUS-27', 'CUS-28', 'CUS-29', 'CUS-30'],
+                'Requirement Id', 
+                'Requirement Name', 
+                'Requirement Description', 
+                'Release Version', 
+                'Type', 
+                'Importance', 
+                'Status', 
+                'Estimate', 
+                'Author', 
+                'Owner', 
+                'Component', 
+                'Linked Requirements \nCurrently not supported', 
+                'Comment \nCurrently not supported', 
+                'CUS-01', 'CUS-02', 'CUS-03', 'CUS-04', 'CUS-05', 'CUS-06', 'CUS-07', 'CUS-08', 'CUS-09', 'CUS-10', 'CUS-11', 'CUS-12', 'CUS-13', 'CUS-14', 'CUS-15', 'CUS-16', 'CUS-17', 'CUS-18', 'CUS-19', 'CUS-20', 'CUS-21', 'CUS-22', 'CUS-23', 'CUS-24', 'CUS-25', 'CUS-26', 'CUS-27', 'CUS-28', 'CUS-29', 'CUS-30'],
             JSON_headings: [
-            "RequirementId", 
-            "Name", 
-            "Description", 
-            "ReleaseVersionNumber", 
-            "RequirementTypeId", 
-            "ImportanceName", 
-            "StatusName", 
-            "EstimatePoints", 
-            "AuthorName", 
-            "OwnerName", 
-            "ComponentName",
-            "StatusId"],
+                "RequirementId", 
+                "Name", 
+                "Description", 
+                "ReleaseVersionNumber", 
+                "RequirementTypeId", 
+                "ImportanceName", 
+                "StatusName", 
+                "EstimatePoints", 
+                "AuthorName", 
+                "OwnerName", 
+                "ComponentName",
+                "StatusId"],
             sizes: [
                 [1, 100],
                 [2, 250],
@@ -388,5 +388,95 @@ function Store (){
 
 //model becomes a new instance of the data store preserving the immutability of the primary data object.
 let model = new Store;
+
+let data = {
+    fieldType: {
+        int: 1,
+        num: 2,
+        bool: 3,
+        text: 4,
+        date: 5,
+        drop: 6,
+        user: 7,
+        component: 8,
+        release: 9,
+        arr: 10
+    }
+    currentProjectName: '',
+    currentProjectNumber: '',
+    currentArtifactName: '',
+    currentArtifactId: '',
+    isTemplateLoaded: false,
+    projectUsers: [],
+    requirements: {
+        identification: 'requirements',
+        unsupported: ['L3:L400', 'M3:M400'],
+        accessPermission: [1,2],
+        standardTitleRange: 'A1:M1',
+        customTitleRange: 'N1:AQ1',
+        editableRange: 'A3:AQ3',
+        standardRange: 'A1:M2',
+        customRange: 'N1:AQ2',
+        customHeaders: 'N2:AQ2',
+        customColumnLength: 'N3:N200',
+        cellRange: 'A3:L3',
+        customCellRange: 'N3:AQ3',
+        cellRangeLength: 43,
+        components: [],
+        releases: [],
+        fields: [
+            {field: "RequirementId", name: "Requirement ID", type: fieldType.int, col: 0, width: 100},
+            {field: "Name", name: "Requirement Name", type: fieldType.text, col: 1, width: 250},
+            {field: "Description", name: "Requirement Description", type: fieldType.text, col: 2, width: 350},
+            {field: "ReleaseVersionNumber", name: "Release Version", type: fieldType.release, col: 3, width: 250},
+            {field: "RequirementTypeId", name: "Type", type: fieldType.drop, col: 4, width: 100,
+                values: [
+                    {id: -1, name: "Package"},
+                    {id: 1, name: "Need"},
+                    {id: 2, name: "Feature"},
+                    {id: 3, name: "Use Case"},
+                    {id: 4, name: "User Story"},
+                    {id: 5, name: "Quality"},
+                    {id: 6, name: "Design Elemen"}
+                ]
+            },
+            {field: "ImportanceName", name: "Importance", type: fieldType.drop, col: 5, width: 100, 
+                values: [
+                    {id: 1, name: "1 -Critical"},
+                    {id: 2, name: "2 -High"},
+                    {id: 3, name: "3 -Medium"},
+                    {id: 4, name: "4 -Low"}
+                ]
+            },
+            {field: "StatusName", name: "Status", type: fieldType.drop, col: 6, width: 100, 
+                values: [
+                    {id: 1, name: "Requested"},
+                    {id: 2, name: "Planned"},
+                    {id: 3, name: "In Progress"},
+                    {id: 4, name: "Developed"},
+                    {id: 5, name: "Accepted"},
+                    {id: 6, name: "Rejected"},
+                    {id: 7, name: "Under Review"},
+                    {id: 8, name: "Obsolete"},
+                    {id: 9, name: "Tested"},
+                    {id: 10, name: "Completed"}
+                ]
+            },
+            {field: "EstimatePoints", name: "Estimate", type: fieldType.num, col: 7, width: 100},
+            {field: "AuthorName", name: "Author", type: fieldType.user, col: 8, width: 100},
+            {field: "OwnerName", name: "Owner", type: fieldType.user, col: 9, width: 100},
+            {field: "ComponentName", name: "Component", type: fieldType.component, col: 10, width: 200},
+            {field: "LinkedRequirementIds", name: "Linked Requirements \nCurrently not supported", type: fieldType.arr, col: 11},
+            {field: "StatusId", name: "Status ID", type: fieldType.drop, col: 12}, //not sure this is needed
+            {field: "Comment", name: "Comment \nCurrently not supported", type: fieldType.text, col: 13, width: 400},
+            
+             
+            'Comment \nCurrently not supported', 
+            'CUS-01', 'CUS-02', 'CUS-03', 'CUS-04', 'CUS-05', 'CUS-06', 'CUS-07', 'CUS-08', 'CUS-09', 'CUS-10', 'CUS-11', 'CUS-12', 'CUS-13', 'CUS-14', 'CUS-15', 'CUS-16', 'CUS-17', 'CUS-18', 'CUS-19', 'CUS-20', 'CUS-21', 'CUS-22', 'CUS-23', 'CUS-24', 'CUS-25', 'CUS-26', 'CUS-27', 'CUS-28', 'CUS-29', 'CUS-30'
+        ],
+        customFields: []
+    }
+}
+
 
 </script>
