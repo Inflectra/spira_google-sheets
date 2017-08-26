@@ -10,30 +10,76 @@
  *
  */
 
-// dev only
-// fill in mock values and uncomment the `dev` button on the index page for easy log in values in development
-$('#dev--stubs').click(function() {
-    $('#input-url').val('https://demo.spiraservice.net/oluwatoni');
-    $('#input-userName').val('administrator');
-    $('#input-password').val('{8323528B-5A45-4FD9-867C-82BF7194EF4F}');
-});
+// for dev mode only - comment out or set to false to disable any UI dev features
+let devMode = true;
 
+(function() {
+    if (devMode) {
+        $("#btn-dev").removeClass("hidden");
+        
+        model.userData.currentUser.url = 'https://demo.spiraservice.net/oluwatoni';
+        model.userData.currentUser.userName = 'administrator';
+        model.userData.currentUser.api_key = '{8323528B-5A45-4FD9-867C-82BF7194EF4F}';
+    }
+})();
 
-$('#btn-login').click(function() {
+// panel: string. suffix for items to act on (eg if id = panel-help, choice = "help")
+function panelToggle (panel) {
+    panelId = "#panel-" + panel;
+    $(panelId).toggleClass("offscreen");
+}
+
+// panel: string. suffix for items to act on (eg if id = panel-help, choice = "help")
+function panelOffscreen (panel) {
+    panelId = "#panel-" + panel;
+    $(panelId).removeClass("offscreen");
+}
+
+function getAuthDetails () {
     // get user data from input fields and store in user data object
     model.userData.currentUser.url = $('#input-url').val();
     model.userData.currentUser.userName = $('#input-userName').val();
     model.userData.currentUser.api_key = btoa('&api-key=' + encodeURIComponent($('#input-password').val()));
+}
 
+// fill in mock values for easy log in development, enable dev button
+function setAuthDetails () {
+    $('#input-url').val(model.userData.currentUser.url);
+    $('#input-userName').val(model.userData.currentUser.userName);
+    $('#input-password').val(model.userData.currentUser.api_key);
+}
+
+function clearAuthForm () {
+    //clear input field values
+    $('#input-url, #input-userName, #input-password').val('');
+}
+
+function loginAttempt () {
+    getAuthDetails();
+    
     // run init function, starts building data model
     init();
-});
+}
+
+// generic function that selects the relevant help section to show
+// choice: string. suffix for items to select (eg if id = help-section-fields, choice = "fields")
+function showChosenHelpSection (choice) {
+    // hide all sections and then only show the one the user wants
+    $(".help-section").addClass("hidden");
+    $("#help-section-" + choice).removeClass("hidden");
+    
+    // set all buttons back to normal, then highlight one just clicked
+    $(".btn-help").removeClass("create");
+    $("#btn-help-" + choice).addClass("create");
+}
 
 
-$('#btn-cancel').click(function() {
-    //clear input field values
-    $('#js--url, #js--userName, #js--password').val('');
-});
+
+
+
+
+
+
 
 $('#js--disconnect').click(function() {
     //warn user that all tab data will be lost. Returns true or false
@@ -45,14 +91,13 @@ $('#js--disconnect').click(function() {
             //clear spreadsheet
             google.script.run.clearAll();
 
-            //display log-in page
-            $('#js--auth').toggleClass('open');
+            // hide other panels, so login page is visible
+            $('#panel-help, #panel-main').addClass('offscreen');
 
             //clear data model
             modelReset();
 
-            //clear input fields
-            $('#js--url, #js--userName, #js--password').val('');
+            clearAuthForm();
 
             //disable template button and artifact dropdown
             $('#js--template').prop('disabled', true);
@@ -190,62 +235,6 @@ $('#js--artifact').change(function(e) {
     }
 });
 
-//Auth screen flag for help screen logic
-var authHelp = false
-
-//opens the help page and closes the auth page if open
-$('.js--help').click(function() {
-    $('#js--helpPage').toggleClass('open hidden')
-    if ($('#js--auth').hasClass('open')) {
-        authHelp = true;
-        $('#js--auth').toggle('open');
-    }
-})
-
-//closes the help page and if necessary reopens the auth page
-$('#js--helpClose').click(function() {
-    $('#js--helpPage').toggleClass('open hidden');
-    if (authHelp) {
-        $('#js--auth').toggle('open');
-    }
-    authHelp = false;
-})
-
-//Help page click handlers
-//toggle hidden state for each of the help divs
-$('#help--login').click(function() {
-    $('#logging-in-text').toggleClass('hidden');
-    $('#main-text').hasClass('hidden') ? null : $('#main-text').toggleClass('hidden');
-    $('#entries-text').hasClass('hidden') ? null : $('#entries-text').toggleClass('hidden');
-    $('#custom-text').hasClass('hidden') ? null : $('#custom-text').toggleClass('hidden');
-})
-
-$('#help--main').click(function() {
-    $('#main-text').toggleClass('hidden');
-    $('#logging-in-text').hasClass('hidden') ? null : $('#logging-in-text').toggleClass('hidden');
-    $('#entries-text').hasClass('hidden') ? null : $('#entries-text').toggleClass('hidden');
-    $('#custom-text').hasClass('hidden') ? null : $('#custom-text').toggleClass('hidden');
-})
-
-$('#help--entries').click(function() {
-    $('#entries-text').toggleClass('hidden');
-    $('#main-text').hasClass('hidden') ? null : $('#main-text').toggleClass('hidden');
-    $('#logging-in-text').hasClass('hidden') ? null : $('#logging-in-text').toggleClass('hidden');
-    $('#custom-text').hasClass('hidden') ? null : $('#custom-text').toggleClass('hidden');
-})
-
-$('#help--customs').click(function() {
-    $('#custom-text').toggleClass('hidden');
-    $('#main-text').hasClass('hidden') ? null : $('#main-text').toggleClass('hidden');
-    $('#logging-in-text').hasClass('hidden') ? null : $('#logging-in-text').toggleClass('hidden');
-    $('#entries-text').hasClass('hidden') ? null : $('#entries-text').toggleClass('hidden');
-})
-
-
-
-
-
-
 
 
 
@@ -317,7 +306,7 @@ function init() {
         $('#js--loggedInAs').html('Logged in as: ' + model.userData.currentUser.userName);
 
         //close auth window
-        $('#js--auth').hasClass('open') ? $('#js--auth').toggleClass('open') : null;
+        $('#panel-auth').hasClass('open') ? $('#panel-auth').toggleClass('open') : null;
 
         //turn off ajax spinner
         $('#js--loader').hasClass('hidden') ? null : $('#js--loader').toggleClass('hidden');
@@ -577,9 +566,6 @@ function errorImpExp(err) {
 function errorUnk(err) {
     errorPopUp(err, 'unk');
 }
-
-
-
 
 </script>
 

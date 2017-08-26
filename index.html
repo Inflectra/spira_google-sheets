@@ -17,124 +17,417 @@
         <h3 class="header-heading">SpiraTeam Google Sheets Integration</h3>
     </header>
 
+
+
+
+
+
+
+
+
     <!--auth page-->
-    <div class="slide-out transition open" id="js--auth">
+    <div class="panel" id="panel-auth">
         <p>Please enter the information used to access your server.</p>
-        <div class="container" id="auth-fields">
-            <label >Spira URL:
-                <input 
-                    class="urlInput" 
-                    id="input-url" 
-                    name="URL" 
-                    placeholder="https://<your-site-name>.com" 
-                    type="text" 
-                    />
-            </label>
-            <label >User Name:
-                <input 
-                    class="userNameInput" 
-                    id="input-userName" 
-                    name="user-name" 
-                    placeholder="User Name" 
-                    type="text" 
-                    />
-            </label>
-            <label >RSS Token:
-                <input 
-                    class="passwordInput" 
-                    id="input-password" 
-                    name="password" 
-                    placeholder="{Your-RSS-Token}" 
-                    type="password" 
-                    />
-            </label>
-        </div>
-        <p>The RSS token can be generated from your 'My Profile' screen inside SpiraTeam. For further assistance contact your system administrator</p>
         
-        <div class="container">
+        <ul class="form">
+          <li class="form-pair">
+            <label 
+                class="form-label" 
+                for="input-url"
+                >
+                Spira URL:
+            </label>
+            <input 
+                class="form-input" 
+                id="input-url" 
+                name="URL" 
+                placeholder="https://<your-site-name>.com" 
+                type="text" 
+                />
+          </li>
+          <li class="form-pair">
+            <label 
+                class="form-label"
+                for="input-userName"
+                >
+                User Name:
+            </label>
+            <input 
+                class="form-input" 
+                id="input-userName" 
+                name="user-name" 
+                placeholder="User Name" 
+                type="text" 
+                />
+          </li>
+          <li class="form-pair">
+            <label
+                class="form-label"
+                for="input-password"
+                >
+                RSS Token:
+            </label>
+            <input 
+                class="form-input" 
+                id="input-password" 
+                name="password" 
+                placeholder="{Your-RSS-Token}" 
+                type="password" 
+                />
+          </li>
+        </ul>
+        
+        <p class="secondary">
+            The RSS token can be generated from your 'My Profile' screen inside SpiraTeam. For further assistance contact your system administrator
+        </p>
+        
+        <div class="mt-md">
             <button 
                 class="action" 
-                id="btn-login"
+                onclick="loginAttempt()"
+                type="button"
                 >
                 Log In
             </button>
-            <button id="btn-cancel">Cancel</button>
-            <button class="js--help">Help</button>
+            <button 
+                onclick="clearAuthForm()"
+                type="button"
+                >
+                Clear
+            </button>
+            <button 
+                onclick="panelToggle('help')"
+                type="button"
+                >
+                Help
+            </button>
             
             <!-- Dev mock login data button. For developement only -->  
-            <button id="dev--stubs">dev</button>
+            <button
+                class="hidden"
+                id="btn-dev"
+                onclick="setAuthDetails()"
+                type="button"
+                >
+                Dev
+            </button>
         </div>
     </div> 
  
  
+
+
+
+
+
+
+
+    <!--main screen-->
+    <div class="panel offscreen" id="panel-main">
+        <p 
+            class="secondary" 
+            id="js--loggedInAs"
+            >
+        </p>
+        
+        <div class="btn-group pb-lg">
+            <button 
+                id="btn-help-main"
+                onclick="panelToggle('help')"
+                type="button"
+                >
+                Help
+            </button>
+            <button id="js--disconnect" >Disconnect</button>
+            <button  id="js--clear">Clear</button>
+        </div>
+        
+        
+        <label >Projects:
+            <select  id="js--project">
+                <!--aysnc populated -->
+            </select>
+        </label>
+        <!-- hardcoded artifact choices, all are disabled until they're developed -->
+        <label >Artifact:
+            <select 
+                id="js--artifact" 
+                class="mt-sm"
+                disabled="true"
+                >
+                <option value="Select an Artifact">Select an Artifact</option>
+                <option id="reqElement" value="requirements">Requirements</option>
+                <option value="testCases" disabled="true">Test Case</option>
+                <option value="incidents" disabled="true">Incident</option>
+                <option value="releases">Releases</option>
+                <option value="testRuns" disabled="true">Test Run</option>
+                <option id="taskElement" value="tasks">Task</option>
+                <option value="testSteps" disabled="true">Test Step</option>
+                <option value="testSets" disabled="true">Test Set</option>
+            </select>
+        </label>
+        
+        
+        <div class="flex" class="btn-group pt-lg">
+            <button id="js--template" disabled="true" >Load Template</button>
+            <button id="js--save" >Save</button>
+        </div>
+        <div class="row justify-content-around" class="btn-group pt-md">
+            <button  id="js--import" disabled="true">Import from SpiraTeam</button>
+            <button  id="js--export" disabled="true">Send to SpiraTeam</button>
+        </div>
+        
+    </div>
+      
+      
+    
+    
+    
+    
+    
+    
+    
     <!--help page-->
-    <div class="slide-out transition hidden" id="js--helpPage">
+    <div class="panel offscreen" id="panel-help">
         <!-- help button and module for help page -->
-        <button id="js--helpClose">Close</button>
-        <?!= include('help') ?>
+        <button 
+            onclick="panelToggle('help')"
+            type="button"
+            >
+            Back
+        </button>
+        
+        <h3>Quick Help Guide</h3>
+        
+        <div class="flex" id='help-header'>
+            <button 
+                class="btn-help"
+                id="btn-help-login"
+                onclick="showChosenHelpSection('login')"
+                type="button"
+                >
+                Login
+            </button>
+            <button 
+                class="btn-help"
+                id="btn-help-actions"
+                onclick="showChosenHelpSection('actions')"
+                type="button"
+                >
+                Templates
+            </button>
+            <button 
+                class="btn-help"
+                id="btn-help-fields"
+                onclick="showChosenHelpSection('fields')"
+                type="button"
+                >
+                Fields
+            </button>
+        </div>
+
+        <div id="help-section-login" class="help-section hidden">
+            <h4>Logging into SpiraTeam</h4>
+            <ol class="list">
+                <li>
+                    <p>
+                        <b>Enter your SpiraTeam URL</b>
+                        <small>Please enter the web address that you use to access SpiraTeam® in your browser. This is usually of the form 'http://(hostname)/SpiraTeam'. Make sure that you remove any suffixes from the address (e.g. Default.aspx)</small>
+                    </p>
+                </li>
+                <li>
+                    <p><b>Enter your user name</b></p>
+                    <small>
+                        Please enter the user name you use to log in to SpiraTeam. (Not Case Sensitive)
+                    </small>
+                </li>
+                <li>
+                    <p><b>Enter your RSS token</b></p>
+                    <small> Please enter your RSS token including the curly braces i.e {ExampleRSS}</small>
+                </li>
+            </ol>
+        </div>
+        
+        
+        
+        
+        <div id="help-section-actions" class="help-section hidden">
+            <h4>Actions</h4>
+            <ul class="list">
+                <li>
+                    <p>
+                        <b>Help</b>
+                        <small>This button will open an in app help menu with basic functionality information.</small>
+                    </p>
+                </li>
+                <li>
+                    <p>
+                        <b>Disconnect</b>
+                        <small>This button will close your connection with SpiraTeam and clear your data. WARNING: your spreadsheet data will be erased as a security measure on disconnect.</small>
+                    </p>
+                </li>
+                <li>
+                    <p>
+                        <b>Clear</b>
+                        <small>This button will clear the contents of your current tab including the template.</small>
+                    </p>
+                </li>
+                <li>
+                    <p>
+                        <b>Projects</b>
+                        <small>Select a project from the menu.</small>
+                    </p>
+                </li>
+                <li>
+                    <p>
+                        <b>Artifacts</b>
+                        <small>Select an artifact from the menu.</small>
+                    </p>
+                </li>
+                <li>
+                    <p>
+                        <b>Load Template</b>
+                        <small>Click this button to generate the template for the project and artifact you’ve selected.</small>
+                    </p>
+                </li>
+                <li>
+                    <p>
+                        <b>Save</b>
+                        <small>Clicking this button will save your current spreadsheet information into a new tab.</small>
+                    </p>
+                </li>
+                <li>
+                    <p>
+                        <b>Send to SpiraTeam</b>
+                        <small>This button will send your properly formatted data to SpiraTeam and it will be added to the current project.</small>
+                    </p>
+                </li>
+                <li>
+                    <p>
+                        <b>Import to SpiraTeam</b>
+                        <small><em>Not Currently Supported</em></small>
+                    </p>
+                </li>
+            </ul>
+        </div>
+        
+        
+        
+        
+        <div id="help-section-fields" class="help-section hidden">
+            <h4>Custom Field Entries</h4>
+            <ul class="list">
+                <li>
+                    <p>
+                        <b>Text</b>
+                        <small>Enter any text. Include HTML tags for rich text.</small>
+                    </p>
+                </li>
+                <li>
+                    <p>
+                        <b>Decimal</b>
+                        <small>Enter any positive number.</small>
+                    </p>
+                </li>
+                <li>
+                    <p>
+                        <b>Integer</b>
+                        <small>Enter a non-decimal number.</small>
+                    </p>
+                </li>
+                <li>
+                    <p>
+                        <b>Date</b>
+                        <small>Enter the date in any standard format.</small>
+                    </p>
+                </li>
+                <li>
+                    <p>
+                        <b>List</b>
+                        <small>Select a value from the dropdown list.</small>
+                    </p>
+                </li>
+                <li>
+                    <p>
+                        <b>MultiList</b>
+                        <small>Select an item from the provided list. <em>This is not currently supported</em></small>
+                    </p>
+                </li>
+                <li>
+                    <p>
+                        <b>User</b>
+                        <small>Select a name from the list of users</small>
+                    </p>
+                </li>
+            </ul>
+            
+            <br>
+            
+            <h4>Help For Specific Fields</h4>
+            <ul class="list">
+                <li>
+                    <p>
+                        <b>ID Fields</b>
+                        <small>Stores the id of the item. This field MUST be left blank to add new items to SpiraTeam</small>
+                    </p>
+                </li>
+                <li>
+                    <p>
+                        <b>Name</b>
+                        <small><b>**Required Field** </b>The name of the item. For REQUIREMENTS and RELEASES this field supports indentation, add a “ > “ symbol to indicate how the items in the artifact hierarchy are organized.</small>
+                    </p>
+                    <pre>
+Example:
+Item 1
+>Item 2 child of item 1
+>Item 3 child of item 1
+>>Item 4 child of item 3
+                    </pre>
+                </li>
+                
+                <li>
+                    <p>
+                        <b>Comments</b>
+                        <small><em>Not Currently Supported</em></small>
+                    </p>
+                </li>
+            </ul>
+        </div>
     </div>
 
 
-
-
-
-
+      
+      
+      
+     
+     
+     
+      
+    <!-- footer -->  
+    <footer class="footer">
+        <a href="https://www.inflectra.com" target="_blank">
+            <img src="https://files.inflectra.com/google/sheets/by_inflectra.png"  class="footer-logo">
+        </a>
+    </footer>
+    
+    
+    
+    
+    
+    
+    
+    
+    
     <!--spinner-->
-    <div id='js--loader' class='spinner-holder hidden'>
+    <div id='js--loader' class='loader-box hidden'>
         <div class="loader"></div>
     </div>
 
 
 
 
-    <!--main screen-->
-    <div class="main hidden">
-        <small id="js--loggedInAs"></small>
-        <div class="container" id="buttons-top">
-            <button class="js--help">Help</button>
-            <button id="js--disconnect" >Disconnect</button>
-            <button  id="js--clear">Clear</button>
-        </div>
-        <div class="select-section">
-            <label >Projects:
-                <select  id="js--project">
-                    <!--aysnc populated -->
-                </select>
-            </label>
-        </div>
-        <div class="select-section">
-            <!-- hardcoded artifact choices, all are disabled until they're developed -->
-            <label >Artifact:
-                <select  id="js--artifact" disabled="true">
-                    <option value="Select an Artifact">Select an Artifact</option>
-                    <option id="reqElement" value="requirements">Requirements</option>
-                    <option value="testCases" disabled="true">Test Case</option>
-                    <option value="incidents" disabled="true">Incident</option>
-                    <option value="releases">Releases</option>
-                    <option value="testRuns" disabled="true">Test Run</option>
-                    <option id="taskElement" value="tasks">Task</option>
-                    <option value="testSteps" disabled="true">Test Step</option>
-                    <option value="testSets" disabled="true">Test Set</option>
-                </select>
-            </label>
-        </div>
-        <div class="container" id="buttons-mid">
-            <button id="js--template" disabled="true" >Load Template</button>
-            <button id="js--save" >Save</button>
-        </div>
-        <div class="row justify-content-around" id="buttons-bottom">
-            <button  id="js--import" disabled="true">Import from SpiraTeam</button>
-            <button  id="js--export" disabled="true">Send to SpiraTeam</button>
-        </div>
-        
-      </div>
-      
-      
-      <footer class="footer">
-          <a href="https://www.inflectra.com" target="_blank">
-              <img src="https://files.inflectra.com/google/sheets/by_inflectra.png"  class="footer-logo">
-          </a>
-      </footer>
+
+
 
 
 

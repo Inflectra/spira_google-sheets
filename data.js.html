@@ -1,18 +1,21 @@
 <script>
 /*
+ *
+ * ==========
+ * DATE MODEL
+ * ==========
+ *
+ * This holds all the information about the user and all template configuration information. 
+ * Future versions of this program can add their artifact to the `templateData` object.
+ *
+ */
 
-Data Model
 
-This holds all the information about the user and all template configuration information. Future versions of this program can add their artifact to the `templateData` object.
-
-*/
-
-
-//This is a hack to reset the data, see below for more details.
+// This is a hack to reset the data, see below for more details.
 function modelReset(){
    // model = new Store;
 
-   //hack - this data is reset here, but the main location is in function Store() below
+   // hack - this data is reset here, but the main location is in function Store() below
    model.userData = {
         currentUser: {
             url: '',
@@ -388,6 +391,7 @@ function Store (){
 //model becomes a new instance of the data store preserving the immutability of the primary data object.
 let model = new Store;
 
+/*
 let data = {
     fieldType: {
         int: 1,
@@ -400,7 +404,7 @@ let data = {
         component: 8,
         release: 9,
         arr: 10
-    }
+    },
     currentProjectName: '',
     currentProjectNumber: '',
     currentArtifactName: '',
@@ -476,6 +480,7 @@ let data = {
         customFields: []
     }
 }
+*/
 
 
 </script>
