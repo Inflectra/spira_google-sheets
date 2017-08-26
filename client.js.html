@@ -17,9 +17,10 @@ let devMode = true;
     if (devMode) {
         $("#btn-dev").removeClass("hidden");
         
-        model.userData.currentUser.url = 'https://demo.spiraservice.net/oluwatoni';
-        model.userData.currentUser.userName = 'administrator';
-        model.userData.currentUser.api_key = '{8323528B-5A45-4FD9-867C-82BF7194EF4F}';
+        model.userData.currentUser.url = "https://demo.spiraservice.net/oluwatoni";
+        model.userData.currentUser.userName = "administrator";
+        model.userData.currentUser.api_key = "{8323528B-5A45-4FD9-867C-82BF7194EF4F}";
+        console.log(model.userData.currentUser);
     }
 })();
 
@@ -37,9 +38,9 @@ function panelOffscreen (panel) {
 
 function getAuthDetails () {
     // get user data from input fields and store in user data object
-    model.userData.currentUser.url = $('#input-url').val();
-    model.userData.currentUser.userName = $('#input-userName').val();
-    model.userData.currentUser.api_key = btoa('&api-key=' + encodeURIComponent($('#input-password').val()));
+    model.userData.currentUser.url = $("#input-url").val();
+    model.userData.currentUser.userName = $("#input-userName").val();
+    model.userData.currentUser.api_key = btoa("&api-key=" + encodeURIComponent($("#input-password").val()));
 }
 
 // fill in mock values for easy log in development, enable dev button
@@ -74,42 +75,40 @@ function showChosenHelpSection (choice) {
 }
 
 
-
-
-
-
-
-
-
-$('#js--disconnect').click(function() {
+function logout () {
     //warn user that all tab data will be lost. Returns true or false
-    google.script.run.withSuccessHandler(userChoice).warn();
-
+    google.script.run.withSuccessHandler(userLogoutResponse).warn('All data on current tab will be deleted. Continue?');
+    
     //gets a true or false value promise from google
-    function userChoice(bool) {
-        if (bool) {
-            //clear spreadsheet
+    function userLogoutResponse (isLogout) {
+        if (isLogout) {
+            //clear spreadsheet, model and login form
             google.script.run.clearAll();
-
-            // hide other panels, so login page is visible
-            $('#panel-help, #panel-main').addClass('offscreen');
-
-            //clear data model
             modelReset();
-
             clearAuthForm();
+            
+            // hide other panels, so login page is visible
+            $(".panel:not(#panel-auth)").addClass("offscreen");
+            
+            // disable template button and artifact dropdown
+            $("#btn-template, #select-artifact").prop("disabled", true);
 
-            //disable template button and artifact dropdown
-            $('#js--template').prop('disabled', true);
-            $('#js--artifact').prop('disabled', true);
-
-            //reset artifacts drop down to 'Select an Artifact'
-            $("#js--artifact option[value='Select an Artifact']").attr('selected', 'selected');
+            // reset artifact dropdown to 'Select an Artifact'
+            $("#select-artifact option[value='Select an Artifact']").attr("selected", "selected");
         }
-    }
-});
+   }
+}
 
-$('#js--template').click(function() {
+
+
+
+
+
+
+
+
+
+$('#btn-template').click(function() {
     
     //warn the user data will be erased
     google.script.run.withSuccessHandler(userChoice).warn();
@@ -119,7 +118,7 @@ $('#js--template').click(function() {
           //clear tab data
           google.script.run.clearAll();
           //set artifact equal to the artifact from the dropdown
-          var artifact = $("js--artifact").value;
+          var artifact = $("select-artifact").value;
         
            projectAndArtifactSetter();
             
@@ -175,7 +174,7 @@ $('#js--export').click(function() {
     }
 });
 
-$('#js--save').click(function() {
+$('#btn-save').click(function() {
     //check to see if there is a template present
     //edge case check
     if (model.templateData.isTemplateLoaded) {
@@ -214,24 +213,24 @@ $('#js--clear').click(function() {
 $('#js--project').change(function(e) {
     //if the project field has not been selected all other selected buttons are disabled
     if (e.target.value === 'Select a Project') {
-        $('#js--artifact').prop('disabled', true);
-        $('#js--template').prop('disabled', true);
+        $('#select-artifact').prop('disabled', true);
+        $('#btn-template').prop('disabled', true);
     } else {
         //if project has been selected check to see if artifacts have been selected already
         //if so enable the template button as well
-        $('#js--artifact').prop('disabled', false);
-        if ($('#js--artifact option:selected').val() !== 'Select an Artifact') {
-            $('#js--template').prop('disabled', false)
+        $('#select-artifact').prop('disabled', false);
+        if ($('#select-artifact option:selected').val() !== 'Select an Artifact') {
+            $('#btn-template').prop('disabled', false)
         }
     }
 });
 
 //handles enabling the template button if the artifact drop down is properly selected.
-$('#js--artifact').change(function(e) {
+$('#select-artifact').change(function(e) {
     if (e.target.value === 'Select an Artifact') {
-        $('#js--template').prop('disabled', true);
+        $('#btn-template').prop('disabled', true);
     } else {
-        $('#js--template').prop('disabled', false);
+        $('#btn-template').prop('disabled', false);
     }
 });
 
@@ -258,7 +257,7 @@ $('#js--artifact').change(function(e) {
 //initializing function, this function is called on a log in attempt
 function init() {
     //turn on ajax spinner
-    $('#js--loader').toggleClass('hidden');
+    $('#js--loader').addClass('hidden');
 
     //call server side function to get projects
     //this also serves as an authentication check, if the user credentials aren't correct it will throw a network error
@@ -305,11 +304,11 @@ function init() {
         //displays the current logged in user name
         $('#js--loggedInAs').html('Logged in as: ' + model.userData.currentUser.userName);
 
-        //close auth window
-        $('#panel-auth').hasClass('open') ? $('#panel-auth').toggleClass('open') : null;
+        //open mainh window
+        $("#panel-main").removeClass("offscreen");
 
         //turn off ajax spinner
-        $('#js--loader').hasClass('hidden') ? null : $('#js--loader').toggleClass('hidden');
+        $('#js--loader').addClass('hidden');
 
         //server side 'slide up' pop-up window (aka 'toast') notifying user on success
         google.script.run.success('Projects loaded');
@@ -323,7 +322,7 @@ function init() {
 function projectAndArtifactSetter() {
     // store dropdown values
     let projectDropdownVal = $('#js--project option:selected').val();
-    let artifactDropdownVal = $('#js--artifact option:selected').val();
+    let artifactDropdownVal = $('#select-artifact option:selected').val();
 
     // filter the project and artifact lists to those chosen 
     let artifactSelected = model.userData.artifacts.filter(function(artifact) {

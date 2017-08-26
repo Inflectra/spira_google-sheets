@@ -138,22 +138,45 @@
                 >
                 Help
             </button>
-            <button id="js--disconnect" >Disconnect</button>
+            <button 
+                onclick="logout()"
+                type="button"
+                >
+                Logout
+            </button>
             <button  id="js--clear">Clear</button>
         </div>
         
         
-        <label >Projects:
-            <select  id="js--project">
+        
+        <ul class="form">
+          <li class="form-pair">
+            <label 
+                class="form-label" 
+                for="input-url"
+                >
+                Projects:
+            </label>
+            <select 
+                class="form-input"
+                id="js--project"
+                >
                 <!--aysnc populated -->
             </select>
-        </label>
-        <!-- hardcoded artifact choices, all are disabled until they're developed -->
-        <label >Artifact:
+          </li>
+          <li class="form-pair">
+            <label 
+                class="form-label" 
+                for="input-url"
+                >
+                Artifact:
+            </label>
+            
+            <!-- hardcoded artifact choices, all are disabled until they're developed -->
             <select 
-                id="js--artifact" 
-                class="mt-sm"
+                class="form-input mt-sm"
                 disabled="true"
+                id="select-artifact" 
                 >
                 <option value="Select an Artifact">Select an Artifact</option>
                 <option id="reqElement" value="requirements">Requirements</option>
@@ -168,12 +191,12 @@
         </label>
         
         
-        <div class="flex" class="btn-group pt-lg">
-            <button id="js--template" disabled="true" >Load Template</button>
-            <button id="js--save" >Save</button>
+        <div class="pt-lg">
+            <button id="btn-template" disabled="true" >Load Template</button>
+            <button id="btn-save" >Save</button>
         </div>
-        <div class="row justify-content-around" class="btn-group pt-md">
-            <button  id="js--import" disabled="true">Import from SpiraTeam</button>
+        <div class="pt-md">
+            <button  id="js--import" disabled="true">Get from SpiraTeam</button>
             <button  id="js--export" disabled="true">Send to SpiraTeam</button>
         </div>
         
@@ -206,7 +229,7 @@
                 onclick="showChosenHelpSection('login')"
                 type="button"
                 >
-                Login
+                LOGIN
             </button>
             <button 
                 class="btn-help"
@@ -214,7 +237,7 @@
                 onclick="showChosenHelpSection('actions')"
                 type="button"
                 >
-                Templates
+                TEMPLATES
             </button>
             <button 
                 class="btn-help"
@@ -222,7 +245,7 @@
                 onclick="showChosenHelpSection('fields')"
                 type="button"
                 >
-                Fields
+                FIELDS
             </button>
         </div>
 

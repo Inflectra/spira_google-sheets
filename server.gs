@@ -135,10 +135,10 @@ function success(string) {
 
 
 //Alert pop up for data clear warning
-function warn() {
+function warn(messageString) {
     var ui = SpreadsheetApp.getUi();
     //alert popup with yes and no button
-    var response = ui.alert('All data on current tab will be deleted. Continue?', ui.ButtonSet.YES_NO);
+    var response = ui.alert(messageString, ui.ButtonSet.YES_NO);
 
     //returns with user choice
     if (response == ui.Button.YES) {
