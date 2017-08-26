@@ -8,74 +8,100 @@
 </head>
 
 <body>
-    <!--
-Main view
+    <!--This is the HTML that the user sees when the app launched and the sidebar is opened. -->
+    <!-- `< ?!= include(X)? >` are template inserts for modularity -->
+    <!-- and the entire document will be bundled together with inline CSS and JavaScript on deployment -->
 
-This is the HTML that the user sees when the app launched and the sidebar is opened.
-
-`< ?!= include(X)? >` are template inserts for modularity and the entire document will be bundled together with inline CSS and JavaScript on deployment
-
--->
-    <!--help page-->
-    <div class="slide-out transition hidden" id="js--helpPage">
-        <header class="container">
-            <h3>SpiraTeam Google Sheets Integration</h3>
-            <img src="https://files.inflectra.com/google/sheets/spira_icon.png" id="logo--top" >
-        </header>
-        <!-- help button and module for help page -->
-        <button id="js--helpClose">Close</button>
-        <?!= include('help') ?>
-    </div>
     <!--auth page-->
     <div class="slide-out transition open" id="js--auth">
         <header class="container">
             <h3>SpiraTeam Google Sheets Integration</h3>
-            <img src="https://files.inflectra.com/google/sheets/spira_icon.png" id="logo--top" >
+            <img src="https://files.inflectra.com/google/sheets/spira_icon.png" class="logo-top">
         </header>
         <p>Please enter the information used to access your server.</p>
         <div class="container" id="auth-fields">
             <label >Spira URL:
-                <input type="text" name="URL" placeholder="https://<your-site-name>.com" class="urlInput" id="js--url" />
+                <input 
+                    class="urlInput" 
+                    id="input-url" 
+                    name="URL" 
+                    placeholder="https://<your-site-name>.com" 
+                    type="text" 
+                    />
             </label>
             <label >User Name:
-                <input type="text" name="user-name" placeholder="User Name" class="userNameInput" id="js--userName" />
+                <input 
+                    class="userNameInput" 
+                    id="input-userName" 
+                    name="user-name" 
+                    placeholder="User Name" 
+                    type="text" 
+                    />
             </label>
             <label >RSS Token:
-                <input type="password" name="password" placeholder="{Your-RSS-Token}" class="passwordInput" id="js--password" />
+                <input 
+                    class="passwordInput" 
+                    id="input-password" 
+                    name="password" 
+                    placeholder="{Your-RSS-Token}" 
+                    type="password" 
+                    />
             </label>
         </div>
         <p>The RSS token can be generated from your 'My Profile' screen inside SpiraTeam. For further assistance contact your system administrator</p>
         <footer >
             <div class="container">
-                <button class="action" id="js--logIn">Log In</button>
-                <button  id="js--cancel">Cancel</button>
+                <button 
+                    class="action" 
+                    id="btn-login"
+                    >
+                    Log In
+                </button>
+                <button id="btn-cancel">Cancel</button>
                 <button class="js--help">Help</button>
             </div>
 
 
-
-
             <!-- Dev mock login data button. For developement only -->  
-            <button id="dev--stubs" class=''>dev</button>
+            <button id="dev--stubs">dev</button>
             
 
-
-
-
             <a href="https://www.inflectra.com" target="_blank">
-                <img src="https://files.inflectra.com/google/sheets/by_inflectra.png" id="logo--bottom" >
+                <img src="https://files.inflectra.com/google/sheets/by_inflectra.png"  class="logo-bottom">
             </a>
         </footer>
+    </div> 
+ 
+ 
+    <!--help page-->
+    <div class="slide-out transition hidden" id="js--helpPage">
+        <header class="container">
+            <h3>SpiraTeam Google Sheets Integration</h3>
+            <img src="https://files.inflectra.com/google/sheets/spira_icon.png" class="logo-top">
+        </header>
+        <!-- help button and module for help page -->
+        <button id="js--helpClose">Close</button>
+        <?!= include('help') ?>
     </div>
+
+
+
+
+
+
     <!--spinner-->
     <div id='js--loader' class='spinner-holder hidden'>
         <div class="loader"></div>
     </div>
+
+
+
+
     <!--main screen-->
     <div class="main">
         <header class="container">
             <h3>SpiraTeam Google Sheets Integration</h3>
-            <img src="https://files.inflectra.com/google/sheets/spira_icon.png" id="logo--top" >
+            <img src="https://files.inflectra.com/google/sheets/spira_icon.png" class="logo-top">
         </header>
         <small id="js--loggedInAs"></small>
         <div class="container" id="buttons-top">
@@ -115,9 +141,12 @@ This is the HTML that the user sees when the app launched and the sidebar is ope
             <button  id="js--export" disabled="true">Send to SpiraTeam</button>
         </div>
         <a href="https://www.inflectra.com" target="_blank">
-            <img src="https://files.inflectra.com/google/sheets/by_inflectra.png" id="logo--bottom" >
+            <img src="https://files.inflectra.com/google/sheets/by_inflectra.png" class="logo-bottom" >
         </a>
     </div>
+
+
+
     <!--Jquery-->
     <script src="https://code.jquery.com/jquery-3.1.1.slim.min.js" integrity="sha256-/SIrNqv8h6QGKDuNoLGA4iret+kyesCkHGzVUUV0shc=" crossorigin="anonymous"></script>
     <!--user agent modules-->
@@ -125,5 +154,4 @@ This is the HTML that the user sees when the app launched and the sidebar is ope
     <?!= include('client.js') ?>
 
 </body>
-
 </html>

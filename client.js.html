@@ -10,28 +10,27 @@
  *
  */
 
-//dev only
-//fill in mock values and uncomment the `dev` button on the index page for easy log in values in development
-
+// dev only
+// fill in mock values and uncomment the `dev` button on the index page for easy log in values in development
 $('#dev--stubs').click(function() {
-    $('#js--url').val('https://demo.spiraservice.net/oluwatoni');
-    $('#js--userName').val('administrator');
-    $('#js--password').val('{8323528B-5A45-4FD9-867C-82BF7194EF4F}');
+    $('#input-url').val('https://demo.spiraservice.net/oluwatoni');
+    $('#input-userName').val('administrator');
+    $('#input-password').val('{8323528B-5A45-4FD9-867C-82BF7194EF4F}');
 });
-// END of dev only
 
 
-$('#js--logIn').click(function() {
+$('#btn-login').click(function() {
+    // get user data from input fields and store in user data object
+    model.userData.currentUser.url = $('#input-url').val();
+    model.userData.currentUser.userName = $('#input-userName').val();
+    model.userData.currentUser.api_key = btoa('&api-key=' + encodeURIComponent($('#input-password').val()));
 
-    //get user data from input fields and store in user data object
-    model.userData.currentUser.url = $('#js--url').val();
-    model.userData.currentUser.userName = $('#js--userName').val();
-    model.userData.currentUser.api_key = btoa('&api-key=' + encodeURIComponent($('#js--password').val()));
-    //run init function, starts building data model
+    // run init function, starts building data model
     init();
 });
 
-$('#js--cancel').click(function() {
+
+$('#btn-cancel').click(function() {
     //clear input field values
     $('#js--url, #js--userName, #js--password').val('');
 });
@@ -282,7 +281,10 @@ function init() {
 
         //map through and store project data
         projects.map(function(project) {
-            let projArr = [project.ProjectId, project.Name];
+            let projArr = {
+                id: project.ProjectId,
+                name: project.Name
+            };
            
             //store project data [id , name]
             model.userData.projects.push(projArr);
@@ -327,22 +329,29 @@ function init() {
     }
 }
 
-//this function sets the model data for project and artifact when the template function is launched
+// sets the model data based on the chosen project and artifact
+// called when the template function is launched
 function projectAndArtifactSetter() {
-    //store dropdown values
+    // store dropdown values
     let projectDropdownVal = $('#js--project option:selected').val();
     let artifactDropdownVal = $('#js--artifact option:selected').val();
 
-
-    //map through model arrays to assign ids to selected values
-    let artifactSelected = model.userData.artifacts.filter(function(artifact) {return artifact.name == artifactDropdownVal})[0];
-    let projectSelected = model.userData.projects.filter(function(project) {return project[1] == projectDropdownVal})[0];
+    // filter the project and artifact lists to those chosen 
+    let artifactSelected = model.userData.artifacts.filter(function(artifact) {
+        return artifact.name == artifactDropdownVal
+    })[0];
+    let projectSelected = model.userData.projects.filter(function(project) {
+        return project[1] == projectDropdownVal
+    })[0];
     
+    // set the template data to the filtered values
     model.templateData.currentArtifactName = artifactSelected.name;
     model.templateData.currentArtifactId = artifactSelected.id;
     
-    model.templateData.currentProjectName = projectSelected[1];
-    model.templateData.currentProjectNumber = projectSelected[0];
+    model.templateData.currentProjectName = projectSelected.name;
+    model.templateData.currentProjectID = projectSelected.id;
+
+    // get all relevant information for chosen project and artifact
     updateData();
 }
 
@@ -356,7 +365,7 @@ function updateData() {
 
     //call google function to load project users data
     
-    google.script.run.withSuccessHandler(userSuccess).withFailureHandler(errorNetwork).getUsers(model.userData.currentUser, model.templateData.currentProjectNumber)
+    google.script.run.withSuccessHandler(userSuccess).withFailureHandler(errorNetwork).getUsers(model.userData.currentUser, model.templateData.currentProjectId)
     
     //parses user data on successful fetch
     function userSuccess(users) {
@@ -413,7 +422,6 @@ function updateData() {
     }
     
     //get all custom fields
-
     function getCustomFields() {
  
         //call server side fetch for project custom fields
