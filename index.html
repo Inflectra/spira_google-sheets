@@ -12,12 +12,13 @@
     <!-- `< ?!= include(X)? >` are template inserts for modularity -->
     <!-- and the entire document will be bundled together with inline CSS and JavaScript on deployment -->
 
+    <header class="container">
+        <h3>SpiraTeam Google Sheets Integration</h3>
+        <img src="https://files.inflectra.com/google/sheets/spira_icon.png" class="logo-top">
+    </header>
+
     <!--auth page-->
     <div class="slide-out transition open" id="js--auth">
-        <header class="container">
-            <h3>SpiraTeam Google Sheets Integration</h3>
-            <img src="https://files.inflectra.com/google/sheets/spira_icon.png" class="logo-top">
-        </header>
         <p>Please enter the information used to access your server.</p>
         <div class="container" id="auth-fields">
             <label >Spira URL:
@@ -75,10 +76,6 @@
  
     <!--help page-->
     <div class="slide-out transition hidden" id="js--helpPage">
-        <header class="container">
-            <h3>SpiraTeam Google Sheets Integration</h3>
-            <img src="https://files.inflectra.com/google/sheets/spira_icon.png" class="logo-top">
-        </header>
         <!-- help button and module for help page -->
         <button id="js--helpClose">Close</button>
         <?!= include('help') ?>
@@ -99,10 +96,6 @@
 
     <!--main screen-->
     <div class="main">
-        <header class="container">
-            <h3>SpiraTeam Google Sheets Integration</h3>
-            <img src="https://files.inflectra.com/google/sheets/spira_icon.png" class="logo-top">
-        </header>
         <small id="js--loggedInAs"></small>
         <div class="container" id="buttons-top">
             <button class="js--help">Help</button>
