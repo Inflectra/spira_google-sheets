@@ -12,9 +12,9 @@
     <!-- `< ?!= include(X)? >` are template inserts for modularity -->
     <!-- and the entire document will be bundled together with inline CSS and JavaScript on deployment -->
 
-    <header class="container">
-        <h3>SpiraTeam Google Sheets Integration</h3>
-        <img src="https://files.inflectra.com/google/sheets/spira_icon.png" class="logo-top">
+    <header class="header">
+        <img src="https://files.inflectra.com/google/sheets/spira_icon.png" class="header-logo">
+        <h3 class="header-heading">SpiraTeam Google Sheets Integration</h3>
     </header>
 
     <!--auth page-->
@@ -50,27 +50,20 @@
             </label>
         </div>
         <p>The RSS token can be generated from your 'My Profile' screen inside SpiraTeam. For further assistance contact your system administrator</p>
-        <footer >
-            <div class="container">
-                <button 
-                    class="action" 
-                    id="btn-login"
-                    >
-                    Log In
-                </button>
-                <button id="btn-cancel">Cancel</button>
-                <button class="js--help">Help</button>
-            </div>
-
-
+        
+        <div class="container">
+            <button 
+                class="action" 
+                id="btn-login"
+                >
+                Log In
+            </button>
+            <button id="btn-cancel">Cancel</button>
+            <button class="js--help">Help</button>
+            
             <!-- Dev mock login data button. For developement only -->  
             <button id="dev--stubs">dev</button>
-            
-
-            <a href="https://www.inflectra.com" target="_blank">
-                <img src="https://files.inflectra.com/google/sheets/by_inflectra.png"  class="logo-bottom">
-            </a>
-        </footer>
+        </div>
     </div> 
  
  
@@ -95,7 +88,7 @@
 
 
     <!--main screen-->
-    <div class="main">
+    <div class="main hidden">
         <small id="js--loggedInAs"></small>
         <div class="container" id="buttons-top">
             <button class="js--help">Help</button>
@@ -133,10 +126,15 @@
             <button  id="js--import" disabled="true">Import from SpiraTeam</button>
             <button  id="js--export" disabled="true">Send to SpiraTeam</button>
         </div>
-        <a href="https://www.inflectra.com" target="_blank">
-            <img src="https://files.inflectra.com/google/sheets/by_inflectra.png" class="logo-bottom" >
-        </a>
-    </div>
+        
+      </div>
+      
+      
+      <footer class="footer">
+          <a href="https://www.inflectra.com" target="_blank">
+              <img src="https://files.inflectra.com/google/sheets/by_inflectra.png"  class="footer-logo">
+          </a>
+      </footer>
 
 
 

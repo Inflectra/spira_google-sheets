@@ -20,18 +20,6 @@ body {
     padding: 10px;
 }
 
-.logo-top {
-    height: 75px;
-    width: 75px;
-}
-
-.logo-bottom {
-    float: right;
-    height: 35px;
-    padding: 20px 10px;
-    width: 140px;
-}
-
 .hidden {
     display: none;
 }
@@ -47,36 +35,42 @@ auth and help screen styles
 */
 
 
-#js--auth {
-    background-color: white;
-    position: relative;
-    right: -520px;
-    z-index: 100;
-}
-
-#js--helpPage {
-    background-color: white;
-    height: 550px;
-    position: relative;
-    right: -520px;
-    z-index: 1000;
-}
-
 #entries-text pre {
     margin-left: -90px;
 }
 
-header {
-    padding-bottom: 20px;
+
+
+
+
+.header {
+    align-items: center;
+    display: flex;
+    padding: 10px 5px;
+}
+.header-heading {
+    margin: 0 0 0 1rem;
+}
+.header-logo {
+    height: 40px;
 }
 
-header h3 {
-    padding-top: 14px;
-    text-align: center;
-    width: 188px;
-    letter-spacing: .75px;
-    line-height: 1.2rem;
+
+.footer {
+    bottom: 0;
+    padding: 1rem;
+    position: fixed;
 }
+.footer-logo {
+    height: 25px;
+}
+
+
+
+
+
+
+
 
 #help-header {
     display: flex;
@@ -88,9 +82,6 @@ header h3 {
     margin-left: 0;
 }
 
-#js--auth p {
-    text-align: center;
-}
 
 #auth-fields {
     flex-direction: column;
@@ -113,12 +104,7 @@ header h3 {
     margin-left: 38%;
 }
 
-footer {
-    margin-top: 50px;
-    padding-bottom: 75px;
-}
-
-footer .container {
+.container {
     display: flex;
     justify-content: space-around;
 }
