@@ -119,7 +119,7 @@ Error Functions
 function error(type) {
     if (type == 'impExp') {
         okWarn('There was an input error. Please check that your entries are correct.');
-    } else if (type == 'unk') {
+    } else if (type == 'unknown') {
         okWarn('Unkown error. Please try again later or contact your system administrator');
     } else {
         okWarn('Network error. Please check your username, url, and password. If correct make sure you have the correct permissions.');

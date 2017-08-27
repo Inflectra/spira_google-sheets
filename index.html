@@ -139,12 +139,11 @@
                 Help
             </button>
             <button 
-                onclick="logout()"
+                onclick="logoutAttempt()"
                 type="button"
                 >
                 Logout
             </button>
-            <button  id="js--clear">Clear</button>
         </div>
         
         
@@ -159,7 +158,7 @@
             </label>
             <select 
                 class="form-input"
-                id="js--project"
+                id="select-project"
                 >
                 <!--aysnc populated -->
             </select>
@@ -178,7 +177,7 @@
                 disabled="true"
                 id="select-artifact" 
                 >
-                <option value="Select an Artifact">Select an Artifact</option>
+                <option value="0">Select an Artifact</option>
                 <option id="reqElement" value="requirements">Requirements</option>
                 <option value="testCases" disabled="true">Test Case</option>
                 <option value="incidents" disabled="true">Incident</option>
@@ -191,11 +190,25 @@
         </label>
         
         
-        <div class="pt-lg">
-            <button id="btn-template" disabled="true" >Load Template</button>
-            <button id="btn-save" >Save</button>
-        </div>
         <div class="pt-md">
+            <button 
+                class="action"
+                disabled="true"
+                id="btn-template" 
+                onclick="createTemplateAttempt()"
+                type="button"
+                >
+                Load
+            </button>
+            <button id="btn-save" >Copy</button>
+            <button 
+                onclick="clearSheetAttempt()"
+                type="button"
+                >
+                Clear
+            </button>
+        </div>
+        <div class="pt-lg">
             <button  id="js--import" disabled="true">Get from SpiraTeam</button>
             <button  id="js--export" disabled="true">Send to SpiraTeam</button>
         </div>
@@ -442,7 +455,7 @@ Item 1
     
     
     <!--spinner-->
-    <div id='js--loader' class='loader-box hidden'>
+    <div id='loader' class='loader-box hidden'>
         <div class="loader"></div>
     </div>
 

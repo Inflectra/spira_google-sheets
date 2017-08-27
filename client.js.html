@@ -4,37 +4,94 @@
 
 /*
  *
- * ==================
- * HTML UI MANAGEMENT
- * ==================
+ * =================================
+ * UTILITIES & CROSS PANEL FUNCTIONS
+ * =================================
  *
  */
 
 // for dev mode only - comment out or set to false to disable any UI dev features
 let devMode = true;
 
-(function() {
+(function () {
+    setDevStuff();
+})();
+
+function setDevStuff () {
     if (devMode) {
         $("#btn-dev").removeClass("hidden");
         
         model.userData.currentUser.url = "https://demo.spiraservice.net/oluwatoni";
         model.userData.currentUser.userName = "administrator";
         model.userData.currentUser.api_key = "{8323528B-5A45-4FD9-867C-82BF7194EF4F}";
-        console.log(model.userData.currentUser);
     }
-})();
+}
 
 // panel: string. suffix for items to act on (eg if id = panel-help, choice = "help")
 function panelToggle (panel) {
     panelId = "#panel-" + panel;
     $(panelId).toggleClass("offscreen");
 }
-
-// panel: string. suffix for items to act on (eg if id = panel-help, choice = "help")
-function panelOffscreen (panel) {
+function hidePanel (panel) {
+    panelId = "#panel-" + panel;
+    $(panelId).addClass("offscreen");
+}
+function showPanel (panel) {
     panelId = "#panel-" + panel;
     $(panelId).removeClass("offscreen");
 }
+
+function showLoadingSpinner () {
+    $('#loader').removeClass('hidden');
+}
+function hideLoadingSpinner () {
+    $('#loader').addClass('hidden');
+}
+
+
+function clearAddonData () {
+    //clear spreadsheet, model
+    clearSheet();
+    modelReset();
+}
+
+// shouldClear: optional bool to check
+function clearSheet (shouldClear) {
+    var shouldClearToUse = typeof shouldClear !== 'undefined' ? shouldClear : true;
+    if (shouldClearToUse) google.script.run.clearAll();
+}
+
+function resetSidebar () {
+    clearAuthForm();
+    
+    // hide other panels, so login page is visible
+    $(".panel:not(#panel-auth)").addClass("offscreen");
+    
+    // disable template button and artifact dropdown
+    $("#btn-template, #select-artifact").prop("disabled", true);
+
+    // reset artifact dropdown to 'Select an Artifact'
+    $("#select-artifact option[value='Select an Artifact']").attr("selected", "selected");
+    
+    // reset anything required if in devmode
+    setDevStuff();
+}
+
+
+
+
+
+
+
+
+
+/*
+ *
+ * ============
+ * LOGIN SCREEN
+ * ============
+ *
+ */
 
 function getAuthDetails () {
     // get user data from input fields and store in user data object
@@ -57,12 +114,133 @@ function clearAuthForm () {
 
 function loginAttempt () {
     getAuthDetails();
-    
-    // run init function, starts building data model
-    init();
+    login();
 }
 
-// generic function that selects the relevant help section to show
+// login function that starts the intial data creation
+function login() {    
+    showLoadingSpinner();
+
+    // call server side function to get projects
+    // also serves as authentication check, if the user credentials aren't correct it will throw a network error
+    google.script.run.withSuccessHandler(populateProjects).withFailureHandler(errorNetwork).getProjects(model.userData.currentUser);
+}
+
+// kick off prepping and showing main panel
+function populateProjects (projects) {
+
+    // take projects data from Spira API call, strip out unwanted fields, add to data model
+    let pairedDownProjectsData = projects.map(function(project) {
+        let result = {
+            id: project.ProjectId,
+            name: project.Name
+        };
+        return result;
+    });
+    
+    // now add paired down project array to data store
+    model.userData.projects = pairedDownProjectsData;
+    
+    // get UI logic ready for main panel
+    showMainPanel();
+}
+
+
+
+
+
+
+
+
+
+/*
+ *
+ * ===========
+ * MAIN SCREEN
+ * ===========
+ *
+ */
+ 
+function showMainPanel () {
+    // displays the current logged in user name
+    $('#js--loggedInAs').html('Logged in as: ' + model.userData.currentUser.userName);
+    
+    setProjectsDropdown();
+    showPanel("main");
+    hideLoadingSpinner();
+
+    // server side 'slide up' pop-up window (aka 'toast') notifying user on success
+    google.script.run.success('Projects loaded');
+
+}
+
+function setProjectsDropdown () {
+    // add default "select" option to top of project array
+    var projects = JSON.parse(JSON.stringify(model.userData.projects));
+    var selectAProject = {id: 0, name: "Select a project"};
+    projects.unshift(selectAProject);
+
+    // clear project dropdown
+    $("#select-project").html('');
+    
+    // add all projects to the dropdown
+    $.each(projects, function (i, item) {
+        $("#select-project").append($("<option>", { 
+            value: item.id,
+            text: item.name 
+        }));
+    });
+}
+
+
+function logoutAttempt () {
+    //warn user that all tab data will be lost. Returns true or false
+    google.script.run.withSuccessHandler(logout).warn('All data on current tab will be deleted. Continue?');
+}
+//gets a true or false value promise from google
+function logout (shouldLogout) {
+    if (shouldLogout) {
+        clearAddonData();
+        resetSidebar();
+    }
+}
+
+function createTemplateAttempt() {   
+    //warn the user data will be erased
+    google.script.run.withSuccessHandler(createTemplate).warn('All data on current tab will be replaced. Continue?');
+}
+function createTemplate (shouldClearForm) {
+    if (shouldClearForm) {
+        clearSheet();
+        
+        //set artifact equal to the artifact from the dropdown
+        //TODO: this does nothing and should be deleted as part of refactor
+        var artifact = $("#select-artifact").value;
+      
+        projectAndArtifactSetter();   
+    }
+}
+
+function clearSheetAttempt () {
+    //warn that data will be erased
+    google.script.run.withSuccessHandler(clearSheet).warn('All data on current tab will be deleted. Continue?');
+};
+
+
+
+
+
+
+
+
+/*
+ *
+ * ===========
+ * HELP SCREEN
+ * ===========
+ *
+ */
+
 // choice: string. suffix for items to select (eg if id = help-section-fields, choice = "fields")
 function showChosenHelpSection (choice) {
     // hide all sections and then only show the one the user wants
@@ -75,29 +253,6 @@ function showChosenHelpSection (choice) {
 }
 
 
-function logout () {
-    //warn user that all tab data will be lost. Returns true or false
-    google.script.run.withSuccessHandler(userLogoutResponse).warn('All data on current tab will be deleted. Continue?');
-    
-    //gets a true or false value promise from google
-    function userLogoutResponse (isLogout) {
-        if (isLogout) {
-            //clear spreadsheet, model and login form
-            google.script.run.clearAll();
-            modelReset();
-            clearAuthForm();
-            
-            // hide other panels, so login page is visible
-            $(".panel:not(#panel-auth)").addClass("offscreen");
-            
-            // disable template button and artifact dropdown
-            $("#btn-template, #select-artifact").prop("disabled", true);
-
-            // reset artifact dropdown to 'Select an Artifact'
-            $("#select-artifact option[value='Select an Artifact']").attr("selected", "selected");
-        }
-   }
-}
 
 
 
@@ -108,23 +263,7 @@ function logout () {
 
 
 
-$('#btn-template').click(function() {
-    
-    //warn the user data will be erased
-    google.script.run.withSuccessHandler(userChoice).warn();
-    //gets a true or false from a google promise
-    function userChoice(bool) {
-        if(bool){
-          //clear tab data
-          google.script.run.clearAll();
-          //set artifact equal to the artifact from the dropdown
-          var artifact = $("select-artifact").value;
-        
-           projectAndArtifactSetter();
-            
-        }
-    }
-});
+
 
 $('#js--import').click(function() {
     //this can be reimplemented in future versions but all code related to importing artifact data is commented out.
@@ -145,8 +284,9 @@ $('#js--export').click(function() {
     //check that template is loaded
     //edge case check.
     if (model.templateData.isTemplateLoaded) {
-        // toggle on spinner
-        $('#js--loader').toggleClass('hidden');
+        
+        showLoadingSpinner();
+        
         //call export function
         google.script.run.withFailureHandler(errorImpExp).withSuccessHandler(exportSuccess).exporter(model);
     } else {
@@ -166,8 +306,9 @@ $('#js--export').click(function() {
                 console.log(error);
             })
         }
-        //toggle off spinner
-        $('#js--loader').toggleClass('hidden');
+        
+        hideLoadingSpinner();
+        
         //runs the export success function, passes a boolean flag, if there are errors the flag is true.
         google.script.run.exportSuccess(data[0]);
 
@@ -178,10 +319,11 @@ $('#btn-save').click(function() {
     //check to see if there is a template present
     //edge case check
     if (model.templateData.isTemplateLoaded) {
-        //toggle spinner on
-        $('#js--loader').toggleClass('hidden');
+
+        showLoadingSpinner();
+        
         //call save function
-        google.script.run.withFailureHandler(errorUnk).withSuccessHandler(saveSuccess).save();
+        google.script.run.withFailureHandler(errorUnknown).withSuccessHandler(saveSuccess).save();
     } else {
         //if no template popup a warning
         google.script.run.noTemplate();
@@ -189,7 +331,7 @@ $('#btn-save').click(function() {
 
     function saveSuccess(bool) {
         // toggle spinner off on yes or no from popup dialog
-        $('#js--loader').toggleClass('hidden');
+        $('#loader').toggleClass('hidden');
         
         if(bool){
             //notify on success
@@ -198,28 +340,17 @@ $('#btn-save').click(function() {
     }
 });
 
-$('#js--clear').click(function() {
-    //warn that data will be erased
-    google.script.run.withSuccessHandler(userChoice).warn();
-
-    function userChoice(bool) {
-        //clear all data
-        bool ? google.script.run.clearAll() : null;
-    }
-
-});
-
-//handles enabling or disabling dropdown fields depending on the correct values
-$('#js--project').change(function(e) {
+//handles changing project dropdown - what should be enabled or disabled
+$('#select-project').change(function(e) {
     //if the project field has not been selected all other selected buttons are disabled
-    if (e.target.value === 'Select a Project') {
-        $('#select-artifact').prop('disabled', true);
-        $('#btn-template').prop('disabled', true);
+    if (e.target.value == 0) {
+        $("#select-artifact, #btn-template").prop('disabled', true);
     } else {
-        //if project has been selected check to see if artifacts have been selected already
-        //if so enable the template button as well
+        //enable artifacts dropdown
         $('#select-artifact').prop('disabled', false);
-        if ($('#select-artifact option:selected').val() !== 'Select an Artifact') {
+
+        //if artifact already selected, also enable the template button
+        if ($('#select-artifact option:selected').val() != 0) {
             $('#btn-template').prop('disabled', false)
         }
     }
@@ -254,74 +385,18 @@ $('#select-artifact').change(function(e) {
  */
 
 
-//initializing function, this function is called on a log in attempt
-function init() {
-    //turn on ajax spinner
-    $('#js--loader').addClass('hidden');
-
-    //call server side function to get projects
-    //this also serves as an authentication check, if the user credentials aren't correct it will throw a network error
-    google.script.run.withSuccessHandler(projectSuccess).withFailureHandler(errorNetwork).getProjects(model.userData.currentUser);
 
 
-    //on success this function will parse the received project data
-    function projectSuccess(projects) {
-
-        //map through and store project data
-        projects.map(function(project) {
-            let projArr = {
-                id: project.ProjectId,
-                name: project.Name
-            };
-           
-            //store project data [id , name]
-            model.userData.projects.push(projArr);
-        });
-
-        //populate project dropdown select menu
-        populateFields();
-    }
-
-    //this function is called on successful log in after the projects have been received
-    function populateFields() {
-        //clear project drop down
-        $('#js--project').html('');
-
-        //add first default item to dropdown menu
-        //this is value is also used to check if a project has been selected in other functions
-        let selectOption = $('<option></option>');
-        selectOption.text('Select a Project');
-        $('#js--project').append(selectOption);
-
-        //populate projects drop down
-        model.userData.projects.map(proj => {
-                let option = $('<option></option>');
-                option.attr('value', proj[1]);
-                option.text(proj[1]);
-                $('#js--project').append(option);
-            })
-
-        //displays the current logged in user name
-        $('#js--loggedInAs').html('Logged in as: ' + model.userData.currentUser.userName);
-
-        //open mainh window
-        $("#panel-main").removeClass("offscreen");
-
-        //turn off ajax spinner
-        $('#js--loader').addClass('hidden');
-
-        //server side 'slide up' pop-up window (aka 'toast') notifying user on success
-        google.script.run.success('Projects loaded');
 
 
-    }
-}
+
+
 
 // sets the model data based on the chosen project and artifact
 // called when the template function is launched
 function projectAndArtifactSetter() {
     // store dropdown values
-    let projectDropdownVal = $('#js--project option:selected').val();
+    let projectDropdownVal = $('#select-project option:selected').val();
     let artifactDropdownVal = $('#select-artifact option:selected').val();
 
     // filter the project and artifact lists to those chosen 
@@ -348,8 +423,7 @@ function projectAndArtifactSetter() {
 //this function will throw an error if the user does not have the proper permissions
 function updateData() {
 
-    //turn on ajax spinner
-    $('#js--loader').toggleClass('hidden');
+    showLoadingSpinner();
 
     //call google function to load project users data
     
@@ -404,8 +478,8 @@ function updateData() {
         } else {
        
             google.script.run.okWarn('You do not have the correct permissions to access this artifact');
-            //turn off ajax spinner
-            $('#js--loader').toggleClass('hidden');
+            
+            hideLoadingSpinner();
         }
     }
     
@@ -519,7 +593,7 @@ function updateData() {
     function getTemplate(){
 
       //call server side template function
-      google.script.run.withSuccessHandler(templateSuccess).withFailureHandler(errorUnk).templateLoader(model.templateData);
+      google.script.run.withSuccessHandler(templateSuccess).withFailureHandler(errorUnknown).templateLoader(model.templateData);
 
 
             
@@ -527,12 +601,9 @@ function updateData() {
            
      
               model.templateData.isTemplateLoaded = true;
-                  
-
-      
       
               //turn off ajax spinner if it's on
-              $('#js--loader').hasClass('hidden') ? null : $('#js--loader').toggleClass('hidden');
+              hideLoadingSpinner();
             
 
               //enable the send to spira button
@@ -544,13 +615,19 @@ function updateData() {
 
 
 /*
- * Error functions
- * All of these functions call a server side popup with various args, most args are the HTTPResponse objects from the `withFailureHandler` promise.
+ * 
+ * ==============
+ * ERROR HANDLING
+ * ==============
+ *
+ * These call a popup using google server side code
+ * most args are the HTTPResponse objects from the `withFailureHandler` promise
+ *
  */
 
 function errorPopUp(err, type) {
     google.script.run.error(type);
-    $('#js--loader').hasClass('hidden') ? null : $('#js--loader').toggleClass('hidden');
+    hideLoadingSpinner();
     console.log(err);
 }
 
@@ -562,8 +639,8 @@ function errorImpExp(err) {
     errorPopUp(err, 'impExp');
 }
 
-function errorUnk(err) {
-    errorPopUp(err, 'unk');
+function errorUnknown(err) {
+    errorPopUp(err, 'unknown');
 }
 
 </script>
