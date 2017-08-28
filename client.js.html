@@ -67,8 +67,8 @@ function resetSidebar () {
     // hide other panels, so login page is visible
     $(".panel:not(#panel-auth)").addClass("offscreen");
     
-    // disable template button and artifact dropdown
-    $("#btn-template, #select-artifact").prop("disabled", true);
+    // disable buttons and dropdowns
+    $("#btn-template, #select-artifact, #btn-toSpira").prop("disabled", true);
 
     // reset artifact dropdown to 'Select an Artifact'
     $("#select-artifact option[value='Select an Artifact']").attr("selected", "selected");
@@ -193,6 +193,7 @@ function setProjectsDropdown () {
 }
 
 
+
 function logoutAttempt () {
     //warn user that all tab data will be lost. Returns true or false
     google.script.run.withSuccessHandler(logout).warn('All data on current tab will be deleted. Continue?');
@@ -205,6 +206,35 @@ function logout (shouldLogout) {
     }
 }
 
+
+
+//handles changing project dropdown - what should be enabled or disabled
+$('#select-project').change(function(e) {
+    //if the project field has not been selected all other selected buttons are disabled
+    if (e.target.value == 0) {
+        $("#select-artifact, #btn-template").prop('disabled', true);
+    } else {
+        //enable artifacts dropdown
+        $('#select-artifact').prop('disabled', false);
+
+        //if artifact already selected, also enable the template button
+        if ($('#select-artifact option:selected').val() != 0) {
+            $('#btn-template').prop('disabled', false)
+        }
+    }
+});
+
+//handles enabling the template button if the artifact drop down is properly selected.
+$('#select-artifact').change(function(e) {
+    if (e.target.value == 0) {
+        $('#btn-template').prop('disabled', true);
+    } else {
+        $('#btn-template').prop('disabled', false);
+    }
+});
+
+
+
 function createTemplateAttempt() {   
     //warn the user data will be erased
     google.script.run.withSuccessHandler(createTemplate).warn('All data on current tab will be replaced. Continue?');
@@ -213,18 +243,92 @@ function createTemplate (shouldClearForm) {
     if (shouldClearForm) {
         clearSheet();
         
-        //set artifact equal to the artifact from the dropdown
-        //TODO: this does nothing and should be deleted as part of refactor
-        var artifact = $("#select-artifact").value;
+        let selectedProject = getSelectedProject(),
+            selectedArtifact = getSelectedArtifact();
       
         projectAndArtifactSetter();   
     }
 }
 
+
+
 function clearSheetAttempt () {
     //warn that data will be erased
     google.script.run.withSuccessHandler(clearSheet).warn('All data on current tab will be deleted. Continue?');
 };
+
+
+
+function saveSheetAttempt () {
+    //check to see if there is a template present
+    if (model.templateData.isTemplateLoaded) {
+        showLoadingSpinner();
+        
+        //call save function
+        google.script.run.withFailureHandler(errorUnknown).withSuccessHandler(saveSheet).save();
+    } else {
+        //if no template popup a warning
+        google.script.run.noTemplate();
+    }
+
+}
+function saveSheet (isSaved) {
+    hideLoadingSpinner()
+    
+    if(isSaved){
+        //notify on success
+        google.script.run.success('Sheet saved in new tab.');
+    }
+}
+
+
+
+function getFromSpiraAttempt (function() {
+    //this can be reimplemented in future versions but all code related to importing artifact data is commented out.
+
+    // if (model.templateData.isTemplateLoaded) {
+    //     google.script.run.withSuccessHandler(importSuccess).withFailureHandler(errorNetwork).importer(model.userData.currentUser);
+    // } else {
+    //     google.script.run.noTemplate();
+    // }
+
+    // function importSuccess() {
+    //     google.script.run.success('Data loaded successfully.');
+    // }
+
+});
+
+
+
+function sendToSpiraAttempt () {
+    //check that template is loaded
+    if (model.templateData.isTemplateLoaded) {
+        showLoadingSpinner();
+        
+        //call export function
+        google.script.run.withFailureHandler(errorImpExp).withSuccessHandler(sendToSpira).exporter(model);
+    } else {
+        //if no template popup a warning
+        google.script.run.noTemplate();
+    }
+}
+function sendToSpira (data) {
+    //Array holds any error responses
+    let errorArr = data[1];
+
+    //if errors present
+    if (errorArr.length) {
+        //log all errors to the console.
+        errorArr.map(function(error) {
+            console.log(error);
+        })
+    }   
+    hideLoadingSpinner();
+    
+    //runs the export success function, passes a boolean flag, if there are errors the flag is true.
+    google.script.run.exportSuccess(data[0]);
+
+}
 
 
 
@@ -260,140 +364,42 @@ function showChosenHelpSection (choice) {
 
 
 
-
-
-
-
-
-$('#js--import').click(function() {
-    //this can be reimplemented in future versions but all code related to importing artifact data is commented out.
-
-    // if (model.templateData.isTemplateLoaded) {
-    //     google.script.run.withSuccessHandler(importSuccess).withFailureHandler(errorNetwork).importer(model.userData.currentUser);
-    // } else {
-    //     google.script.run.noTemplate();
-    // }
-
-    // function importSuccess() {
-    //     google.script.run.success('Data loaded successfully.');
-    // }
-
-});
-
-$('#js--export').click(function() {
-    //check that template is loaded
-    //edge case check.
-    if (model.templateData.isTemplateLoaded) {
-        
-        showLoadingSpinner();
-        
-        //call export function
-        google.script.run.withFailureHandler(errorImpExp).withSuccessHandler(exportSuccess).exporter(model);
-    } else {
-        //if no template popup a warning
-        google.script.run.noTemplate();
-    }
-
-    function exportSuccess(data) {
-  
-        //Array holds the error responses
-        let errorArr = data[1];
-
-        //if errors present
-        if (errorArr.length) {
-            //log all errors to the console.
-            errorArr.map(function(error) {
-                console.log(error);
-            })
-        }
-        
-        hideLoadingSpinner();
-        
-        //runs the export success function, passes a boolean flag, if there are errors the flag is true.
-        google.script.run.exportSuccess(data[0]);
-
-    }
-});
-
-$('#btn-save').click(function() {
-    //check to see if there is a template present
-    //edge case check
-    if (model.templateData.isTemplateLoaded) {
-
-        showLoadingSpinner();
-        
-        //call save function
-        google.script.run.withFailureHandler(errorUnknown).withSuccessHandler(saveSuccess).save();
-    } else {
-        //if no template popup a warning
-        google.script.run.noTemplate();
-    }
-
-    function saveSuccess(bool) {
-        // toggle spinner off on yes or no from popup dialog
-        $('#loader').toggleClass('hidden');
-        
-        if(bool){
-            //notify on success
-            google.script.run.success('Sheet saved in new tab.');
-        }
-    }
-});
-
-//handles changing project dropdown - what should be enabled or disabled
-$('#select-project').change(function(e) {
-    //if the project field has not been selected all other selected buttons are disabled
-    if (e.target.value == 0) {
-        $("#select-artifact, #btn-template").prop('disabled', true);
-    } else {
-        //enable artifacts dropdown
-        $('#select-artifact').prop('disabled', false);
-
-        //if artifact already selected, also enable the template button
-        if ($('#select-artifact option:selected').val() != 0) {
-            $('#btn-template').prop('disabled', false)
-        }
-    }
-});
-
-//handles enabling the template button if the artifact drop down is properly selected.
-$('#select-artifact').change(function(e) {
-    if (e.target.value === 'Select an Artifact') {
-        $('#btn-template').prop('disabled', true);
-    } else {
-        $('#btn-template').prop('disabled', false);
-    }
-});
-
-
-
-
-
-
-
-
-
 /*
  *
  * =================
- * UTILITY FUNCTIONS
+ * CREATING TEMPLATE
  * =================
- *
- * These scripts build the model for the selected artifact and project
- * Error pop-ups are also located here
  *
  */
 
-
-
-
-
-
-
-
-
 // sets the model data based on the chosen project and artifact
 // called when the template function is launched
+function getSelectedProject () {
+    // store dropdown value
+    let projectDropdownVal = $('#select-project option:selected').val();
+
+    // filter the project lists to those chosen 
+    let projectSelected = model.userData.projects.filter(function(project) {
+        return project.id == projectDropdownVal;
+    })[0];
+
+    return projectSelected;
+}
+
+function getSelectedArtifact() {
+    // store dropdown values
+    let artifactDropdownVal = $('#select-artifact option:selected').val();
+
+    // filter the artifact lists to those chosen 
+    let artifactSelected = model.userData.artifacts.filter(function(artifact) {
+        return artifact.id == artifactDropdownVal;
+    })[0];
+
+    return artifactSelected;
+}
+
+
+
 function projectAndArtifactSetter() {
     // store dropdown values
     let projectDropdownVal = $('#select-project option:selected').val();
@@ -401,10 +407,10 @@ function projectAndArtifactSetter() {
 
     // filter the project and artifact lists to those chosen 
     let artifactSelected = model.userData.artifacts.filter(function(artifact) {
-        return artifact.name == artifactDropdownVal
+        return artifact.id == artifactDropdownVal
     })[0];
     let projectSelected = model.userData.projects.filter(function(project) {
-        return project[1] == projectDropdownVal
+        return project.id == projectDropdownVal
     })[0];
     
     // set the template data to the filtered values
@@ -505,112 +511,99 @@ function updateData() {
     google.script.run.withSuccessHandler(authorSuccess).withFailureHandler(errorNetwork).getUsers(model.userData.currentUser, model.templateData.currentProjectNumber);
 
     function authorSuccess(data) {
-    
-    var arr = [];
-    //map through Author data object
-    data.map(function(data){
-    // push data onto array
-    arr.push([data.AuthorId, data.FullName])
-    })
-    
-    //assign values to dropdown data 
-    model.templateData.requirements.dropdowns['Owner'] = arr;
-    //This method can be used to work around requirement hardcodings, a new artifact array must be created in store.js
-    model.templateData.tasks.dropdowns['Owner'] = arr;
-    model.templateData.requirements.dropdowns['Author'] = arr;
-    
-    
-    getComponentsValues();
-    
-    google.script.run.success('User data loaded');
-    
-    
-    
+        var arr = [];
+        //map through Author data object
+        data.map(function(data){
+        // push data onto array
+        arr.push([data.AuthorId, data.FullName])
+        })
+        
+        //assign values to dropdown data 
+        model.templateData.requirements.dropdowns['Owner'] = arr;
+        //This method can be used to work around requirement hardcodings, a new artifact array must be created in store.js
+        model.templateData.tasks.dropdowns['Owner'] = arr;
+        model.templateData.requirements.dropdowns['Author'] = arr;
+        
+        
+        getComponentsValues();
+        
+        google.script.run.success('User data loaded');    
     }
+}
 
-    
-    
-    
+
+function getComponentsValues() {
+    google.script.run.withSuccessHandler(componentSuccess).withFailureHandler(errorNetwork).getComponents(model.userData.currentUser, model.templateData.currentProjectNumber);
+
+    function componentSuccess(data) {
+        var arr = [];
+        //map through component data object
+        data.map(function(data) {
+            //push id and name into array
+            arr.push([data.ComponentId, data.FullName])
+        })
+        //assign array to data model
+        model.templateData.requirements.components = arr;
+
+        //assign values to dropdown data
+        model.templateData.requirements.dropdowns['Components'] = arr;
+
+
+        getReleasesValues();
     }
-    
-    
-    
-    
-    
-    
+}
 
-    function getComponentsValues() {
-        google.script.run.withSuccessHandler(componentSuccess).withFailureHandler(errorNetwork).getComponents(model.userData.currentUser, model.templateData.currentProjectNumber);
+function getReleasesValues() {
+    google.script.run.withSuccessHandler(releaseSuccess).withFailureHandler(errorNetwork).getReleases(model.userData.currentUser, model.templateData.currentProjectNumber);
+  
 
-        function componentSuccess(data) {
-            var arr = [];
-            //map through component data object
-            data.map(function(data) {
-                //push id and name into array
-                arr.push([data.ComponentId, data.FullName])
-            })
-            //assign array to data model
-            model.templateData.requirements.components = arr;
+    function releaseSuccess(data) {
 
-            //assign values to dropdown data
-            model.templateData.requirements.dropdowns['Components'] = arr;
+        var arr = [];
+        //map through release data object
+        data.map(function(data) {
+            //collect id and name
+            arr.push([data.ReleaseId, data.Name])
+        })
 
-
-            getReleasesValues();
-        }
-    }
-
-    function getReleasesValues() {
-        google.script.run.withSuccessHandler(releaseSuccess).withFailureHandler(errorNetwork).getReleases(model.userData.currentUser, model.templateData.currentProjectNumber);
-      
-   
-        function releaseSuccess(data) {
-
-            var arr = [];
-            //map through release data object
-            data.map(function(data) {
-                //collect id and name
-                arr.push([data.ReleaseId, data.Name])
-            })
-
-            //assign collected data to model
-            model.templateData.requirements.releases = arr;
-         
-
-            //assign values to model drop down data
-            model.templateData.requirements.dropdowns['Version Number'] = arr;
-            model.templateData.tasks.dropdowns['Version Number'] = model.templateData.requirements.releases;
-         
-         
-            //call main template function
-            getTemplate();
-
-            //all user data loaded, call success notification
-            google.script.run.success('User data loaded');
-        }
-    }
-
-    function getTemplate(){
-
-      //call server side template function
-      google.script.run.withSuccessHandler(templateSuccess).withFailureHandler(errorUnknown).templateLoader(model.templateData);
-
-
-            
-            function templateSuccess(data) {
-           
+        //assign collected data to model
+        model.templateData.requirements.releases = arr;
      
-              model.templateData.isTemplateLoaded = true;
-      
-              //turn off ajax spinner if it's on
-              hideLoadingSpinner();
-            
 
-              //enable the send to spira button
-              $('#js--export').prop('disabled', false);
-            }
-             
+        //assign values to model drop down data
+        model.templateData.requirements.dropdowns['Version Number'] = arr;
+        model.templateData.tasks.dropdowns['Version Number'] = model.templateData.requirements.releases;
+     
+     
+        //call main template function
+        getTemplate();
+
+        //all user data loaded, call success notification
+        google.script.run.success('User data loaded');
     }
+}
+
+function getTemplate(){
+
+  //call server side template function
+  google.script.run.withSuccessHandler(templateSuccess).withFailureHandler(errorUnknown).templateLoader(model.templateData);
+
+
+        
+        function templateSuccess(data) {
+       
+ 
+          model.templateData.isTemplateLoaded = true;
+  
+          //turn off ajax spinner if it's on
+          hideLoadingSpinner();
+        
+
+          //enable the send to spira button
+          $("#btn-toSpira").prop('disabled', false);
+        }
+         
+}
 }
 
 

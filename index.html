@@ -178,14 +178,13 @@
                 id="select-artifact" 
                 >
                 <option value="0">Select an Artifact</option>
-                <option id="reqElement" value="requirements">Requirements</option>
-                <option value="testCases" disabled="true">Test Case</option>
-                <option value="incidents" disabled="true">Incident</option>
-                <option value="releases">Releases</option>
-                <option value="testRuns" disabled="true">Test Run</option>
-                <option id="taskElement" value="tasks">Task</option>
-                <option value="testSteps" disabled="true">Test Step</option>
-                <option value="testSets" disabled="true">Test Set</option>
+                <option value="1">Requirements</option>
+                <option value="2" disabled="true">Test Case</option>
+                <option value="3" disabled="true">Incident</option>
+                <option value="4">Releases</option>
+                <option value="5" disabled="true">Test Run</option>
+                <option value="6">Task</option>
+                <option value="8" disabled="true">Test Set</option>
             </select>
         </label>
         
@@ -200,7 +199,12 @@
                 >
                 Load
             </button>
-            <button id="btn-save" >Copy</button>
+            <button 
+                onclick="saveSheetAttempt()"
+                type="button"
+                >
+                Copy
+            </button>
             <button 
                 onclick="clearSheetAttempt()"
                 type="button"
@@ -209,8 +213,22 @@
             </button>
         </div>
         <div class="pt-lg">
-            <button  id="js--import" disabled="true">Get from SpiraTeam</button>
-            <button  id="js--export" disabled="true">Send to SpiraTeam</button>
+            <button  
+                disabled="true"
+                id="btn-fromSpira"
+                onclick="getFromSpiraAttempt()"
+                type="button"
+                >
+                Get from SpiraTeam
+            </button>
+            <button
+                disabled="true"
+                id="btn-toSpira" 
+                onclick="sendToSpiraAttempt()"
+                type="button"
+                >
+                Send to SpiraTeam
+            </button>
         </div>
         
     </div>
