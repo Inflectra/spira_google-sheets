@@ -166,7 +166,7 @@ function populateProjects (projects) {
  
 function showMainPanel () {
     // displays the current logged in user name
-    $('#js--loggedInAs').html('Logged in as: ' + model.userData.currentUser.userName);
+    $('#js--loggedInAs').html('Logged in as: ' + model.user.userName);
     
     setProjectsDropdown();
     showPanel("main");
