@@ -263,7 +263,7 @@ function Store (){
             customFields: []
         },
         
-                   tasks : {
+        tasks : {
             identification: 'tasks',
             unsupported: [],
             accessPermission: [1,2],
@@ -389,13 +389,12 @@ function Store (){
 }
 
 //model becomes a new instance of the data store preserving the immutability of the primary data object.
-let model = new Store;
+let model = new Data;
 
-/*
-let data = {
+let params = {
     fieldType: {
         int: 1,
-        num: 2,
+        num: 2,                                                           
         bool: 3,
         text: 4,
         date: 5,
@@ -405,14 +404,42 @@ let data = {
         release: 9,
         arr: 10
     },
-    currentProjectName: '',
-    currentProjectNumber: '',
-    currentArtifactName: '',
-    currentArtifactId: '',
-    isTemplateLoaded: false,
-    projectUsers: [],
-    requirements: {
-        identification: 'requirements',
+    artifacts: [
+        {name: 'requirements', id: 1},
+        {name: 'testCases', id: 2},
+        {name: 'incidents', id: 3},
+        {name: 'releases', id: 4},
+        {name: 'testRuns', id: 5},
+        {name: 'tasks', id: 6},
+        {name: 'testSteps', id: 7},
+        {name: 'testSets', id: 8}
+    ]
+};
+
+function Data() {
+
+    this.user = {
+        url: '',
+        userName: '',
+        api_key: '',
+        roleId: '',
+    };
+
+    this.projects = [];
+
+    this.currentProject = '';
+    this.currentProjectComponents = [];
+    this.currentProjectReleases = [];
+    this.currentProjectUsers = [];
+    
+    this.currentArtifact = '';
+    
+    this.isTemplateLoaded = false;
+
+    this.artifactData = '';
+
+    this.sheetRanges = {
+        // TODO MAKE DYNAMIC - these are for requirements
         unsupported: ['L3:L400', 'M3:M400'],
         accessPermission: [1,2],
         standardTitleRange: 'A1:M1',
@@ -425,14 +452,22 @@ let data = {
         cellRange: 'A3:L3',
         customCellRange: 'N3:AQ3',
         cellRangeLength: 43,
-        components: [],
-        releases: [],
+    };
+
+    this.isTemplateLoaded = false;
+    this.template = {
+        accessPermission: '' //TODO - not hooked up or likely working correctly
+    };
+};
+
+let fields = {
+    requirements: {
         fields: [
-            {field: "RequirementId", name: "Requirement ID", type: fieldType.int, col: 0, width: 100},
-            {field: "Name", name: "Requirement Name", type: fieldType.text, col: 1, width: 250},
-            {field: "Description", name: "Requirement Description", type: fieldType.text, col: 2, width: 350},
-            {field: "ReleaseVersionNumber", name: "Release Version", type: fieldType.release, col: 3, width: 250},
-            {field: "RequirementTypeId", name: "Type", type: fieldType.drop, col: 4, width: 100,
+            {field: "RequirementId", name: "Requirement ID", type: params.fieldType.int, col: 0, width: 100},
+            {field: "Name", name: "Requirement Name", type: params.fieldType.text, col: 1, width: 250},
+            {field: "Description", name: "Requirement Description", type: params.fieldType.text, col: 2, width: 350},
+            {field: "ReleaseVersionNumber", name: "Release Version", type: params.fieldType.release, col: 3, width: 250},
+            {field: "RequirementTypeId", name: "Type", type: params.params.fieldType.drop, col: 4, width: 100,
                 values: [
                     {id: -1, name: "Package"},
                     {id: 1, name: "Need"},
@@ -443,7 +478,7 @@ let data = {
                     {id: 6, name: "Design Elemen"}
                 ]
             },
-            {field: "ImportanceName", name: "Importance", type: fieldType.drop, col: 5, width: 100, 
+            {field: "ImportanceName", name: "Importance", type: params.fieldType.drop, col: 5, width: 100, 
                 values: [
                     {id: 1, name: "1 -Critical"},
                     {id: 2, name: "2 -High"},
@@ -451,7 +486,7 @@ let data = {
                     {id: 4, name: "4 -Low"}
                 ]
             },
-            {field: "StatusName", name: "Status", type: fieldType.drop, col: 6, width: 100, 
+            {field: "StatusName", name: "Status", type: params.fieldType.drop, col: 6, width: 100, 
                 values: [
                     {id: 1, name: "Requested"},
                     {id: 2, name: "Planned"},
@@ -465,22 +500,40 @@ let data = {
                     {id: 10, name: "Completed"}
                 ]
             },
-            {field: "EstimatePoints", name: "Estimate", type: fieldType.num, col: 7, width: 100},
-            {field: "AuthorName", name: "Author", type: fieldType.user, col: 8, width: 100},
-            {field: "OwnerName", name: "Owner", type: fieldType.user, col: 9, width: 100},
-            {field: "ComponentName", name: "Component", type: fieldType.component, col: 10, width: 200},
-            {field: "LinkedRequirementIds", name: "Linked Requirements \nCurrently not supported", type: fieldType.arr, col: 11},
-            {field: "StatusId", name: "Status ID", type: fieldType.drop, col: 12}, //not sure this is needed
-            {field: "Comment", name: "Comment \nCurrently not supported", type: fieldType.text, col: 13, width: 400},
+            {field: "EstimatePoints", name: "Estimate", type: params.fieldType.num, col: 7, width: 100},
+            {field: "AuthorName", name: "Author", type: params.fieldType.user, col: 8, width: 100},
+            {field: "OwnerName", name: "Owner", type: params.fieldType.user, col: 9, width: 100},
+            {field: "ComponentName", name: "Component", type: params.fieldType.component, col: 10, width: 200},
+            {field: "LinkedRequirementIds", name: "Linked Requirements \nCurrently not supported", type: params.fieldType.arr, col: 11, unsupported: true},
+            {field: "StatusId", name: "Status ID", type: params.fieldType.drop, col: 12}, //not sure this is needed
+            {field: "Comment", name: "Comment \nCurrently not supported", type: params.fieldType.text, col: 13, width: 400, unsupported: true},
             
              
-            'Comment \nCurrently not supported', 
-            'CUS-01', 'CUS-02', 'CUS-03', 'CUS-04', 'CUS-05', 'CUS-06', 'CUS-07', 'CUS-08', 'CUS-09', 'CUS-10', 'CUS-11', 'CUS-12', 'CUS-13', 'CUS-14', 'CUS-15', 'CUS-16', 'CUS-17', 'CUS-18', 'CUS-19', 'CUS-20', 'CUS-21', 'CUS-22', 'CUS-23', 'CUS-24', 'CUS-25', 'CUS-26', 'CUS-27', 'CUS-28', 'CUS-29', 'CUS-30'
         ],
-        customFields: []
     }
+};
+
+function createSheetRange (startCol, endCol, startRow, endRow) {
+
+    var colStart = toColumnName(startCol),
+        colEnd = toColumnName(endCol),
+        rowStart = startRow,
+        rowEnd = endRow;
+    return colStart + rowStart + ":" + colEnd + rowEnd;
 }
-*/
+
+/**
+ * Takes a positive integer and returns the corresponding column name.
+ * from http://cwestblog.com/2013/09/05/javascript-snippet-convert-number-to-column-name/
+ * @param {number} num  The positive integer to convert to a column name.
+ * @return {string}  The column name.
+ */
+ function toColumnName(num) {
+  for (var ret = '', a = 1, b = 26; (num -= a) >= 0; a = b, b *= 26) {
+    ret = String.fromCharCode(parseInt((num % b) / a) + 65) + ret;
+  }
+  return ret;
+}
 
 
 </script>
