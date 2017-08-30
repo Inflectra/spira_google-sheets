@@ -78,6 +78,35 @@ function resetSidebar () {
 }
 
 
+// adds all options to a dropdown
+// @param: selectId - is the id of the dom select element
+// @param: array - the array of objects (with id, name, and optionally a disabled value, and hidden bool)
+// @param: firstMessage - an optional text field to go at the top of the array - the initial choice 
+function setDropdown (selectId, array, firstMessage) {
+    // first make a deep copy of the array to stop any funny business
+    var arrayCopy = JSON.parse(JSON.stringify(array)),
+        $element = $("#" + selectId);
+
+    // if passed in, add default "select" option to top of project array
+    if(firstMessage) arrayCopy.unshift({
+        id: 0, 
+        name: firstMessage
+    });
+
+    // clear the dropdown
+    $element.html('');
+
+    var options = arrayCopy.map(function(item) {
+        var disabledText = item.disabled ? " disabled='true'" : "",
+            option = "<option value=" + item.id + disabledText + ">" + item.name + "</option>"
+        return !item.hidden ? option : null;
+    }).join("");
+    
+    // add all optoins to the dropdown
+    $element.append(options);
+}
+
+
 
 
 
@@ -168,31 +197,14 @@ function showMainPanel () {
     // displays the current logged in user name
     $('#js--loggedInAs').html('Logged in as: ' + model.user.userName);
     
-    setProjectsDropdown();
+    setDropdown("select-project", model.projects, "Select a project");
+    setDropdown("select-artifact", params.artifacts, "Select an artifact");
     showPanel("main");
     hideLoadingSpinner();
 
     // server side 'slide up' pop-up window (aka 'toast') notifying user on success
     google.script.run.success('Projects loaded');
 
-}
-
-function setProjectsDropdown () {
-    // add default "select" option to top of project array
-    var projects = JSON.parse(JSON.stringify(model.projects));
-    var selectAProject = {id: 0, name: "Select a project"};
-    projects.unshift(selectAProject);
-
-    // clear project dropdown
-    $("#select-project").html('');
-    
-    // add all projects to the dropdown
-    $.each(projects, function (i, item) {
-        $("#select-project").append($("<option>", { 
-            value: item.id,
-            text: item.name 
-        }));
-    });
 }
 
 
@@ -257,7 +269,7 @@ function createTemplate (shouldClearForm) {
         model.currentArtifact = selectedArtifact;
       
         // get all relevant information for chosen project and artifact
-        updateData();  
+        getTemplateDataFromSpira();  
     }
 }
 
@@ -417,182 +429,152 @@ function getSelectedArtifact() {
 
 
 
-//This function updates the user info for the selected project and artifact.
-//this function also calls the create template function after all data has been properly received
-//this function will throw an error if the user does not have the proper permissions
-function updateData() {
+function getComponents(user, projectId) {
+    model.getRequest.components = true;
 
-    showLoadingSpinner();
-
-    //call google function to load project users data
-    google.script.run
-        .withSuccessHandler(userSuccess)
-        .withFailureHandler(errorNetwork)
-        .getUsers(model.user, model.currentProject.id)
-    
-    //parses user data on successful fetch
-    function userSuccess(users) {
-        //clear old values
-        model.currentProjectUsers = [];
-        //map through user obj and assign names
-        users.map(user => {
-      
-            let num = user.UserId;
-            let first = user.FirstName;
-            let last = user.LastName;
-            let full = '';
-            //concat user name data into proper format
-            //check to see if middle name exists
-            if (user.MiddleInitial) {
-                let middle = user.MiddleInitial;
-                full = first + ' ' + middle + ' ' + last;
-            } else {
-                full = first + ' ' + last;
-             
-            }
-            
-            //add name and id to data model [id, name]
-            model.currentProjectUsers.push([num, full]);
-
-            //Log current user role id to current user data object
-            if (model.user.userName == user.UserName) {
-                //TODO access customized role id to lock out users without access
-                //currently the app will allow any user to attempt to post any artifact to a project they have access to.
-                //model.userData.currentUserRoleId = user.ProjectRoleId
-
-                //*******all access granted***********
-                model.user.roleId = 1;
-            }
-            
-        })
-
-        //check user role against allowed user roles
-        //if permission is correct continue along the callback chain
-        if (model.template.accessPermission.includes(model.user.roleId)) {
-            getCustomFields();
-           
-
-        //if permission is not correct pop up a warning and do nothing
-        } else {
-       
-            google.script.run.okWarn('You do not have the correct permissions to access this artifact');
-            
-            hideLoadingSpinner();
-        }
-    }
-    
-    //get all custom fields
-    function getCustomFields() {
- 
-        //call server side fetch for project custom fields
-        google.script.run
-            .withSuccessHandler(customSuccess)
-            .withFailureHandler(errorNetwork)
-            .getCustoms(model.user, model.currentProjectId, model.currentArtifact.id);
-
-        //called on successful custom field fetch
-        function customSuccess(data) {
-            //assign unparsed data to data object
-            //these values are parsed later depending on function needs
-            model.template.customFields = data;
-
-            getOwner();
-        }
-    }
-
-  function getOwner(){
-    //call server for username values
-    google.script.run
-        .withSuccessHandler(ownerSucess)
-        .withFailureHandler(errorNetwork)
-        .getUsers(model.user, model.currentProject.id);
-
-    function ownerSuccess(data) {
-        // add relevant data to model store
-        model.curentProjectUsers = data.map(function(data){
-            return {
-                id: data.AuthorId, 
-                name: data.FullName
-            }
-        });
-        
-        getComponentsValues();
-        
-        google.script.run.success('User data loaded');    
-    }
-}
-
-
-function getComponentsValues() {
+    // call server side fetch
     google.script.run
         .withSuccessHandler(componentSuccess)
         .withFailureHandler(errorNetwork)
         .getComponents(model.user, model.currentProject.id);
-
-    function componentSuccess(data) {
-        
-        // add relevant data to the main model store
-        model.currentProjectComponents = data.map(function(data) {
-            return {
-                id: data.ComponentId, 
-                name: data.FullName
-            }
-        });
-
-        getReleasesValues();
-    }
 }
+function getComponentsSuccess(data) {
+    model.getSuccess.components = true;
+    
+    // clear old values
+    model.currentProjectComponents = [];
 
-function getReleasesValues() {
-    google.script.run
-        .withSuccessHandler(releaseSuccess)
-        .withFailureHandler(errorNetwork)
-        .getReleases(model.user, model.currentProject.id);
-  
-
-    function releaseSuccess(data) {
-
-        // add relevant data to the main model store
-        model.currentProjectReleases = data.map(function(data) {
-            return {
-                id: data.ReleaseId,
-                name: data.Name
-            }
-        })
-     
-
-        //assign values to model drop down data
-        // TODO THIS NEEDS TO BE REFACTORED
-        model.template.dropdowns['Version Number'] = arr;     
-     
-        //call main template function
-        getTemplate();
-
-        //all user data loaded, call success notification
-        google.script.run.success('User data loaded');
-    }
-}
-
-function getTemplate(){
-
-  //call server side template function
-  google.script.run
-    .withSuccessHandler(templateSuccess)
-    .withFailureHandler(errorUnknown)
-    .templateLoader(model.template);
-      
-        function templateSuccess(data) {
-       
-          model.isTemplateLoaded = true;
-  
-          //turn off ajax spinner if it's on
-          hideLoadingSpinner();
-        
-          //enable the send to spira button
-          $("#btn-toSpira").prop('disabled', false);
+    // add relevant data to the main model store
+    model.currentProjectComponents = data.map(function(data) {
+        return {
+            id: data.ComponentId, 
+            name: data.FullName
         }
-         
+    });
+
+    if (allGetsSucceeded()) templateLoader();
 }
+
+
+
+function getCustoms(user, projectId, artifactId) {
+    model.getRequest.customs = true;
+
+    // call server side fetch
+    google.script.run
+        .withSuccessHandler(getCustomsSuccess)
+        .withFailureHandler(errorNetwork)
+        .getCustoms(user, projectId, artifactId);
+}
+function getCustomsSuccess(data) {
+    model.getSuccess.customs = true;
+    
+    // assign unparsed data to data object
+    // these values are parsed later depending on function needs
+    model.template.customFields = data;
+
+    if (allGetsSucceeded()) templateLoader();
+}
+
+
+function getReleases(user, projectId, artifactId) {
+    model.getRequest.releases = true;
+
+    // call server side fetch
+    google.script.run
+        .withSuccessHandler(getReleasesSuccess)
+        .withFailureHandler(errorNetwork)
+        .getReleases(user, projectId);
+}
+function getReleasesSuccess(data) {
+    model.getSuccess.releases = true;
+    
+    // clear old values
+    model.currentProjectReleases = [];
+
+    // add relevant data to the main model store
+    model.currentProjectReleases = data.map(function(data) {
+        return {
+            id: data.ReleaseId,
+            name: data.Name
+        }
+    })
+
+    if (allGetsSucceeded()) templateLoader();
+}
+
+
+function getUsers(user, projectId) {
+    model.getRequest.users = true;
+
+    // call server side fetch
+    google.script.run
+        .withSuccessHandler(getUsersSuccess)
+        .withFailureHandler(errorNetwork)
+        .getUsers(user, projectId)
+}
+function getUsersSuccess(data) {
+    model.getSuccess.users = true;
+
+    // clear old values
+    model.currentProjectUsers = [];
+
+    // map through user obj and assign names
+    model.currentProjectUsers = data.map(function(user) {
+        return {
+            userId: user.UserId,
+            username: user.UserName,
+            fullName: user.FullName,
+        }
+    }) 
+
+    if (allGetsSucceeded()) templateLoader();
+}
+
+
+
+function templateLoader () {
+    //all data loaded, call success notification
+    google.script.run.success('All data loaded');
+
+    //call server side template function
+    google.script.run
+        .withSuccessHandler(templateLoaderSuccess)
+        .withFailureHandler(errorUnknown)
+        .templateLoader(model.template);
+}    
+function templateLoaderSuccess(data) {
+        
+    model.isTemplateLoaded = true;
+    
+    //turn off ajax spinner if it's on
+    hideLoadingSpinner();
+            
+    //enable the send to spira button
+    $("#btn-toSpira").prop('disabled', false);
+}
+
+
+function allGetsSucceeded () {
+    var request = model.getRequest,
+        success = model.getSuccess,
+        isRequestDone = request.components && request.customs && request.releases && request.users,
+        isSuccessDone = success.components && success.customs && success.releases && success.users;
+
+    return isRequestDone && isSuccessDone;
+}
+
+// retrieves all relevant data for template creation.
+// calls functions that each check for completion of all calls
+// on final success, kick off template creation
+function getTemplateDataFromSpira() {
+
+    showLoadingSpinner();
+
+    getUsers(model.user, model.currentProject.id);
+    getCustoms(model.user, model.currentProjectId, model.currentArtifact.id);
+    getComponents(model.user, model.currentProject.id);
+    getReleases(model.user, model.currentProject.id);
 }
 
 

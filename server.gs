@@ -1,12 +1,11 @@
 /*
- * =================
- * UTILITY FUNCTIONS
- * =================
+ * ======================
+ * INITIAL LOAD FUNCTIONS
+ * ======================
  * 
- * The Utility functions needed for initialization 
- * and basic app functionality are located here, as well as all GET functions. 
+ * These functions are needed for initialization  
  * All Google App Script (GAS) files are bundled by the engine 
- * at start up so any non-scoped variable declared will be available globally.
+ * at start up so any non-scoped variables declared will be available globally.
  *
  */
 
@@ -16,14 +15,12 @@ function onInstall(e) {
   onOpen(e);
 }
 
-
 // App script boilerplate open function
 // opens sidebar
 // Method `addItem`  is related to the 'Add-on' menu items. Currently just one is listed 'Start' in the dropdown menu
 function onOpen(e) {
   SpreadsheetApp.getUi().createAddonMenu().addItem('Start', 'showSidebar').addToUi();
 }
-
 
 // side bar function gets index.html and opens in side window
 function showSidebar() {
@@ -35,7 +32,6 @@ function showSidebar() {
   SpreadsheetApp.getUi().showSidebar(ui);
 }
 
-
 // This function is part of the google template engine and allows for modularization of code
 function include(filename) {
   return HtmlService.createHtmlOutputFromFile(filename).getContent();
@@ -43,69 +39,78 @@ function include(filename) {
 
 
 
-/*
-**********************
-Fetch `GET` functions
-**********************
-*/
 
-//This function is called on initial log in and acts as user validation
-//Gets projects for current logged in user and returns data to scripts.js.html
-function getProjects(currentUser) {
-    var fetcherURL = '/services/v5_0/RestService.svc/projects?username=';
-    return fetcher(currentUser, fetcherURL);
-}
+
+
+
+
 
 /*
-All of these functions are called when a template is loaded and they return data to scripts.js.html
+ *
+ * =====================
+ * FETCH "GET" FUNCTIONS
+ * =====================
+ * 
+ */
 
-When new artifacts are added new GET functions will need to be added and removed.
-*/
-
-//Gets User data for current user and current project users
-function getUsers(currentUser, proj) {
-    var fetcherURL = '/services/v5_0/RestService.svc/projects/' + proj + '/users?username=';
-    return fetcher(currentUser, fetcherURL);
-}
-
-//Gets custom fields for current user, project and artifact.
-function getCustoms(currentUser, proj, artifact) {
-    var fetcherURL = '/services/v5_0/RestService.svc/projects/' + proj + '/custom-properties/' + artifact + '?username=';
-    return fetcher(currentUser, fetcherURL);
-}
-
-//Gets Releases for current user and project.
-function getReleases(currentUser, proj) {
-    var fetcherURL = '/services/v5_0/RestService.svc/projects/' + proj + '/releases?username=';
-    return fetcher(currentUser, fetcherURL);
-}
-
-//Gets components for current user and project.
-function getComponents(currentUser, proj) {
-    var fetcherURL = '/services/v5_0/RestService.svc/projects/' + proj + '/components?active_only=true&include_deleted=false&username=';
-    return fetcher(currentUser, fetcherURL);
-}
-
-
-//Fetch function uses Googles built in fetch api
-//Arguments are current user object and url params
-function fetcher(currentUser, fetcherURL) {
-
+// General fetch function, using Google's built in fetch api
+// @param: currentUser = user object storing login data from client
+// @param: fetcherUrl = url string passed in to connect with Spira
+function fetcher(currentUser, fetcherURL) { 
     //google base 64 encoded string utils
     var decoded = Utilities.base64Decode(currentUser.api_key);
     var APIKEY = Utilities.newBlob(decoded).getDataAsString();
 
     //build URL from args
-    //this must be changed if using mock values in development
     var URL = currentUser.url + fetcherURL + currentUser.userName + APIKEY;
     //set MIME type
-    var init = { 'content-type': 'application/json' };
+    var params = { 'content-type': 'application/json' };
     //call Google fetch function
-    var response = UrlFetchApp.fetch(URL, init);
+    var response = UrlFetchApp.fetch(URL, params);
+    
     //returns parsed JSON
     //unparsed response contains error codes if needed
     return JSON.parse(response);
 }
+
+// Gets projects accessible by current logged in user
+// This function is called on initial log in and therefore also acts as user validation
+function getProjects(currentUser) {
+    var fetcherURL = '/services/v5_0/RestService.svc/projects?username=';
+    return fetcher(currentUser, fetcherURL);
+}
+
+// Gets components for selected project.
+function getComponents(currentUser, proj) {
+    var fetcherURL = '/services/v5_0/RestService.svc/projects/' + proj + '/components?active_only=true&include_deleted=false&username=';
+    return fetcher(currentUser, fetcherURL);
+}
+
+// Gets custom fields for selected project and artifact
+function getCustoms(currentUser, proj, artifact) {
+    var fetcherURL = '/services/v5_0/RestService.svc/projects/' + proj + '/custom-properties/' + artifact + '?username=';
+    return fetcher(currentUser, fetcherURL);
+}
+
+// Gets releases for selected project.
+function getReleases(currentUser, proj) {
+    var fetcherURL = '/services/v5_0/RestService.svc/projects/' + proj + '/releases?username=';
+    return fetcher(currentUser, fetcherURL);
+}
+
+// Gets users for selected project
+function getUsers(currentUser, proj) {
+    var fetcherURL = '/services/v5_0/RestService.svc/projects/' + proj + '/users?username=';
+    return fetcher(currentUser, fetcherURL);
+}
+
+
+
+
+
+
+
+
 
 /*
 *************

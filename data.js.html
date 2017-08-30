@@ -405,14 +405,14 @@ let params = {
         arr: 10
     },
     artifacts: [
-        {name: 'requirements', id: 1},
-        {name: 'testCases', id: 2},
-        {name: 'incidents', id: 3},
-        {name: 'releases', id: 4},
-        {name: 'testRuns', id: 5},
-        {name: 'tasks', id: 6},
-        {name: 'testSteps', id: 7},
-        {name: 'testSets', id: 8}
+        {field: 'requirements', name: 'Requirements', id: 1},
+        {field: 'testCases', name: 'Test Cases', id: 2, disabled: true},
+        {field: 'incidents', name: 'Incidents', id: 3, disabled: true},
+        {field: 'releases', name: 'Releases', id: 4, disabled: true},
+        {field: 'testRuns', name: 'Test Runs', id: 5, disabled: true},
+        {field: 'tasks', name: 'Tasks', id: 6, disabled: true},
+        {field: 'testSteps', name: 'Test Steps', id: 7, disabled: true, hidden: true},
+        {field: 'testSets', name: 'Test Sets', id: 8, disabled: true}
     ]
 };
 
@@ -422,7 +422,7 @@ function Data() {
         url: '',
         userName: '',
         api_key: '',
-        roleId: '',
+        roleId: 1, //TODO this is wrong and should eventually be fixed to limit what user can create or edit client side
     };
 
     this.projects = [];
@@ -433,6 +433,19 @@ function Data() {
     this.currentProjectUsers = [];
     
     this.currentArtifact = '';
+
+    this.getRequest = {
+        components: false,
+        customs: false,
+        releases: false,
+        users: false
+    };
+    this.getSuccess = {
+        components: false,
+        customs: false,
+        releases: false,
+        users: false
+    };
     
     this.isTemplateLoaded = false;
 
