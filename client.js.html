@@ -445,10 +445,10 @@ function getComponentsSuccess(data) {
     model.currentProjectComponents = [];
 
     // add relevant data to the main model store
-    model.currentProjectComponents = data.map(function(data) {
+    model.currentProjectComponents = data.map(function(item) {
         return {
-            id: data.ComponentId, 
-            name: data.FullName
+            id: item.ComponentId, 
+            name: item.FullName
         }
     });
 
@@ -468,10 +468,33 @@ function getCustoms(user, projectId, artifactId) {
 }
 function getCustomsSuccess(data) {
     model.getSuccess.customs = true;
+    console.log(data);
     
     // assign unparsed data to data object
     // these values are parsed later depending on function needs
-    model.template.customFields = data;
+    model.template.customFields = data
+        .filter(function(item) { return !item.IsDeleted;})
+        .map(function(item) {
+            var customField = {
+                custom: true,
+                field: item.CustomPropertyId, 
+                name: item.Name,
+                type: item.CustomPropertyTypeId
+            };
+
+            // add array of values for dropdowns
+            if (item.CustomPropertyId == params.fieldTypes.drop || item.CustomPropertyId == params.fieldTypes.multi) {
+                customFields.values = item.CustomList.Values.map(function(listItem) {
+                    return {
+                        id: listItem.CustomPropertyValueId,
+                        name: listItem.Name
+                    }
+                })
+            }
+
+            return customField;
+        }
+    );
 
     if (allGetsSucceeded()) templateLoader();
 }
@@ -493,10 +516,10 @@ function getReleasesSuccess(data) {
     model.currentProjectReleases = [];
 
     // add relevant data to the main model store
-    model.currentProjectReleases = data.map(function(data) {
+    model.currentProjectReleases = data.map(function(item) {
         return {
-            id: data.ReleaseId,
-            name: data.Name
+            id: item.ReleaseId,
+            name: item.Name
         }
     })
 
@@ -520,39 +543,17 @@ function getUsersSuccess(data) {
     model.currentProjectUsers = [];
 
     // map through user obj and assign names
-    model.currentProjectUsers = data.map(function(user) {
+    model.currentProjectUsers = data.map(function(item) {
         return {
-            userId: user.UserId,
-            username: user.UserName,
-            fullName: user.FullName,
+            userId: item.UserId,
+            username: item.UserName,
+            fullName: item.FullName,
         }
     }) 
 
     if (allGetsSucceeded()) templateLoader();
 }
 
-
-
-function templateLoader () {
-    //all data loaded, call success notification
-    google.script.run.success('All data loaded');
-
-    //call server side template function
-    google.script.run
-        .withSuccessHandler(templateLoaderSuccess)
-        .withFailureHandler(errorUnknown)
-        .templateLoader(model.template);
-}    
-function templateLoaderSuccess(data) {
-        
-    model.isTemplateLoaded = true;
-    
-    //turn off ajax spinner if it's on
-    hideLoadingSpinner();
-            
-    //enable the send to spira button
-    $("#btn-toSpira").prop('disabled', false);
-}
 
 
 function allGetsSucceeded () {
@@ -576,6 +577,29 @@ function getTemplateDataFromSpira() {
     getComponents(model.user, model.currentProject.id);
     getReleases(model.user, model.currentProject.id);
 }
+
+function templateLoader () {
+    //all data loaded, call success notification
+    google.script.run.success('All data loaded');
+
+    //call server side template function
+    google.script.run
+        .withSuccessHandler(templateLoaderSuccess)
+        .withFailureHandler(errorUnknown)
+        .templateLoader(model.template);
+}    
+function templateLoaderSuccess(data) {
+        
+    model.isTemplateLoaded = true;
+    
+    //turn off ajax spinner if it's on
+    hideLoadingSpinner();
+            
+    //enable the send to spira button
+    $("#btn-toSpira").prop('disabled', false);
+}
+
+
 
 
 /*

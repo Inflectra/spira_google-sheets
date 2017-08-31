@@ -254,51 +254,54 @@ function clearAll() {
  *
  */
 
-//function for template creation
+// function for template creation
 function templateLoader(data) {
-    //call clear function and clear spreadsheet depending on user input
+    // clear spreadsheet depending on user input
     clearAll();
 
-    //select open file and select first tab
-    var spreadSheet = SpreadsheetApp.getActiveSpreadsheet();
-    var sheet = spreadSheet.getSheets()[0];
-    var artifactData = data[data.currentArtifactName];
+    // select open file and select first tab
+    var spreadSheet = SpreadsheetApp.getActiveSpreadsheet(),
+    sheet = spreadSheet.getSheets()[0],
+    template = data.template,
+    fields = data.tempalte.fields;
+    var artifactData = data.template[data.currentArtifactName];
     
+    // set sheet (tab) name to model name
+    sheet.setName(data.currentProject.name + ' - ' + data.currentArtifact.name);
+    
+    // deal with formatting
+    var numberOfFields = artifactData.fields.length,
+        headerRow = sheet.getRange(1,1,1,numberOfFields),
+        idColumn = sheet.getRange(2,1,400);
+    
+    // heading row
+    headerRow.setBackground('#073642');
+    headerRow.setFontColor('#fff');
+
+    // id column set to grey to denote special field
+    idColumn.setBackground('#a6a6a6');
+
+    // TODO perform batch color operations
+    var grayedOutColumns = new Array;
+    
+
+    
+    // and show warning if the user tries to write in a value
+    var protection = idColumn.protect().setDescription('Exported items must not have a requirement number');
+    // protection.setWarningOnly(true); // Remove this to make the column un-writable
+
+
 
     //shorten variable
     var dropdownColumnAssignments = artifactData.dropdownColumnAssignments;
 
-    //set sheet (tab) name to model name
-    sheet.setName(data.currentProjectName + ' - ' + data.currentArtifactName);
-
-    //set heading colors and font colors for standard and custom ranges
-    var stdColorRange = sheet.getRange(artifactData.standardRange);
-    stdColorRange.setBackground('#073642');
-    stdColorRange.setFontColor('#fff');
-
-    var cusColorRange = sheet.getRange(artifactData.customRange);
-    cusColorRange.setBackground('#1398b9');
-    cusColorRange.setFontColor('#fff');
-
-    //get range for artifact ids and set color
-    //color set to grey to denote unwritable field
-    var reqIdRange = sheet.getRange('A3:A400');
-    reqIdRange.setBackground('#a6a6a6');
-
-    //set customfield cells as grey if inactive
-    var customCellRange = sheet.getRange('N3:AQ400');
-    customCellRange.setBackground('#a6a6a6');
 
     //unsupported fields also colored grey
-    for (var i = 0; i < artifactData.unsupported.length; i++) {
+    for (var i = 0; i < fields.length; i++) {
         var column = sheet.getRange(artifactData.unsupported[i]);
         column.setBackground('#a6a6a6')
     }
 
-    //set column A to present a warning if the user tries to write in a value
-    var protection = reqIdRange.protect().setDescription('Exported items must not have a requirement number');
-    //set warning. Remove this to make the column un-writable
-    protection.setWarningOnly(true);
 
     //set title range and center
     sheet.getRange(artifactData.standardTitleRange).merge().setValue("Standard Fields").setHorizontalAlignment("center");

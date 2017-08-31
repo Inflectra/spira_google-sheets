@@ -388,21 +388,24 @@ function Store (){
     }
 }
 
-//model becomes a new instance of the data store preserving the immutability of the primary data object.
+// model becomes a new instance of the data store preserving the immutability of the primary data object.
 let model = new Data;
 
 let params = {
+    // enums for different types of field - match custom field prop types where relevant
     fieldType: {
-        int: 1,
-        num: 2,                                                           
-        bool: 3,
-        text: 4,
+        int: 2,
+        num: 3,                                                           
+        bool: 4,
         date: 5,
         drop: 6,
-        user: 7,
-        component: 8,
-        release: 9,
-        arr: 10
+        multi: 7,
+        user: 8,
+        // following types don't exist as custom property types
+        text: 9,
+        component: 10,
+        release: 11,
+        arr: 12
     },
     artifacts: [
         {field: 'requirements', name: 'Requirements', id: 1},
@@ -474,56 +477,52 @@ function Data() {
 };
 
 let fields = {
-    requirements: {
-        fields: [
-            {field: "RequirementId", name: "Requirement ID", type: params.fieldType.int, col: 0, width: 100},
-            {field: "Name", name: "Requirement Name", type: params.fieldType.text, col: 1, width: 250},
-            {field: "Description", name: "Requirement Description", type: params.fieldType.text, col: 2, width: 350},
-            {field: "ReleaseVersionNumber", name: "Release Version", type: params.fieldType.release, col: 3, width: 250},
-            {field: "RequirementTypeId", name: "Type", type: params.fieldType.drop, col: 4, width: 100,
-                values: [
-                    {id: -1, name: "Package"},
-                    {id: 1, name: "Need"},
-                    {id: 2, name: "Feature"},
-                    {id: 3, name: "Use Case"},
-                    {id: 4, name: "User Story"},
-                    {id: 5, name: "Quality"},
-                    {id: 6, name: "Design Elemen"}
-                ]
-            },
-            {field: "ImportanceName", name: "Importance", type: params.fieldType.drop, col: 5, width: 100, 
-                values: [
-                    {id: 1, name: "1 -Critical"},
-                    {id: 2, name: "2 -High"},
-                    {id: 3, name: "3 -Medium"},
-                    {id: 4, name: "4 -Low"}
-                ]
-            },
-            {field: "StatusName", name: "Status", type: params.fieldType.drop, col: 6, width: 100, 
-                values: [
-                    {id: 1, name: "Requested"},
-                    {id: 2, name: "Planned"},
-                    {id: 3, name: "In Progress"},
-                    {id: 4, name: "Developed"},
-                    {id: 5, name: "Accepted"},
-                    {id: 6, name: "Rejected"},
-                    {id: 7, name: "Under Review"},
-                    {id: 8, name: "Obsolete"},
-                    {id: 9, name: "Tested"},
-                    {id: 10, name: "Completed"}
-                ]
-            },
-            {field: "EstimatePoints", name: "Estimate", type: params.fieldType.num, col: 7, width: 100},
-            {field: "AuthorName", name: "Author", type: params.fieldType.user, col: 8, width: 100},
-            {field: "OwnerName", name: "Owner", type: params.fieldType.user, col: 9, width: 100},
-            {field: "ComponentName", name: "Component", type: params.fieldType.component, col: 10, width: 200},
-            {field: "LinkedRequirementIds", name: "Linked Requirements \nCurrently not supported", type: params.fieldType.arr, col: 11, unsupported: true},
-            {field: "StatusId", name: "Status ID", type: params.fieldType.drop, col: 12}, //not sure this is needed
-            {field: "Comment", name: "Comment \nCurrently not supported", type: params.fieldType.text, col: 13, width: 400, unsupported: true},
-            
-             
-        ],
-    }
+    requirements: [
+        {field: "RequirementId", name: "Requirement ID", type: params.fieldType.int, col: 0, width: 100},
+        {field: "Name", name: "Requirement Name", type: params.fieldType.text, col: 1, width: 250},
+        {field: "Description", name: "Requirement Description", type: params.fieldType.text, col: 2, width: 350},
+        {field: "ReleaseVersionNumber", name: "Release Version", type: params.fieldType.release, col: 3, width: 250},
+        {field: "RequirementTypeId", name: "Type", type: params.fieldType.drop, col: 4, width: 100,
+            values: [
+                {id: -1, name: "Package"},
+                {id: 1, name: "Need"},
+                {id: 2, name: "Feature"},
+                {id: 3, name: "Use Case"},
+                {id: 4, name: "User Story"},
+                {id: 5, name: "Quality"},
+                {id: 6, name: "Design Elemen"}
+            ]
+        },
+        {field: "ImportanceName", name: "Importance", type: params.fieldType.drop, col: 5, width: 100, 
+            values: [
+                {id: 1, name: "1 -Critical"},
+                {id: 2, name: "2 -High"},
+                {id: 3, name: "3 -Medium"},
+                {id: 4, name: "4 -Low"}
+            ]
+        },
+        {field: "StatusName", name: "Status", type: params.fieldType.drop, col: 6, width: 100, 
+            values: [
+                {id: 1, name: "Requested"},
+                {id: 2, name: "Planned"},
+                {id: 3, name: "In Progress"},
+                {id: 4, name: "Developed"},
+                {id: 5, name: "Accepted"},
+                {id: 6, name: "Rejected"},
+                {id: 7, name: "Under Review"},
+                {id: 8, name: "Obsolete"},
+                {id: 9, name: "Tested"},
+                {id: 10, name: "Completed"}
+            ]
+        },
+        {field: "EstimatePoints", name: "Estimate", type: params.fieldType.num, col: 7, width: 100},
+        {field: "AuthorName", name: "Author", type: params.fieldType.user, col: 8, width: 100},
+        {field: "OwnerName", name: "Owner", type: params.fieldType.user, col: 9, width: 100},
+        {field: "ComponentName", name: "Component", type: params.fieldType.component, col: 10, width: 200},
+        {field: "LinkedRequirementIds", name: "Linked Requirements \nCurrently not supported", type: params.fieldType.arr, col: 11, unsupported: true},
+        {field: "StatusId", name: "Status ID", type: params.fieldType.drop, col: 12}, //not sure this is needed
+        {field: "Comment", name: "Comment \nCurrently not supported", type: params.fieldType.text, col: 13, width: 400, unsupported: true},        
+    ]
 };
 
 function createSheetRange (startCol, endCol, startRow, endRow) {
