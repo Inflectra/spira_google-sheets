@@ -589,7 +589,7 @@ function templateLoader () {
     google.script.run
         .withSuccessHandler(templateLoaderSuccess)
         .withFailureHandler(errorUnknown)
-        .templateLoader(templateData);
+        .templateLoader(model, params.fieldType);
 }    
 function templateLoaderSuccess(data) {
         

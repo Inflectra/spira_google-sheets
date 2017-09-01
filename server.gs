@@ -255,29 +255,29 @@ function clearAll() {
  */
 
 // function for template creation
-function templateLoader(data) {
+function templateLoader(model, fieldType) {
     // clear spreadsheet depending on user input
     clearAll();
 
     // select open file and select first tab
     var spreadSheet = SpreadsheetApp.getActiveSpreadsheet(),
     sheet = spreadSheet.getSheets()[0],
-    template = data.template,
-    fields = data.tempalte.fields;
-    var artifactData = data.template[data.currentArtifactName];
+    fields = model.template;
+    model.rowsToFormat = 400;
     
     // set sheet (tab) name to model name
-    sheet.setName(data.currentProject.name + ' - ' + data.currentArtifact.name);
+    sheet.setName(model.currentProject.name + ' - ' + model.currentArtifact.name);
     
+    // heading row - sets names and formatting
+    headerSetter(data);
+
+
+
+
     // deal with formatting
-    var numberOfFields = artifactData.fields.length,
-        headerRow = sheet.getRange(1,1,1,numberOfFields),
+    var numberOfFields = fields.length,
         idColumn = sheet.getRange(2,1,400);
     
-    // heading row
-    headerRow.setBackground('#073642');
-    headerRow.setFontColor('#fff');
-
     // id column set to grey to denote special field
     idColumn.setBackground('#a6a6a6');
 
@@ -303,16 +303,8 @@ function templateLoader(data) {
     }
 
 
-    //set title range and center
-    sheet.getRange(artifactData.standardTitleRange).merge().setValue("Standard Fields").setHorizontalAlignment("center");
-    sheet.getRange(artifactData.customTitleRange).merge().setValue("Custom Fields").setHorizontalAlignment("center");
+    
 
-    //append standard column headings to sheet
-    sheet.appendRow(artifactData.headings)
-
-    //set custom headings if they exist
-    //pass in custom field range, data model, and custom column to be used for background coloring
-    customHeadSetter(sheet.getRange(artifactData.customHeaders), data, sheet.getRange(artifactData.customColumnLength));
 
     //loop through model size data and set columns to correct width
     for (var i = 0; i < artifactData.sizes.length; i++) {
@@ -360,36 +352,15 @@ function templateLoader(data) {
     }
 }
 
-/*
-Custom header setter function
 
-Takes a range of cells, the data model and a column range as arguments
-*/
 
-//Sets headings for custom fields
-function customHeadSetter(range, data, col) {
 
-    //shorten variable
-    var fields = data.requirements.customFields
 
-    //loop through model custom fields data
-    //take passed in range and only overwrite the fields if a value is present in the model
-    for (var i = 0; i < fields.length; i++) {
-        //get cell and offset by one column every iteration
-        var cell = range.getCell(1, i + 1)
-            //set heading and wrap text to fit
-        cell.setValue('Custom Field ' + (i + 1) + '\n' + fields[i].Name).setWrap(true);
-        //get column and offset (move to the right) every iteration and set background
-        var column = col.offset(0, i)
-        column.setBackground('#fff');
-    }
-}
+
 
 /*
 Custom content setter function
-
 Sets the data validation rules for the custom fields
-
 Takes a range of cells and the data model as arguments.
 */
 
@@ -497,6 +468,65 @@ function customContentSetter(range, data) {
     }
 
 }
+
+// Sets headings for fields
+// creates an array of the field names so that changes can be batched to the relevant range in one go for performance reasons
+// @param: fields - full field data
+function headerSetter(fields, fieldType) {
+    
+    var headerNames = [],
+        fieldsLength = fields.length;
+
+    for (var i = 0; i < fieldsLength; i++) {
+        headerNames.push(fields[i].name);
+    }
+
+    sheet.getRange(1, 1, 1, fieldsLength)
+        .setWrap(true)
+        .setBackground('#073642')
+        .setFontColor('#fff')
+        .setValues(headerNames);
+}
+
+function contentSetter(model) {
+    for (var index = 0; index < model.fields.length; index++) {
+        var columnNumber = index + 1;
+        
+        switch (model.fields[index].type) {
+            case fieldType.drop:
+            case fieldType.multi:
+                var list = [];
+                var fieldList = model.fields[index].values;
+                for (var i = 0; i < fieldList.length; i++) {
+                    list.push(fieldList[i].name);
+                }
+                setDropdownValidation(columnNumber, model.rowsToFormat, list, true);
+                break;
+
+            case fieldType.user:
+                var list = [];
+                for (var i = 0; i < model.users.length; i++) {
+                    list.push(model.users[i].name);
+                }
+                setDropdownValidation(columnNumber, model.rowsToFormat, list, true);
+                break;
+        }
+    }
+}
+
+function setDropdownValidation (columnNumber, rowLength, list, isRequired) {
+    // create range
+    var range = sheet.getRange(1, columnNumber, 1, rowLength);
+
+    // create the validation rule
+    // requireValueInList - params are the array to use, and whether to create a dropdown list
+    var rule = SpreadsheetApp.newDataValidation().requireValueInList(list, true).setAllowInvalid(isRequired).build();
+    range.setDataValidation(rule);
+}
+
+
+
+
 
 //supplies the column of the current cell
 function columnRanger(cell) {
