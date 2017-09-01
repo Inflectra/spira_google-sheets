@@ -204,7 +204,6 @@ function showMainPanel () {
 
     // server side 'slide up' pop-up window (aka 'toast') notifying user on success
     google.script.run.success('Projects loaded');
-
 }
 
 
@@ -434,7 +433,7 @@ function getComponents(user, projectId) {
 
     // call server side fetch
     google.script.run
-        .withSuccessHandler(componentSuccess)
+        .withSuccessHandler(getComponentsSuccess)
         .withFailureHandler(errorNetwork)
         .getComponents(model.user, model.currentProject.id);
 }
@@ -468,11 +467,10 @@ function getCustoms(user, projectId, artifactId) {
 }
 function getCustomsSuccess(data) {
     model.getSuccess.customs = true;
-    console.log(data);
     
     // assign unparsed data to data object
     // these values are parsed later depending on function needs
-    model.template.customFields = data
+    model.customFieldsTempStore = data
         .filter(function(item) { return !item.IsDeleted;})
         .map(function(item) {
             var customField = {
@@ -483,7 +481,7 @@ function getCustomsSuccess(data) {
             };
 
             // add array of values for dropdowns
-            if (item.CustomPropertyId == params.fieldTypes.drop || item.CustomPropertyId == params.fieldTypes.multi) {
+            if (item.CustomPropertyId == params.fieldType.drop || item.CustomPropertyId == params.fieldType.multi) {
                 customFields.values = item.CustomList.Values.map(function(listItem) {
                     return {
                         id: listItem.CustomPropertyValueId,
@@ -550,7 +548,6 @@ function getUsersSuccess(data) {
             fullName: item.FullName,
         }
     }) 
-
     if (allGetsSucceeded()) templateLoader();
 }
 
@@ -573,20 +570,26 @@ function getTemplateDataFromSpira() {
     showLoadingSpinner();
 
     getUsers(model.user, model.currentProject.id);
-    getCustoms(model.user, model.currentProjectId, model.currentArtifact.id);
+    getCustoms(model.user, model.currentProject.id, model.currentArtifact.id);
     getComponents(model.user, model.currentProject.id);
     getReleases(model.user, model.currentProject.id);
 }
 
 function templateLoader () {
-    //all data loaded, call success notification
+    // all data loaded, call success notification
     google.script.run.success('All data loaded');
 
-    //call server side template function
+    // collate data
+    var customs = model.customFieldsTempStore,
+        fields = templateFields[model.currentArtifact.field];
+        
+    var templateData = model.template.concat(fields, customs);
+    
+    // call server side template function
     google.script.run
         .withSuccessHandler(templateLoaderSuccess)
         .withFailureHandler(errorUnknown)
-        .templateLoader(model.template);
+        .templateLoader(templateData);
 }    
 function templateLoaderSuccess(data) {
         
