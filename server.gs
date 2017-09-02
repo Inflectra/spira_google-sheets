@@ -909,7 +909,7 @@ function parentChildSetter(arr) {
  * Chris: Everything listed below can be safely removed and or modified without effecting the codebase.
  *
  */
-
+/*
 //import function, basic for now
 //stretch goal is to have this as a useful import
 function importer(currentUser, data){
@@ -948,3 +948,4 @@ function importer(currentUser, data){
     range = range.offset(1, 0, data.templateData.requirements.cellRangeLength);
  }
 }
+*/
