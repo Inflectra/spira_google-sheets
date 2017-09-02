@@ -406,9 +406,10 @@ let params = {
         user: 8,
         // following types don't exist as custom property types
         text: 9,
-        component: 10,
-        release: 11,
-        arr: 12
+        id: 10,
+        component: 11,
+        release: 12,
+        arr: 13
     },
     artifacts: [
         {field: 'requirements', name: 'Requirements', id: 1},
@@ -424,7 +425,7 @@ let params = {
 
 var templateFields = {
     requirements: [
-        {field: "RequirementId", name: "Requirement ID", type: params.fieldType.int, col: 0, width: 100},
+        {field: "RequirementId", name: "Requirement ID", type: params.fieldType.id, col: 0, width: 100},
         {field: "Name", name: "Requirement Name", type: params.fieldType.text, col: 1, width: 250},
         {field: "Description", name: "Requirement Description", type: params.fieldType.text, col: 2, width: 350},
         {field: "ReleaseVersionNumber", name: "Release Version", type: params.fieldType.release, col: 3, width: 250},
@@ -484,9 +485,9 @@ function Data() {
     this.projects = [];
 
     this.currentProject = '';
-    this.currentProjectComponents = [];
-    this.currentProjectReleases = [];
-    this.currentProjectUsers = [];
+    this.projectComponents = [];
+    this.projectReleases = [];
+    this.projectUsers = [];
     
     this.currentArtifact = '';
 
@@ -507,21 +508,11 @@ function Data() {
 
     this.artifactData = '';
 
-    this.sheetRanges = {
-        // TODO MAKE DYNAMIC - these are for requirements
-        unsupported: ['L3:L400', 'M3:M400'],
-        accessPermission: [1,2],
-        standardTitleRange: 'A1:M1',
-        customTitleRange: 'N1:AQ1',
-        editableRange: 'A3:AQ3',
-        standardRange: 'A1:M2',
-        customRange: 'N1:AQ2',
-        customHeaders: 'N2:AQ2',
-        customColumnLength: 'N3:N200',
-        cellRange: 'A3:L3',
-        customCellRange: 'N3:AQ3',
-        cellRangeLength: 43,
-    };
+    this.colors = {
+        bgHeader: '#073642',
+        bgReadOnly: '#a6a6a6',
+        header: '#ffffff' 
+    }
 
     this.isTemplateLoaded = false;
     this.template = new Array;

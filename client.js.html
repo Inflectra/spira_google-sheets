@@ -441,10 +441,10 @@ function getComponentsSuccess(data) {
     model.getSuccess.components = true;
     
     // clear old values
-    model.currentProjectComponents = [];
+    model.projectComponents = [];
 
     // add relevant data to the main model store
-    model.currentProjectComponents = data.map(function(item) {
+    model.projectComponents = data.map(function(item) {
         return {
             id: item.ComponentId, 
             name: item.FullName
@@ -511,10 +511,10 @@ function getReleasesSuccess(data) {
     model.getSuccess.releases = true;
     
     // clear old values
-    model.currentProjectReleases = [];
+    model.projectReleases = [];
 
     // add relevant data to the main model store
-    model.currentProjectReleases = data.map(function(item) {
+    model.projectReleases = data.map(function(item) {
         return {
             id: item.ReleaseId,
             name: item.Name
@@ -538,10 +538,10 @@ function getUsersSuccess(data) {
     model.getSuccess.users = true;
 
     // clear old values
-    model.currentProjectUsers = [];
+    model.projectUsers = [];
 
     // map through user obj and assign names
-    model.currentProjectUsers = data.map(function(item) {
+    model.projectUsers = data.map(function(item) {
         return {
             userId: item.UserId,
             username: item.UserName,

@@ -113,14 +113,16 @@ function getUsers(currentUser, proj) {
 
 
 /*
-*************
-Error Functions
-*************
-*/
+ *
+ * ==============
+ * ERROR MESSAGES
+ * ==============
+ * 
+ */
 
-//Error notification function
-//Assigns string value and routes error call from scripts.js.html
-//Argument `type` is a string identifying the message to be displayed
+// Error notification function
+// Assigns string value and routes error call from client.js.html
+// @param: type - string identifying the message to be displayed
 function error(type) {
     if (type == 'impExp') {
         okWarn('There was an input error. Please check that your entries are correct.');
@@ -131,15 +133,15 @@ function error(type) {
     }
 }
 
-//Pop-up notification function
-//Argument `string` is the message to be displayed
+// Pop-up notification function
+// @param: string - message to be displayed
 function success(string) {
     // Show a 2-second popup with the title "Status" and a message passed in as an argument.
     SpreadsheetApp.getActiveSpreadsheet().toast(string, 'Success', 2);
 }
 
 
-//Alert pop up for data clear warning
+// Alert pop up for data clear warning
 function warn(messageString) {
     var ui = SpreadsheetApp.getUi();
     //alert popup with yes and no button
@@ -153,8 +155,8 @@ function warn(messageString) {
     }
 }
 
-//Alert pop up for export success
-//Argument `err` is a boolean sent from the export function
+// Alert pop up for export success
+// @param: err - boolean sent from the export function
 function exportSuccess(err) {
     if (err) {
         okWarn('Operation complete, some errors occurred. Clear sheet to export more artifacts.');
@@ -163,16 +165,23 @@ function exportSuccess(err) {
     }
 }
 
-//Alert pop up for no template present
+// Alert pop up for no template present
 function noTemplate() {
     okWarn('Please load a template to continue.');
 }
 
-//Google alert popup with Ok button
-function okWarn(dialoge) {
+// Google alert popup with Ok button
+function okWarn(dialog) {
     var ui = SpreadsheetApp.getUi();
-    var response = ui.alert(dialoge, ui.ButtonSet.OK);
+    var response = ui.alert(dialog, ui.ButtonSet.OK);
 }
+
+
+
+
+
+
+
 
 
 /*
@@ -269,210 +278,31 @@ function templateLoader(model, fieldType) {
     sheet.setName(model.currentProject.name + ' - ' + model.currentArtifact.name);
     
     // heading row - sets names and formatting
-    headerSetter(data);
+    headerSetter(fields, model.colors);
 
+    // set validation rules on the columns
+    contentValidationSetter(model, fieldType);
 
+    // set any extra formatting options
+    contentFormattingSetter(model);
 
-
-    // deal with formatting
-    var numberOfFields = fields.length,
-        idColumn = sheet.getRange(2,1,400);
-    
-    // id column set to grey to denote special field
-    idColumn.setBackground('#a6a6a6');
-
-    // TODO perform batch color operations
-    var grayedOutColumns = new Array;
-    
-
-    
-    // and show warning if the user tries to write in a value
-    var protection = idColumn.protect().setDescription('Exported items must not have a requirement number');
-    // protection.setWarningOnly(true); // Remove this to make the column un-writable
-
-
-
-    //shorten variable
-    var dropdownColumnAssignments = artifactData.dropdownColumnAssignments;
-
-
-    //unsupported fields also colored grey
-    for (var i = 0; i < fields.length; i++) {
-        var column = sheet.getRange(artifactData.unsupported[i]);
-        column.setBackground('#a6a6a6')
-    }
-
-
-    
-
-
+    /*
     //loop through model size data and set columns to correct width
     for (var i = 0; i < artifactData.sizes.length; i++) {
         sheet.setColumnWidth(artifactData.sizes[i][0], artifactData.sizes[i][1]);
     }
-
-    //main custom field function assigns type, dropdowns, datavalidation etc. See function for details.
-    customContentSetter(sheet.getRange(artifactData.customCellRange), data)
-
-    //loop through dropdowns model data
-    for (var i = 0; i < dropdownColumnAssignments.length; i++) {
-        //variable assignment from dropdown object
-        var letter = dropdownColumnAssignments[i][1];
-        var name = dropdownColumnAssignments[i][0];
-        //array that will hold dropdown values
-        var list = [];
-        //loop through 2D arrays and form standard array
-        for (var j = 0; j < artifactData.dropdowns[name].length; j++) {
-            list.push(artifactData.dropdowns[name][j][1])
-
-          
-        }
-
-        //set range to entire column excluding top two rows (offset)
-        var cell = SpreadsheetApp.getActive().getRange(letter + ':' + letter).offset(2, 0);
-        //require list of values as a dropdown
-        //require value in list: list variable is from the model, true shows dropdown arrow
-        //allow invalid set to false does not allow invalid entries
-        var rule = SpreadsheetApp.newDataValidation().requireValueInList(list, true).setAllowInvalid(false).build();
-        cell.setDataValidation(rule);
-    }
-  
-  
- 
-  
-    //loop through data model
-    //set 'number only' columns to only accept numbers
-    for (var i = 0; i < artifactData.requireNumberFields.length; i++) {
-        var colLetter = artifactData.requireNumberFields[i];
-        var column = SpreadsheetApp.getActive().getRange(colLetter + ':' + colLetter);
-        //does not allow negative numbers or non-integers
-        //sets a tooltip explaining cell rules
-        var rule = SpreadsheetApp.newDataValidation().requireNumberGreaterThan(-1).setAllowInvalid(false).setHelpText('Must be a positive integer').build();
-        column.setDataValidation(rule);
-    }
+    */
 }
 
 
 
 
-
-
-
-/*
-Custom content setter function
-Sets the data validation rules for the custom fields
-Takes a range of cells and the data model as arguments.
-*/
-
-//Sets dropdown and validation content for custom fields
-function customContentSetter(range, data) {
-    //shorten variable
-    var customs = data.requirements.customFields;
-    //grab users list from owners dropdown
-    var users = data.requirements.dropdowns['Owner'];
-    //loop through custom property fields
-    for (var i = 0; i < customs.length; i++) {
-
-        //check if field matches {2: integer} or {3: float}
-        if (customs[i].CustomPropertyTypeId == 2 || customs[i].CustomPropertyTypeId == 3) {
-
-            //get first cell in range
-            var cell = range.getCell(1, i + 1);
-
-            //get column range (x : x)
-            //gets the column letter of the selected cell, i.e 'F'
-            var column = columnRanger(cell);
-
-            //set number only data validation
-            //must be a valid number greater than -1 (also excludes 1.1.0 style numbers)
-            var rule = SpreadsheetApp.newDataValidation().requireNumberGreaterThan(-1).setAllowInvalid(false).setHelpText('Must be a positive integer').build();
-            column.setDataValidation(rule);
-        }
-
-        //check if field matches {4: boolean}
-        if (customs[i].CustomPropertyTypeId == 4) {
-
-            //dropdown options
-            //'True' and 'False' don't work as dropdown choices
-            var list = ["Yes", "No"];
-
-            //get first cell in range
-            var cell = range.getCell(1, i + 1);
-
-            //get A1 notation from google range dataType
-            var cellsTop = cell.getA1Notation();
-
-            // set the end of the column
-            //needed to apply data validation, I've set the column to be 200 cells long
-            var cellsEnd = cell.offset(200, 0).getA1Notation();
-
-            //sets the column in A1 notation (XX : XX)
-            var column = SpreadsheetApp.getActive().getRange(cellsTop + ':' + cellsEnd);
-
-            //builds the data validation rule
-            var rule = SpreadsheetApp.newDataValidation().requireValueInList(list, true).setAllowInvalid(false).build();
-            column.setDataValidation(rule);
-        }
-
-        //check if field matches {5: date}
-        if (customs[i].CustomPropertyTypeId == 5) {
-            var cell = range.getCell(1, i + 1);
-
-            //gets the column letter of the selected cell, i.e 'F'
-            var column = columnRanger(cell);
-
-            //set number only data validation
-            var rule = SpreadsheetApp.newDataValidation().requireDate().setAllowInvalid(false).setHelpText('Must be a valid date').build();
-            column.setDataValidation(rule);
-        }
-
-        //List {6} and MultiList {7}
-        if (customs[i].CustomPropertyTypeId == 6 || customs[i].CustomPropertyTypeId == 7) {
-            var list = [];
-            //loop through the custom list values and push into our holder array
-            for (var j = 0; j < customs[i].CustomList.Values.length; j++) {
-                list.push(customs[i].CustomList.Values[j].Name);
-            }
-            //get the first cell in the column
-            var cell = range.getCell(1, i + 1);
-
-            //get the top and bottom of the range i.e (A1:A200)
-            var cellsTop = cell.getA1Notation();
-            var cellsEnd = cell.offset(200, 0).getA1Notation();
-            var column = SpreadsheetApp.getActive().getRange(cellsTop + ':' + cellsEnd);
-
-            //assign dropdowns and do not allow entries outside of the supplied list
-            var rule = SpreadsheetApp.newDataValidation().requireValueInList(list, true).setAllowInvalid(false).build();
-            column.setDataValidation(rule);
-        }
-
-        //users
-        if (customs[i].CustomPropertyTypeId == 8) {
-            //loop through list of users and assign them to a holder array
-            var list = [];
-            var len = users.length;
-            for (var j = 0; j < len; j++) {
-                list.push(users[j][1]);
-            }
-
-            //get the top and bottom of the range i.e (A1:A200)
-            var cell = range.getCell(1, i + 1);
-            var cellsTop = cell.getA1Notation();
-            var cellsEnd = cell.offset(200, 0).getA1Notation();
-            var column = SpreadsheetApp.getActive().getRange(cellsTop + ':' + cellsEnd);
-
-            //assign dropdowns and do not allow entries outside of the supplied list
-            var rule = SpreadsheetApp.newDataValidation().requireValueInList(list, true).setAllowInvalid(false).build();
-            column.setDataValidation(rule);
-        }
-    }
-
-}
 
 // Sets headings for fields
 // creates an array of the field names so that changes can be batched to the relevant range in one go for performance reasons
 // @param: fields - full field data
-function headerSetter(fields, fieldType) {
+// @param: colors - global colors used for formatting
+function headerSetter (fields, colors) {
     
     var headerNames = [],
         fieldsLength = fields.length;
@@ -483,16 +313,45 @@ function headerSetter(fields, fieldType) {
 
     sheet.getRange(1, 1, 1, fieldsLength)
         .setWrap(true)
-        .setBackground('#073642')
-        .setFontColor('#fff')
+        .setBackground(colors.bgHeader)
+        .setFontColor(colors.header)
         .setValues(headerNames);
 }
 
-function contentSetter(model) {
+// Sets headings for fields
+// creates an array of the field names so that changes can be batched to the relevant range in one go for performance reasons
+// @param: model - full data to acccess global params as well as all fields
+// @param: fieldType - enums for field types
+function contentValidationSetter (model, fieldType) {
     for (var index = 0; index < model.fields.length; index++) {
         var columnNumber = index + 1;
         
         switch (model.fields[index].type) {
+            case fieldType.id:
+                setNumberValidation(columnNumber, model.rowsToFormat, false);
+
+                var range = sheet.getRange(2,columnNumber,model.rowsToFormat);
+                range.setBackground(model.colors.readOnly);
+
+                var protection = range.protect().setDescription('Exported items must not have a requirement number');
+                // protection.setWarningOnly(true); // Remove this to make the column un-writable
+                break;
+
+            case fieldType.int:
+            case fieldType.num:
+                setNumberValidation(columnNumber, model.rowsToFormat, false);
+                break;
+
+            case fieldType.bool:
+                // 'True' and 'False' don't work as dropdown choices
+                var list = ["Yes", "No"];
+                setDropdownValidation(columnNumber, model.rowsToFormat, list, false);
+                break;
+
+            case fieldType.date:
+                setDateValidation(columnNumber, model.rowsToFormat, false);
+                break;
+
             case fieldType.drop:
             case fieldType.multi:
                 var list = [];
@@ -500,56 +359,118 @@ function contentSetter(model) {
                 for (var i = 0; i < fieldList.length; i++) {
                     list.push(fieldList[i].name);
                 }
-                setDropdownValidation(columnNumber, model.rowsToFormat, list, true);
+                setDropdownValidation(columnNumber, model.rowsToFormat, list, false);
                 break;
 
             case fieldType.user:
                 var list = [];
-                for (var i = 0; i < model.users.length; i++) {
-                    list.push(model.users[i].name);
+                for (var i = 0; i < model.projectUsers.length; i++) {
+                    list.push(model.projectUsers[i].name);
                 }
-                setDropdownValidation(columnNumber, model.rowsToFormat, list, true);
+                setDropdownValidation(columnNumber, model.rowsToFormat, list, false);
+                break;
+
+            case fieldType.component:
+                var list = [];
+                for (var i = 0; i < model.projectComponents.length; i++) {
+                    list.push(model.projectComponents[i].name);
+                }
+                setDropdownValidation(columnNumber, model.rowsToFormat, list, false);
+                break;
+                
+            case fieldType.release:
+                var list = [];
+                for (var i = 0; i < model.projectReleases.length; i++) {
+                    list.push(model.projectReleases[i].name);
+                }
+                setDropdownValidation(columnNumber, model.rowsToFormat, list, false);
                 break;
         }
     }
 }
 
-function setDropdownValidation (columnNumber, rowLength, list, isRequired) {
+// create dropdown validation on set column based on specified values
+// @param: columnNumber - int of the column to validate
+// @param: rowLength - int of the number of rows for range (global param)
+// @param: list - array of values to show in a dropdown and use for validation
+// @param: allowInvalid - bool to state whether to restrict any values to those in validation or not
+function setDropdownValidation (columnNumber, rowLength, list, allowInvalid) {
     // create range
-    var range = sheet.getRange(1, columnNumber, 1, rowLength);
+    var range = sheet.getRange(2, columnNumber, 1, rowLength);
 
     // create the validation rule
     // requireValueInList - params are the array to use, and whether to create a dropdown list
-    var rule = SpreadsheetApp.newDataValidation().requireValueInList(list, true).setAllowInvalid(isRequired).build();
+    var rule = SpreadsheetApp.newDataValidation()
+        .requireValueInList(list, true)
+        .setAllowInvalid(allowInvalid)
+        .build();
+    range.setDataValidation(rule);
+}
+
+// create date validation on set column based on specified values
+// @param: columnNumber - int of the column to validate
+// @param: rowLength - int of the number of rows for range (global param)
+// @param: allowInvalid - bool to state whether to restrict any values to those in validation or not
+function setDateValidation (columnNumber, rowLength, allowInvalid) {
+    // create range
+    var range = sheet.getRange(2, columnNumber, 1, rowLength);
+
+    // create the validation rule
+    var rule = SpreadsheetApp.newDataValidation()
+        .requireDate()
+        .setAllowInvalid(false)
+        .setHelpText('Must be a valid date')
+        .build();
+    range.setDataValidation(rule);
+}
+
+// create number validation on set column based on specified values
+// @param: columnNumber - int of the column to validate
+// @param: rowLength - int of the number of rows for range (global param)
+// @param: allowInvalid - bool to state whether to restrict any values to those in validation or not
+function setNumberValidation (columnNumber, rowLength, allowInvalid) {
+    // create range
+    var range = sheet.getRange(2, columnNumber, 1, rowLength);
+
+    // create the validation rule
+    //must be a valid number greater than -1 (also excludes 1.1.0 style numbers)
+    var rule = SpreadsheetApp.newDataValidation()
+        requireNumberGreaterThan(-1)
+        .setAllowInvalid(allowInvalid)
+        .setHelpText('Must be a positive number')
+        .build();
     range.setDataValidation(rule);
 }
 
 
-
-
-
-//supplies the column of the current cell
-function columnRanger(cell) {
-    //get the column
-    var col = cell.getColumn();
-    //get column letter
-    col = columnToLetter(col);
-    //get column range for data validation
-    var column = SpreadsheetApp.getActive().getRange(col + ':' + col);
-
-    return column;
-}
-
-//open source column to letter function **Adam L from Stack OverFlow
-function columnToLetter(column) {
-    var temp, letter = '';
-    while (column > 0) {
-        temp = (column - 1) % 26;
-        letter = String.fromCharCode(temp + 65) + letter;
-        column = (column - temp - 1) / 26;
+// format columns based on a potential rang of factors - eg hide unsupported columns
+// @param: model - full model data set
+function contentFormattingSetter (model) {
+    for (var i = 0; i < model.fields.length; i++) {
+        var columnNumber = i++;
+        
+        // hide unspoorted fields
+        if (model.fields[i].unsupported) {
+            var range = sheet.getRange(1, columnNumber);
+            sheet.hideColumn(range);
+        }
     }
-    return letter;
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
