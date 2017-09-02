@@ -237,6 +237,8 @@ $('#select-project').change(function(e) {
         if ($('#select-artifact option:selected').val() != 0) {
             $('#btn-template').prop('disabled', false)
         }
+        
+        //
     }
 });
 
@@ -444,10 +446,12 @@ function getComponentsSuccess(data) {
     model.projectComponents = [];
 
     // add relevant data to the main model store
-    model.projectComponents = data.map(function(item) {
+    model.projectComponents = data
+        .filter(function(item) { return item.IsActive;})
+        .map(function(item) {
         return {
             id: item.ComponentId, 
-            name: item.FullName
+            name: item.Name
         }
     });
 
@@ -467,7 +471,6 @@ function getCustoms(user, projectId, artifactId) {
 }
 function getCustomsSuccess(data) {
     model.getSuccess.customs = true;
-    
     // assign unparsed data to data object
     // these values are parsed later depending on function needs
     model.customFieldsTempStore = data
@@ -475,14 +478,14 @@ function getCustomsSuccess(data) {
         .map(function(item) {
             var customField = {
                 custom: true,
-                field: item.CustomPropertyId, 
+                field: item.CustomPropertyFieldName, 
                 name: item.Name,
                 type: item.CustomPropertyTypeId
             };
 
             // add array of values for dropdowns
-            if (item.CustomPropertyId == params.fieldType.drop || item.CustomPropertyId == params.fieldType.multi) {
-                customFields.values = item.CustomList.Values.map(function(listItem) {
+            if (item.CustomPropertyTypeId == params.fieldType.drop || item.CustomPropertyTypeId == params.fieldType.multi) {
+                customField.values = item.CustomList.Values.map(function(listItem) {
                     return {
                         id: listItem.CustomPropertyValueId,
                         name: listItem.Name
@@ -583,7 +586,7 @@ function templateLoader () {
     var customs = model.customFieldsTempStore,
         fields = templateFields[model.currentArtifact.field];
         
-    var templateData = model.template.concat(fields, customs);
+    model.fields = fields.concat(customs);
     
     // call server side template function
     google.script.run

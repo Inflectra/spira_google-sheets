@@ -27,7 +27,7 @@ function showSidebar() {
   var ui = HtmlService.createTemplateFromFile('index')
     .evaluate()
     .setSandboxMode(HtmlService.SandboxMode.IFRAME)
-    .setTitle('Inflectra Corporation');
+    .setTitle('SpiraTeam by Inflectra');
   
   SpreadsheetApp.getUi().showSidebar(ui);
 }
@@ -271,20 +271,20 @@ function templateLoader(model, fieldType) {
     // select open file and select first tab
     var spreadSheet = SpreadsheetApp.getActiveSpreadsheet(),
     sheet = spreadSheet.getSheets()[0],
-    fields = model.template;
+    fields = model.fields;
     model.rowsToFormat = 400;
     
     // set sheet (tab) name to model name
     sheet.setName(model.currentProject.name + ' - ' + model.currentArtifact.name);
     
     // heading row - sets names and formatting
-    headerSetter(fields, model.colors);
+    headerSetter(sheet, fields, model.colors);
 
     // set validation rules on the columns
-    contentValidationSetter(model, fieldType);
+    contentValidationSetter(sheet, model, fieldType);
 
     // set any extra formatting options
-    contentFormattingSetter(model);
+    contentFormattingSetter(sheet, model);
 
     /*
     //loop through model size data and set columns to correct width
@@ -294,15 +294,12 @@ function templateLoader(model, fieldType) {
     */
 }
 
-
-
-
-
 // Sets headings for fields
 // creates an array of the field names so that changes can be batched to the relevant range in one go for performance reasons
+// @param: sheet - the sheet object
 // @param: fields - full field data
 // @param: colors - global colors used for formatting
-function headerSetter (fields, colors) {
+function headerSetter (sheet, fields, colors) {
     
     var headerNames = [],
         fieldsLength = fields.length;
@@ -315,43 +312,53 @@ function headerSetter (fields, colors) {
         .setWrap(true)
         .setBackground(colors.bgHeader)
         .setFontColor(colors.header)
-        .setValues(headerNames);
+        // the headerNames array needs to be in an array as setValues expects a 2D for managing 2D ranges
+        .setValues([headerNames])
+        .protect().setDescription("header row").setWarningOnly(true);
 }
 
-// Sets headings for fields
-// creates an array of the field names so that changes can be batched to the relevant range in one go for performance reasons
+// Sets validation on a per column basis, based on the field type passed in by the model
+// a switch statement checks for any type requiring validation and carries out necessary action
+// @param: sheet - the sheet object
 // @param: model - full data to acccess global params as well as all fields
 // @param: fieldType - enums for field types
-function contentValidationSetter (model, fieldType) {
+function contentValidationSetter (sheet, model, fieldType) {
     for (var index = 0; index < model.fields.length; index++) {
         var columnNumber = index + 1;
         
         switch (model.fields[index].type) {
+            
+            // ID fields: restricted to numbers and protected
             case fieldType.id:
-                setNumberValidation(columnNumber, model.rowsToFormat, false);
-
-                var range = sheet.getRange(2,columnNumber,model.rowsToFormat);
-                range.setBackground(model.colors.readOnly);
-
-                var protection = range.protect().setDescription('Exported items must not have a requirement number');
-                // protection.setWarningOnly(true); // Remove this to make the column un-writable
+                setNumberValidation(sheet, columnNumber, model.rowsToFormat, false);
+                protectColumn(
+                    sheet, 
+                    columnNumber, 
+                    model.rowsToFormat, 
+                    model.colors.bgReadOnly, 
+                    "ID field",
+                    false
+                    );
                 break;
-
+            
+            // INT and NUM fields are both treated by Sheets as numbers
             case fieldType.int:
             case fieldType.num:
-                setNumberValidation(columnNumber, model.rowsToFormat, false);
+                setNumberValidation(sheet, columnNumber, model.rowsToFormat, false);
                 break;
 
+            // BOOL as Sheets has no bool validation, a yes/no dropdown is used
             case fieldType.bool:
                 // 'True' and 'False' don't work as dropdown choices
                 var list = ["Yes", "No"];
-                setDropdownValidation(columnNumber, model.rowsToFormat, list, false);
+                setDropdownValidation(sheet, columnNumber, model.rowsToFormat, list, false);
                 break;
 
             case fieldType.date:
-                setDateValidation(columnNumber, model.rowsToFormat, false);
+                setDateValidation(sheet, columnNumber, model.rowsToFormat, false);
                 break;
 
+            // DROPDOWNS and MULTIDROPDOWNS are both treated as simple dropdowns (Sheets does not have multi selects)
             case fieldType.drop:
             case fieldType.multi:
                 var list = [];
@@ -359,44 +366,53 @@ function contentValidationSetter (model, fieldType) {
                 for (var i = 0; i < fieldList.length; i++) {
                     list.push(fieldList[i].name);
                 }
-                setDropdownValidation(columnNumber, model.rowsToFormat, list, false);
+                setDropdownValidation(sheet, columnNumber, model.rowsToFormat, list, false);
                 break;
 
+            // USER fields are dropdowns with the values coming from a project wide set list
             case fieldType.user:
                 var list = [];
                 for (var i = 0; i < model.projectUsers.length; i++) {
-                    list.push(model.projectUsers[i].name);
+                    list.push(model.projectUsers[i].fullName);
                 }
-                setDropdownValidation(columnNumber, model.rowsToFormat, list, false);
+                setDropdownValidation(sheet, columnNumber, model.rowsToFormat, list, false);
                 break;
 
+            // COMPONENT fields are dropdowns with the values coming from a project wide set list
             case fieldType.component:
                 var list = [];
                 for (var i = 0; i < model.projectComponents.length; i++) {
                     list.push(model.projectComponents[i].name);
                 }
-                setDropdownValidation(columnNumber, model.rowsToFormat, list, false);
+                setDropdownValidation(sheet, columnNumber, model.rowsToFormat, list, false);
                 break;
-                
+              
+            // RELEASE fields are dropdowns with the values coming from a project wide set list
             case fieldType.release:
                 var list = [];
                 for (var i = 0; i < model.projectReleases.length; i++) {
                     list.push(model.projectReleases[i].name);
                 }
-                setDropdownValidation(columnNumber, model.rowsToFormat, list, false);
+                setDropdownValidation(sheet, columnNumber, model.rowsToFormat, list, false);
+                break;
+            
+            // All other types
+            default:
+                //do nothing
                 break;
         }
     }
 }
 
 // create dropdown validation on set column based on specified values
+// @param: sheet - the sheet object
 // @param: columnNumber - int of the column to validate
 // @param: rowLength - int of the number of rows for range (global param)
 // @param: list - array of values to show in a dropdown and use for validation
 // @param: allowInvalid - bool to state whether to restrict any values to those in validation or not
-function setDropdownValidation (columnNumber, rowLength, list, allowInvalid) {
+function setDropdownValidation (sheet, columnNumber, rowLength, list, allowInvalid) {
     // create range
-    var range = sheet.getRange(2, columnNumber, 1, rowLength);
+    var range = sheet.getRange(2, columnNumber, rowLength);
 
     // create the validation rule
     // requireValueInList - params are the array to use, and whether to create a dropdown list
@@ -408,12 +424,13 @@ function setDropdownValidation (columnNumber, rowLength, list, allowInvalid) {
 }
 
 // create date validation on set column based on specified values
+// @param: sheet - the sheet object
 // @param: columnNumber - int of the column to validate
 // @param: rowLength - int of the number of rows for range (global param)
 // @param: allowInvalid - bool to state whether to restrict any values to those in validation or not
-function setDateValidation (columnNumber, rowLength, allowInvalid) {
+function setDateValidation (sheet, columnNumber, rowLength, allowInvalid) {
     // create range
-    var range = sheet.getRange(2, columnNumber, 1, rowLength);
+    var range = sheet.getRange(2, columnNumber, rowLength);
 
     // create the validation rule
     var rule = SpreadsheetApp.newDataValidation()
@@ -425,17 +442,18 @@ function setDateValidation (columnNumber, rowLength, allowInvalid) {
 }
 
 // create number validation on set column based on specified values
+// @param: sheet - the sheet object
 // @param: columnNumber - int of the column to validate
 // @param: rowLength - int of the number of rows for range (global param)
 // @param: allowInvalid - bool to state whether to restrict any values to those in validation or not
-function setNumberValidation (columnNumber, rowLength, allowInvalid) {
+function setNumberValidation (sheet, columnNumber, rowLength, allowInvalid) {
     // create range
-    var range = sheet.getRange(2, columnNumber, 1, rowLength);
+    var range = sheet.getRange(2, columnNumber, rowLength);
 
     // create the validation rule
     //must be a valid number greater than -1 (also excludes 1.1.0 style numbers)
     var rule = SpreadsheetApp.newDataValidation()
-        requireNumberGreaterThan(-1)
+        .requireNumberGreaterThan(-1)
         .setAllowInvalid(allowInvalid)
         .setHelpText('Must be a positive number')
         .build();
@@ -444,17 +462,45 @@ function setNumberValidation (columnNumber, rowLength, allowInvalid) {
 
 
 // format columns based on a potential rang of factors - eg hide unsupported columns
+// @param: sheet - the sheet object
 // @param: model - full model data set
-function contentFormattingSetter (model) {
+function contentFormattingSetter (sheet, model) {
     for (var i = 0; i < model.fields.length; i++) {
-        var columnNumber = i++;
+        var columnNumber = i + 1;
         
-        // hide unspoorted fields
+        // hide unsupported fields
         if (model.fields[i].unsupported) {
-            var range = sheet.getRange(1, columnNumber);
-            sheet.hideColumn(range);
+            protectColumn(
+              sheet, 
+              columnNumber, 
+              model.rowsToFormat, 
+              model.colors.bgReadOnly, 
+              model.fields[i].name + "unsupported",
+              true
+              );
         }
     }
+}
+
+// protects specific column. Edits still allowed - current user not excluded from edit list, but could in future
+// @param: sheet - the sheet object
+// @param: columnNumber - int of column to hide
+// @param: rowLength - int of default number of rows to apply any formattting to
+// @param: bgColor - string color to set on background as hex code (eg '#ffffff')
+// @param: name - string description for the protected range
+// @param: hide - optional bool to hide column completely
+function protectColumn (sheet, columnNumber, rowLength, bgColor, name, hide) {
+    // create range
+    var range = sheet.getRange(2, columnNumber, rowLength);
+    range.setBackground(bgColor)
+        .protect()
+        .setDescription(name)
+        .setWarningOnly(true);
+
+  if(hide) {
+    sheet.hideColumns(columnNumber);
+  }
+    
 }
 
 

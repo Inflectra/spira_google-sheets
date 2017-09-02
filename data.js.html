@@ -397,6 +397,7 @@ function Store (){
 let params = {
     // enums for different types of field - match custom field prop types where relevant
     fieldType: {
+        text: 1,
         int: 2,
         num: 3,                                                           
         bool: 4,
@@ -405,11 +406,10 @@ let params = {
         multi: 7,
         user: 8,
         // following types don't exist as custom property types
-        text: 9,
-        id: 10,
-        component: 11,
-        release: 12,
-        arr: 13
+        id: 9,
+        component: 10,
+        release: 11,
+        arr: 12
     },
     artifacts: [
         {field: 'requirements', name: 'Requirements', id: 1},
@@ -466,9 +466,8 @@ var templateFields = {
         {field: "AuthorName", name: "Author", type: params.fieldType.user, col: 8, width: 100},
         {field: "OwnerName", name: "Owner", type: params.fieldType.user, col: 9, width: 100},
         {field: "ComponentName", name: "Component", type: params.fieldType.component, col: 10, width: 200},
-        {field: "LinkedRequirementIds", name: "Linked Requirements \nCurrently not supported", type: params.fieldType.arr, col: 11, unsupported: true},
-        {field: "StatusId", name: "Status ID", type: params.fieldType.drop, col: 12}, //not sure this is needed
-        {field: "Comment", name: "Comment \nCurrently not supported", type: params.fieldType.text, col: 13, width: 400, unsupported: true}        
+        {field: "LinkedRequirementIds", name: "Linked Requirements", type: params.fieldType.arr, col: 11, unsupported: true},
+        {field: "Comment", name: "Comment", type: params.fieldType.text, col: 13, width: 400, unsupported: true}        
     ]
 };
 
@@ -509,13 +508,13 @@ function Data() {
     this.artifactData = '';
 
     this.colors = {
-        bgHeader: '#073642',
-        bgReadOnly: '#a6a6a6',
+        bgHeader: '#f1a42b',
+        bgReadOnly: '#eeeeee',
         header: '#ffffff' 
     }
 
     this.isTemplateLoaded = false;
-    this.template = new Array;
+    this.fields = new Array;
 };
 
 // model becomes a new instance of the data store preserving the immutability of the primary data object.
