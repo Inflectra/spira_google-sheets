@@ -85,18 +85,21 @@
             <button 
                 class="action" 
                 onclick="loginAttempt()"
+                title="Login using details filled out above"
                 type="button"
                 >
                 Log In
             </button>
             <button 
                 onclick="clearAuthForm()"
+                title="Clear the login form"
                 type="button"
                 >
                 Clear
             </button>
             <button 
                 onclick="panelToggle('help')"
+                title="View help screens"
                 type="button"
                 >
                 Help
@@ -107,6 +110,7 @@
                 class="hidden"
                 id="btn-dev"
                 onclick="setAuthDetails()"
+                title="Click to load login screen with dev details"
                 type="button"
                 >
                 Dev
@@ -134,12 +138,14 @@
             <button 
                 id="btn-help-main"
                 onclick="panelToggle('help')"
+                title="View help screen"
                 type="button"
                 >
                 Help
             </button>
             <button 
                 onclick="logoutAttempt()"
+                title="Logout of addon (no data on sheet is affected)"
                 type="button"
                 >
                 Logout
@@ -186,18 +192,21 @@
                 disabled="true"
                 id="btn-template" 
                 onclick="createTemplateAttempt()"
+                title="Create template for chosen options on first sheet in file"
                 type="button"
                 >
                 Load
             </button>
             <button 
                 onclick="saveSheetAttempt()"
+                title="Create a copy of the current sheet in this spreadsheet"
                 type="button"
                 >
                 Copy
             </button>
             <button 
                 onclick="clearSheetAttempt()"
+                title="Manually wipe the current sheet of all data"
                 type="button"
                 >
                 Clear
@@ -249,6 +258,7 @@
                 class="btn-help"
                 id="btn-help-login"
                 onclick="showChosenHelpSection('login')"
+                title="Help with the login screen"
                 type="button"
                 >
                 LOGIN
@@ -257,6 +267,7 @@
                 class="btn-help"
                 id="btn-help-actions"
                 onclick="showChosenHelpSection('actions')"
+                title="Help with creating and loading a template onto the spreadsheet"
                 type="button"
                 >
                 TEMPLATES
@@ -265,6 +276,7 @@
                 class="btn-help"
                 id="btn-help-fields"
                 onclick="showChosenHelpSection('fields')"
+                title="View help for specific fields and artifacts"
                 type="button"
                 >
                 FIELDS
