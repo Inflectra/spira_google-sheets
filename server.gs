@@ -15,12 +15,16 @@ function onInstall(e) {
   onOpen(e);
 }
 
+
+
 // App script boilerplate open function
 // opens sidebar
 // Method `addItem`  is related to the 'Add-on' menu items. Currently just one is listed 'Start' in the dropdown menu
 function onOpen(e) {
   SpreadsheetApp.getUi().createAddonMenu().addItem('Start', 'showSidebar').addToUi();
 }
+
+
 
 // side bar function gets index.html and opens in side window
 function showSidebar() {
@@ -32,9 +36,75 @@ function showSidebar() {
   SpreadsheetApp.getUi().showSidebar(ui);
 }
 
+
+
 // This function is part of the google template engine and allows for modularization of code
 function include(filename) {
   return HtmlService.createHtmlOutputFromFile(filename).getContent();
+}
+
+
+
+
+
+
+
+
+
+/*
+ *
+ * ========================
+ * TEMPLATE PANEL FUNCTIONS
+ * ========================
+ * 
+ */
+
+// copy the first sheet into a new sheet in the same spreadsheet
+function save() {
+    // pop up telling the user that their data will be saved
+    var ui = SpreadsheetApp.getUi();
+    var response = ui.alert('This will save the current sheet in a new sheet on this spreadsheet. Continue?', ui.ButtonSet.YES_NO);
+
+    // returns with user choice
+    if (response == ui.Button.YES) {
+        // get first sheet of  active spreadsheet
+        var spreadSheet = SpreadsheetApp.getActiveSpreadsheet();
+        var sheet = spreadSheet.getSheets()[0];
+
+        // get entire open spreadsheet id
+        var id = spreadSheet.getId();
+
+        // set current spreadsheet file as destination
+        var destination = SpreadsheetApp.openById(id);
+
+        // copy sheet to current spreadsheet in new sheet
+        sheet.copyTo(destination);
+      
+        // returns true to queue success popup
+        return true;
+    } else {
+        // returns false to ignore success popup     
+        return false;
+    }
+}
+
+
+
+//clears first sheet in spreadsheet
+function clearAll() {
+    // get first active spreadsheet
+    var spreadSheet = SpreadsheetApp.getActiveSpreadsheet();
+    var sheet = spreadSheet.getSheets()[0];
+
+    // clear all formatting and content
+    sheet.clear();
+
+    // clears data validations from the entire sheet
+    var range = SpreadsheetApp.getActive().getRange('A:AZ');
+    range.clearDataValidations();
+
+    // Reset sheet name
+    sheet.setName('Sheet');
 }
 
 
@@ -73,6 +143,8 @@ function fetcher(currentUser, fetcherURL) {
     return JSON.parse(response);
 }
 
+
+
 // Gets projects accessible by current logged in user
 // This function is called on initial log in and therefore also acts as user validation
 function getProjects(currentUser) {
@@ -80,11 +152,15 @@ function getProjects(currentUser) {
     return fetcher(currentUser, fetcherURL);
 }
 
+
+
 // Gets components for selected project.
 function getComponents(currentUser, proj) {
     var fetcherURL = '/services/v5_0/RestService.svc/projects/' + proj + '/components?active_only=true&include_deleted=false&username=';
     return fetcher(currentUser, fetcherURL);
 }
+
+
 
 // Gets custom fields for selected project and artifact
 function getCustoms(currentUser, proj, artifact) {
@@ -92,11 +168,15 @@ function getCustoms(currentUser, proj, artifact) {
     return fetcher(currentUser, fetcherURL);
 }
 
+
+
 // Gets releases for selected project.
 function getReleases(currentUser, proj) {
     var fetcherURL = '/services/v5_0/RestService.svc/projects/' + proj + '/releases?username=';
     return fetcher(currentUser, fetcherURL);
 }
+
+
 
 // Gets users for selected project
 function getUsers(currentUser, proj) {
@@ -133,12 +213,15 @@ function error(type) {
     }
 }
 
+
+
 // Pop-up notification function
 // @param: string - message to be displayed
 function success(string) {
     // Show a 2-second popup with the title "Status" and a message passed in as an argument.
     SpreadsheetApp.getActiveSpreadsheet().toast(string, 'Success', 2);
 }
+
 
 
 // Alert pop up for data clear warning
@@ -154,6 +237,8 @@ function warn(messageString) {
         return false;
     }
 }
+
+
 
 // Alert pop up for export success
 // @param: err - boolean sent from the export function
@@ -183,75 +268,6 @@ function okWarn(dialog) {
 
 
 
-
-/*
-************
-Utilities
-************
-*/
-
-//save function
-function save() {
-    //pop up telling the user that their data will be saved
-    var ui = SpreadsheetApp.getUi();
-    var response = ui.alert('This will save the current sheet in a new tab. Continue?', ui.ButtonSet.YES_NO);
-
-    //returns with user choice
-    if (response == ui.Button.YES) {
-        //get first tab of  active spreadsheet
-        var spreadSheet = SpreadsheetApp.getActiveSpreadsheet();
-        var sheet = spreadSheet.getSheets()[0];
-
-        //get entire open spreadsheet id
-        var id = spreadSheet.getId();
-
-        //set current spreadsheet file as destination
-        var destination = SpreadsheetApp.openById(id);
-
-        //copy tab to current spreadsheet in new tab
-        sheet.copyTo(destination);
-      
-        //returns true to que success popup
-        return true;
-    } else {
-        //returns false to ignore success popup     
-        return false;
-    }
-}
-
-//clear function
-//clears current sheet
-function clearAll() {
-    //get first active spreadsheet
-    var spreadSheet = SpreadsheetApp.getActiveSpreadsheet();
-    var sheet = spreadSheet.getSheets()[0];
-
-    //clear all formatting and content
-    sheet.clear();
-
-    //clears data validations from the entire sheet
-    var range = SpreadsheetApp.getActive().getRange('A:AZ');
-    range.clearDataValidations();
-
-    //Reset sheet name
-    sheet.setName('Sheet');
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 /*
  * =================
  * TEMPLATE CREATION
@@ -268,7 +284,7 @@ function templateLoader(model, fieldType) {
     // clear spreadsheet depending on user input
     clearAll();
 
-    // select open file and select first tab
+    // select open file and select first sheet
     var spreadSheet = SpreadsheetApp.getActiveSpreadsheet(),
     sheet = spreadSheet.getSheets()[0],
     fields = model.fields;
@@ -294,6 +310,8 @@ function templateLoader(model, fieldType) {
     */
 }
 
+
+
 // Sets headings for fields
 // creates an array of the field names so that changes can be batched to the relevant range in one go for performance reasons
 // @param: sheet - the sheet object
@@ -316,6 +334,8 @@ function headerSetter (sheet, fields, colors) {
         .setValues([headerNames])
         .protect().setDescription("header row").setWarningOnly(true);
 }
+
+
 
 // Sets validation on a per column basis, based on the field type passed in by the model
 // a switch statement checks for any type requiring validation and carries out necessary action
@@ -404,6 +424,8 @@ function contentValidationSetter (sheet, model, fieldType) {
     }
 }
 
+
+
 // create dropdown validation on set column based on specified values
 // @param: sheet - the sheet object
 // @param: columnNumber - int of the column to validate
@@ -423,6 +445,8 @@ function setDropdownValidation (sheet, columnNumber, rowLength, list, allowInval
     range.setDataValidation(rule);
 }
 
+
+
 // create date validation on set column based on specified values
 // @param: sheet - the sheet object
 // @param: columnNumber - int of the column to validate
@@ -440,6 +464,8 @@ function setDateValidation (sheet, columnNumber, rowLength, allowInvalid) {
         .build();
     range.setDataValidation(rule);
 }
+
+
 
 // create number validation on set column based on specified values
 // @param: sheet - the sheet object
@@ -481,6 +507,8 @@ function contentFormattingSetter (sheet, model) {
         }
     }
 }
+
+
 
 // protects specific column. Edits still allowed - current user not excluded from edit list, but could in future
 // @param: sheet - the sheet object
@@ -542,7 +570,7 @@ function protectColumn (sheet, columnNumber, rowLength, bgColor, name, hide) {
  */
 
 function exporter(data, artifactType) {
-    //get the active spreadsheet and first tab
+    //get the active spreadsheet and first sheet
     var spreadSheet = SpreadsheetApp.getActiveSpreadsheet();
     var sheet = spreadSheet.getSheets()[0];
 

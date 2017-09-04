@@ -209,10 +209,10 @@ function showMainPanel () {
 
 
 function logoutAttempt () {
-    //warn user that all tab data will be lost. Returns true or false
+    //warn user that all data on the first sheet will be lost. Returns true or false
     google.script.run
         .withSuccessHandler(logout)
-        .warn('All data on current tab will be deleted. Continue?');
+        .warn('All data on the first sheet will be deleted. Continue?');
 }
 //gets a true or false value promise from google
 function logout (shouldLogout) {
@@ -257,7 +257,7 @@ function createTemplateAttempt() {
     //warn the user data will be erased
     google.script.run
         .withSuccessHandler(createTemplate)
-        .warn('All data on current tab will be replaced. Continue?');
+        .warn('All data on the first sheet will be replaced. Continue?');
 }
 function createTemplate (shouldClearForm) {
     if (shouldClearForm) {
@@ -280,7 +280,7 @@ function clearSheetAttempt () {
     //warn that data will be erased
     google.script.run
         .withSuccessHandler(clearSheet)
-        .warn('All data on current tab will be deleted. Continue?');
+        .warn('All data on the first sheet will be deleted. Continue?');
 };
 
 
@@ -306,7 +306,7 @@ function saveSheet (isSaved) {
     
     if(isSaved){
         //notify on success
-        google.script.run.success('Sheet saved in new tab.');
+        google.script.run.success('Template saved in new sheet.');
     }
 }
 
