@@ -650,21 +650,21 @@ function exporter(data, artifactType) {
             //shorten variables
             var users = data.userData.projUserWNum;
 
-            //pass values to mapper function
-            //mapper iterates and assigns the values number based on the list order
-            if (i === 3.0) { xObj['ReleaseId'] = mapper(cell, reqs.dropdowns['Version Number']) }
+            //pass values to getIdFromName function
+            //getIdFromName iterates and assigns the values number based on the list order
+            if (i === 3.0) { xObj['ReleaseId'] = getIdFromName(cell, reqs.dropdowns['Version Number']) }
 
-            if (i === 4.0) { cell = mapper(cell, reqs.dropdowns['Type']) }
+            if (i === 4.0) { cell = getIdFromName(cell, reqs.dropdowns['Type']) }
 
-            if (i === 5.0) { xObj['ImportanceId'] = mapper(cell, reqs.dropdowns['Importance']) }
+            if (i === 5.0) { xObj['ImportanceId'] = getIdFromName(cell, reqs.dropdowns['Importance']) }
 
-            if (i === 6.0) { xObj['StatusId'] = mapper(cell, reqs.dropdowns['Status']) }
+            if (i === 6.0) { xObj['StatusId'] = getIdFromName(cell, reqs.dropdowns['Status']) }
 
-            if (i === 8.0) { xObj['AuthorId'] = mapper(cell, users) }
+            if (i === 8.0) { xObj['AuthorId'] = getIdFromName(cell, users) }
 
-            if (i === 9.0) { xObj['OwnerId'] = mapper(cell, users) }
+            if (i === 9.0) { xObj['OwnerId'] = getIdFromName(cell, users) }
 
-            if (i === 10.0) { xObj['ComponentId'] = mapper(cell, reqs.dropdowns['Components']) }
+            if (i === 10.0) { xObj['ComponentId'] = getIdFromName(cell, reqs.dropdowns['Components']) }
 
             //if empty add null otherwise add the cell to the object under the proper key relative to its location on the template
             //Offset by 2 for proj name and indent level
@@ -756,16 +756,18 @@ function requirementExportCall(body, projNum, currentUser, posNum) {
 }
 
 
-//map cell data to their corresponding IDs for export to spirateam
-function mapper(item, list) {
-    //set return value to 1 on err
-    var val = 1;
-    //loop through model for variable being mapped
+// find the corresponding ID for a string value - eg from a dropdown
+// dropdowns can only contain one item per row so we have to now get the IDs for sending to Spira
+// @param: name - the string of the name value specified
+// @param: list - the array of items with keys for id and name values
+function getIdFromName(name, list) {
     for (var i = 0; i < list.length; i++) {
-        //cell value matches model value assign id number
-        if (item == list[i][1]) { val = list[i][0] }
+        if (item == list[i].name) { 
+            return list[i].id;
+        }
     }
-    return val;
+    // return 0 if there's no match
+    return 0;
 }
 
 //gets full model data and custom properties cell range
