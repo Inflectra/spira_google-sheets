@@ -285,10 +285,10 @@ function templateLoader(model, fieldType) {
     clearAll();
 
     // select open file and select first sheet
+    // TODO rework this to be the active sheet - not the first one
     var spreadSheet = SpreadsheetApp.getActiveSpreadsheet(),
-    sheet = spreadSheet.getSheets()[0],
-    fields = model.fields;
-    model.rowsToFormat = 400;
+        sheet = spreadSheet.getSheets()[0],
+        fields = model.fields;
     
     // set sheet (tab) name to model name
     sheet.setName(model.currentProject.name + ' - ' + model.currentArtifact.name);
@@ -569,13 +569,16 @@ function protectColumn (sheet, columnNumber, rowLength, bgColor, name, hide) {
  *
  */
 
-function exporter(data, artifactType) {
-    //get the active spreadsheet and first sheet
-    var spreadSheet = SpreadsheetApp.getActiveSpreadsheet();
-    var sheet = spreadSheet.getSheets()[0];
+function exporter(model) {
+    // get the active spreadsheet and first sheet
+    // TODO rework this to be the active sheet - not the first one
+    var spreadSheet = SpreadsheetApp.getActiveSpreadsheet(),
+        sheet = spreadSheet.getSheets()[0],
+        fields = model.fields;
 
-    //range of cells in a row for the given artifact
-    var range = sheet.getRange(data.templateData.requirements.cellRange);
+    // full area on the sheet where data may be
+    var range = sheet.getRange(1, 1, model.rowsToFormat, fields.length);
+
     //range of cells in a row for custom fields
     var customRange = sheet.getRange(data.templateData.requirements.customCellRange);
     var isRowEmpty = false;
@@ -590,9 +593,9 @@ function exporter(data, artifactType) {
     //shorten variable
     var reqs = data.templateData.requirements;
 
-    //Model window
-    var htmlOutput = HtmlService.createHtmlOutput('<p>Preparing your data for export!</p>').setWidth(250).setHeight(75);
-    SpreadsheetApp.getUi().showModalDialog(htmlOutput, 'Progress');
+    // Create and show a window to tell the user what is going on
+    var exportMessageToUser = HtmlService.createHtmlOutput('<p>Preparing your data for export!</p>').setWidth(250).setHeight(75);
+    SpreadsheetApp.getUi().showModalDialog(exportMessageToUser, 'Progress');
 
     //loop through and collect number of rows that contain data
     while (isRowEmpty === false) {
