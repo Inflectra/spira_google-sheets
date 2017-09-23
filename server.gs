@@ -117,9 +117,11 @@ function clearAll() {
 
 /*
  *
- * =====================
- * FETCH "GET" FUNCTIONS
- * =====================
+ * ====================
+ * DATA "GET" FUNCTIONS
+ * ====================
+ * 
+ * functions used to retrieve data from Spira - things like projects and users, not specific records
  * 
  */
 
@@ -132,11 +134,11 @@ function fetcher(currentUser, fetcherURL) {
     var APIKEY = Utilities.newBlob(decoded).getDataAsString();
 
     //build URL from args
-    var URL = currentUser.url + fetcherURL + currentUser.userName + APIKEY;
+    var fullUrl = currentUser.url + fetcherURL + "username=" + currentUser.userName + APIKEY;
     //set MIME type
     var params = { 'content-type': 'application/json' };
     //call Google fetch function
-    var response = UrlFetchApp.fetch(URL, params);
+    var response = UrlFetchApp.fetch(fullUrl, params);
     
     //returns parsed JSON
     //unparsed response contains error codes if needed
@@ -148,7 +150,7 @@ function fetcher(currentUser, fetcherURL) {
 // Gets projects accessible by current logged in user
 // This function is called on initial log in and therefore also acts as user validation
 function getProjects(currentUser) {
-    var fetcherURL = '/services/v5_0/RestService.svc/projects?username=';
+    var fetcherURL = '/services/v5_0/RestService.svc/projects?';
     return fetcher(currentUser, fetcherURL);
 }
 
@@ -156,7 +158,7 @@ function getProjects(currentUser) {
 
 // Gets components for selected project.
 function getComponents(currentUser, proj) {
-    var fetcherURL = '/services/v5_0/RestService.svc/projects/' + proj + '/components?active_only=true&include_deleted=false&username=';
+    var fetcherURL = '/services/v5_0/RestService.svc/projects/' + proj + '/components?active_only=true&include_deleted=false&';
     return fetcher(currentUser, fetcherURL);
 }
 
@@ -164,7 +166,7 @@ function getComponents(currentUser, proj) {
 
 // Gets custom fields for selected project and artifact
 function getCustoms(currentUser, proj, artifact) {
-    var fetcherURL = '/services/v5_0/RestService.svc/projects/' + proj + '/custom-properties/' + artifact + '?username=';
+    var fetcherURL = '/services/v5_0/RestService.svc/projects/' + proj + '/custom-properties/' + artifact + '?';
     return fetcher(currentUser, fetcherURL);
 }
 
@@ -172,7 +174,7 @@ function getCustoms(currentUser, proj, artifact) {
 
 // Gets releases for selected project.
 function getReleases(currentUser, proj) {
-    var fetcherURL = '/services/v5_0/RestService.svc/projects/' + proj + '/releases?username=';
+    var fetcherURL = '/services/v5_0/RestService.svc/projects/' + proj + '/releases?';
     return fetcher(currentUser, fetcherURL);
 }
 
@@ -180,8 +182,55 @@ function getReleases(currentUser, proj) {
 
 // Gets users for selected project
 function getUsers(currentUser, proj) {
-    var fetcherURL = '/services/v5_0/RestService.svc/projects/' + proj + '/users?username=';
+    var fetcherURL = '/services/v5_0/RestService.svc/projects/' + proj + '/users?';
     return fetcher(currentUser, fetcherURL);
+}
+
+
+
+
+
+
+
+
+
+/*
+ *
+ * =======================
+ * CREATE "POST" FUNCTIONS
+ * =======================
+ * 
+ * functions to create new records in Spira - eg add new requirements
+ * 
+ */
+
+function poster(body, postUrl, currentUser) {
+    //encryption
+    var decoded = Utilities.base64Decode(currentUser.api_key);
+    var APIKEY = Utilities.newBlob(decoded).getDataAsString();
+
+    //build URL from args
+    var fullUrl = currentUser.url + postUrl + "username=" + currentUser.userName + APIKEY;
+
+    //POST headers
+    var params = {
+        'method': 'post',
+        'contentType': 'application/json',
+        'muteHttpExceptions': true,
+        'payload': body
+    };
+
+    //calls and returns google fetch function
+    return UrlFetchApp.fetch(url, params);
+}
+
+// post new requirements
+// takes the stringifyed object, project number, current user, and the position number (for indenting)
+function postRequirementToSpira(body, projectId, currentUser, positionNumber) {
+    //unique url for requirement POST
+    var postUrl = '/services/v5_0/RestService.svc/projects/' + projectId + '/requirements/indent/' + positionNumber + "?";
+    
+    poster(body, postUrl, currentUser);
 }
 
 
@@ -561,21 +610,18 @@ function exporter(model, fieldType, artifacts) {
     // TODO rework this to be the active sheet - not the first one
     var spreadSheet = SpreadsheetApp.getActiveSpreadsheet(),
         sheet = spreadSheet.getSheets()[0],
-        fields = model.fields;
+        fields = model.fields,
+        rowsWithData = findFirstBlankRow(fields.length, model.rowsToFormat, 1);
 
     // full area on the sheet where data may be
     var range = sheet.getRange(1, 1, model.rowsToFormat, fields.length);
 
     //range of cells in a row for custom fields
     var customRange = sheet.getRange(data.templateData.requirements.customCellRange);
-    var isRowEmpty = false;
-    var numberOfRows = 0;
-    var row = 0;
-    var col = 0;
 
     //final arrays that hold finished objects for export
     var responses = [];
-    var xObjArr = [];
+    var entriesForExport = [];
 
     //shorten variable
     var reqs = data.templateData.requirements;
@@ -584,25 +630,9 @@ function exporter(model, fieldType, artifacts) {
     var exportMessageToUser = HtmlService.createHtmlOutput('<p>Preparing your data for export!</p>').setWidth(250).setHeight(75);
     SpreadsheetApp.getUi().showModalDialog(exportMessageToUser, 'Progress');
 
-    //loop through and collect number of rows that contain data
-    while (isRowEmpty === false) {
-        //select row i.e (0, 0, 43)
-        //the offset method moves the row down each iteration
-        var newRange = range.offset(row, col, reqs.cellRangeLength);
-        //check if the row is empty
-        if (newRange.isBlank()) {
-            //if row is empty set var to true
-            isRowEmpty = true
-        } else {
-            //move to next row
-            row++;
-            //add to number of rows
-            numberOfRows++;
-        }
-    }
 
     //loop through standard data rows
-    for (var j = 0; j < numberOfRows + 1; j++) {
+    for (var j = 0; j < rowsWithData + 1; j++) {
 
         //initialize/clear new object for row values
         var xObj = {}
@@ -672,11 +702,11 @@ function exporter(model, fieldType, artifacts) {
         if (xObj.Name) {
             xObj['ProjectName'] = data.templateData.currentProjectName;
 
-            xObjArr.push(xObj);
+            entriesForExport.push(xObj);
            
         }
 
-        xObjArr = parentChildSetter(xObjArr);
+        entriesForExport = parentChildSetter(entriesForExport);
     } //end object creator loop
 
     // set up to individually add each requirement to spirateam
@@ -686,13 +716,13 @@ function exporter(model, fieldType, artifacts) {
     var errorLog = [];
 
     //loop through objects to send
-    var len = xObjArr.length;
+    var len = entriesForExport.length;
     for (var i = 0; i < len; i++) {
         //stringify
-        var JSON_body = JSON.stringify(xObjArr[i]);
+        var JSON_body = JSON.stringify(entriesForExport[i]);
 
         //send JSON, project number, current user data, and indent position to export function
-        var response = requirementExportCall(JSON_body, data.templateData.currentProjectNumber, data.userData.currentUser, xObjArr[i].positionNumber);
+        var response = postRequirementToSpira(JSON_body, data.templateData.currentProjectNumber, data.userData.currentUser, entriesForExport[i].positionNumber);
 
         //parse response
         if (response.getResponseCode() === 200) {
@@ -700,7 +730,7 @@ function exporter(model, fieldType, artifacts) {
             response = JSON.parse(response.getContentText())
             responses.push(response.RequirementId)
                 //set returned ID to id field
-            xObjArr[i].idField.setValue(response.RequirementId)
+            entriesForExport[i].idField.setValue(response.RequirementId)
 
             //modal that displays the status of each artifact sent
             htmlOutputSuccess = HtmlService.createHtmlOutput('<p>' + (i + 1) + ' of ' + (len) + ' sent!</p>').setWidth(250).setHeight(75);
@@ -722,27 +752,31 @@ function exporter(model, fieldType, artifacts) {
     return [isError, errorLog];
 }
 
-//Post API call
-//takes the stringifyed object, project number, current user, and the position number
-function requirementExportCall(body, projNum, currentUser, posNum) {
-    //encryption
-    var decoded = Utilities.base64Decode(currentUser.api_key);
-    var APIKEY = Utilities.newBlob(decoded).getDataAsString();
 
-    //unique url for requirement POST
-    var fetcherURL = '/services/v5_0/RestService.svc/projects/' + projNum + '/requirements/indent/' + posNum + '?username=';
-    //build URL for fetch
-    var URL = currentUser.url + fetcherURL + currentUser.userName + APIKEY;
-    //POST headers
-    var init = {
-        'method': 'post',
-        'contentType': 'application/json',
-        'muteHttpExceptions': true,
-        'payload': body
-    };
 
-    //calls and returns google fetch function
-    return UrlFetchApp.fetch(URL, init);
+function createEntryFromRow() {
+    var newEntry = {};
+}
+
+
+
+// checks each row in a range for data, stopping at the first blank row - returns number of rows containing data
+// @param: columsnInRange - number of columns to include the check
+// @param: maxRowsToCheck - how many rows to check for data/blank
+// @param: rowsToExclude - how many rows to start down from - eg 1 means skip the topmost row
+function findFirstBlankRow(columnsInRange, maxRowsToCheck, rowsToExclude) {
+    //loop through and collect number of rows that contain data
+    var i = 0;
+    for (i; i < maxRowsToCheck; i++) {
+        // the offset method moves the row down each iteration
+        // i + 1: used to exclude the header row
+        var newRange = range.offset(i + rowsToExclude, 0, columnsInRange);
+        //check if the row is empty
+        if (newRange.isBlank()) {
+            break;
+        }
+    }
+    return i;
 }
 
 

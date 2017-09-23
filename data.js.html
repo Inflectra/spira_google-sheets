@@ -85,7 +85,7 @@ let params = {
 var templateFields = {
     requirements: [
         {field: "RequirementId", name: "Requirement ID", type: params.fieldType.id, width: 100},
-        {field: "Name", name: "Requirement Name", type: params.fieldType.text, width: 250},
+        {field: "Name", name: "Requirement Name", type: params.fieldType.text, width: 250, required: true},
         {field: "Description", name: "Requirement Description", type: params.fieldType.text, width: 350},
         {field: "ReleaseVersionNumber", name: "Release Version", type: params.fieldType.release, width: 250},
         {field: "RequirementTypeId", name: "Type", type: params.fieldType.drop, width: 100,
