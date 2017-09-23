@@ -279,7 +279,9 @@ function okWarn(dialog) {
  *
  */
 
-// function for template creation
+// function that manages template creation - creating the header row, formatting cells, setting validation
+// @param: model - full model object from client containing field data for specific artifact, list of project users, components, etc
+// @param: fieldType - list of fieldType enums from client params object
 function templateLoader(model, fieldType) {
     // clear spreadsheet depending on user input
     clearAll();
@@ -539,25 +541,6 @@ function protectColumn (sheet, columnNumber, rowLength, bgColor, name, hide) {
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 /*
  * ================
  * SENDING TO SPIRA
@@ -569,7 +552,11 @@ function protectColumn (sheet, columnNumber, rowLength, bgColor, name, hide) {
  *
  */
 
-function exporter(model) {
+// function that manages exporting data from the sheet - creating an array of objects based on entered data, then sending to Spira
+// @param: model - full model object from client containing field data for specific artifact, list of project users, components, etc
+// @param: fieldType - list of fieldType enums from client params object
+// @param: artifacts - list of artifacts with metadata from client params object (eg is artifact x hierarchical, has folders)
+function exporter(model, fieldType, artifacts) {
     // get the active spreadsheet and first sheet
     // TODO rework this to be the active sheet - not the first one
     var spreadSheet = SpreadsheetApp.getActiveSpreadsheet(),

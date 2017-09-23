@@ -48,7 +48,7 @@ function modelReset(){
 
 
 
-
+// main store for hard coded enums and metadata that define fields and artifacts
 let params = {
     // enums for different types of field - match custom field prop types where relevant
     fieldType: {
@@ -60,18 +60,20 @@ let params = {
         drop: 6,
         multi: 7,
         user: 8,
-        // following types don't exist as custom property types
+        // following types don't exist as custom property types as set by Spira - but useful for defining standard field types here
         id: 9,
         component: 10,
         release: 11,
         arr: 12,
         folder: 13
     },
+
+    // enums and various metadata for all artifacts potentially used by the system
     artifacts: [
-        {field: 'requirements', name: 'Requirements', id: 1},
+        {field: 'requirements', name: 'Requirements', id: 1, hierarchical: true},
         {field: 'testCases',    name: 'Test Cases',   id: 2, hasFolders: true, disabled: true},
         {field: 'incidents',    name: 'Incidents',    id: 3, disabled: true},
-        {field: 'releases',     name: 'Releases',     id: 4, disabled: false},
+        {field: 'releases',     name: 'Releases',     id: 4, hierarchical: true, disabled: false},
         {field: 'testRuns',     name: 'Test Runs',    id: 5, disabled: true},
         {field: 'tasks',        name: 'Tasks',        id: 6, hasFolders: true, disabled: false},
         {field: 'testSteps',    name: 'Test Steps',   id: 7, disabled: true, hidden: true},
@@ -79,6 +81,7 @@ let params = {
     ]
 };
 
+// each artifact has all its standard fields listed, along with important metadata - display name, field type, hard coded values set by system
 var templateFields = {
     requirements: [
         {field: "RequirementId", name: "Requirement ID", type: params.fieldType.id, width: 100},
@@ -219,6 +222,9 @@ function Data() {
     
     this.currentArtifact = '';
 
+    // TODO - for incidents, more calls are required to get lists of statuses etc, and checks for their completion will be required
+    // TODO - one way to do the above: set a number based on calls required - eg 4. Each success decrements that, then checks if it is at 0.
+    // TODO - 4 is default and required on any project change. Additional ones required as soon as particular artifacts selected (eg incidents)
     this.getRequest = {
         components: false,
         customs: false,
