@@ -10,24 +10,31 @@
  *
  */
 
-// for dev mode only - comment out or set to false to disable any UI dev features
-let devMode = true;
-
+// on init make sure to run any required startup functions
 (function () {
     setDevStuff();
 })();
 
+
+
+// for dev mode only - comment out or set to false to disable any UI dev features
+let devMode = true;
+
+// if devmode enabled, set the required fields and show the dev button
 function setDevStuff () {
     if (devMode) {
         $("#btn-dev").removeClass("hidden");
         
-        model.user.url = "https://demo.spiraservice.net/oluwatoni";
+        model.user.url = "https://demo.spiraservice.net/mario-ballesteros";
         model.user.userName = "administrator";
-        model.user.api_key = "{8323528B-5A45-4FD9-867C-82BF7194EF4F}";
+        model.user.api_key = "{D6B2774D-2FAB-4A0C-B627-B5BF0627EC07}";
     }
 }
 
-// panel: string. suffix for items to act on (eg if id = panel-help, choice = "help")
+
+
+// used to show or hide / hide / show a specific panel
+// @param: panel - string. suffix for items to act on (eg if id = panel-help, choice = "help")
 function panelToggle (panel) {
     panelId = "#panel-" + panel;
     $(panelId).toggleClass("offscreen");
@@ -41,6 +48,9 @@ function showPanel (panel) {
     $(panelId).removeClass("offscreen");
 }
 
+
+
+// manage the loading spinner
 function showLoadingSpinner () {
     $('#loader').removeClass('hidden');
 }
@@ -49,18 +59,25 @@ function hideLoadingSpinner () {
 }
 
 
+
+// clear spreadsheet, model
 function clearAddonData () {
-    //clear spreadsheet, model
     clearSheet();
     modelReset();
 }
 
-// shouldClear: optional bool to check
+
+
+// clears the first sheet in the book
+// @param: shouldClear - optional bool to check
 function clearSheet (shouldClear) {
     var shouldClearToUse = typeof shouldClear !== 'undefined' ? shouldClear : true;
     if (shouldClearToUse) google.script.run.clearAll();
 }
 
+
+
+// resets the sidebar following logout
 function resetSidebar () {
     clearAuthForm();
     
@@ -122,12 +139,15 @@ function setDropdown (selectId, array, firstMessage) {
  *
  */
 
+// get user data from input fields and store in user data object
+// adds the 'api-key' text before the key to make creating the urls simpler
 function getAuthDetails () {
-    // get user data from input fields and store in user data object
     model.user.url = $("#input-url").val();
     model.user.userName = $("#input-userName").val();
     model.user.api_key = btoa("&api-key=" + encodeURIComponent($("#input-password").val()));
 }
+
+
 
 // fill in mock values for easy log in development, enable dev button
 function setAuthDetails () {
@@ -136,16 +156,20 @@ function setAuthDetails () {
     $('#input-password').val(model.user.api_key);
 }
 
+
+
+// clear input field values
 function clearAuthForm () {
-    //clear input field values
     $('#input-url, #input-userName, #input-password').val('');
 }
 
+
+
+// handle the click of the login button
 function loginAttempt () {
     getAuthDetails();
     login();
 }
-
 // login function that starts the intial data creation
 function login() {    
     showLoadingSpinner();
@@ -158,7 +182,10 @@ function login() {
         .getProjects(model.user);
 }
 
+
+
 // kick off prepping and showing main panel
+// @param: projects - passed in projects data returned from the server following successful API call to Spira
 function populateProjects (projects) {
 
     // take projects data from Spira API call, strip out unwanted fields, add to data model
@@ -193,6 +220,7 @@ function populateProjects (projects) {
  *
  */
  
+// manage the switching of the UI off the login screen on succesful login and retrieval of projects
 function showMainPanel () {
     // displays the current logged in user name
     $('#js--loggedInAs').html('Logged in as: ' + model.user.userName);
@@ -208,13 +236,14 @@ function showMainPanel () {
 
 
 
+// run server side code to manage logout
 function logoutAttempt () {
     //warn user that all data on the first sheet will be lost. Returns true or false
     google.script.run
         .withSuccessHandler(logout)
         .warn('All data on the first sheet will be deleted. Continue?');
 }
-//gets a true or false value promise from google
+// @param: shouldLogout - a true or false value from google
 function logout (shouldLogout) {
     if (shouldLogout) {
         clearAddonData();
@@ -224,7 +253,7 @@ function logout (shouldLogout) {
 
 
 
-//handles changing project dropdown - what should be enabled or disabled
+// handles changing project dropdown - what should be enabled or disabled
 $('#select-project').change(function(e) {
     //if the project field has not been selected all other selected buttons are disabled
     if (e.target.value == 0) {
@@ -242,7 +271,9 @@ $('#select-project').change(function(e) {
     }
 });
 
-//handles enabling the template button if the artifact drop down is properly selected.
+
+
+// handles enabling the template button if the artifact drop down is properly selected.
 $('#select-artifact').change(function(e) {
     if (e.target.value == 0) {
         $('#btn-template').prop('disabled', true);
@@ -253,6 +284,7 @@ $('#select-artifact').change(function(e) {
 
 
 
+// starts the process to create a template from chosen options
 function createTemplateAttempt() {   
     //warn the user data will be erased
     google.script.run
@@ -285,6 +317,7 @@ function clearSheetAttempt () {
 
 
 
+// current functionality is to clone existing sheet onto new sheet in same workbook
 function saveSheetAttempt () {
     //check to see if there is a template present
     if (model.isTemplateLoaded) {
@@ -377,7 +410,8 @@ function sendToSpira (data) {
  *
  */
 
-// choice: string. suffix for items to select (eg if id = help-section-fields, choice = "fields")
+// manage showing the correct help section to the user
+// @param: choice - string. suffix for items to select (eg if id = help-section-fields, choice = "fields")
 function showChosenHelpSection (choice) {
     // hide all sections and then only show the one the user wants
     $(".help-section").addClass("hidden");
@@ -477,9 +511,10 @@ function getCustomsSuccess(data) {
         .filter(function(item) { return !item.IsDeleted;})
         .map(function(item) {
             var customField = {
-                custom: true,
+                isCustom: true,
                 field: item.CustomPropertyFieldName, 
                 name: item.Name,
+                propertyNumber: item.PropertyNumber,
                 type: item.CustomPropertyTypeId
             };
 
@@ -546,9 +581,9 @@ function getUsersSuccess(data) {
     // map through user obj and assign names
     model.projectUsers = data.map(function(item) {
         return {
-            userId: item.UserId,
+            id: item.UserId,
             username: item.UserName,
-            fullName: item.FullName,
+            name: item.FullName,
         }
     }) 
     if (allGetsSucceeded()) templateLoader();

@@ -126,8 +126,8 @@ function clearAll() {
  */
 
 // General fetch function, using Google's built in fetch api
-// @param: currentUser = user object storing login data from client
-// @param: fetcherUrl = url string passed in to connect with Spira
+// @param: currentUser - user object storing login data from client
+// @param: fetcherUrl - url string passed in to connect with Spira
 function fetcher(currentUser, fetcherURL) { 
     //google base 64 encoded string utils
     var decoded = Utilities.base64Decode(currentUser.api_key);
@@ -149,6 +149,7 @@ function fetcher(currentUser, fetcherURL) {
 
 // Gets projects accessible by current logged in user
 // This function is called on initial log in and therefore also acts as user validation
+// @param: currentUser - object with details about the current user
 function getProjects(currentUser) {
     var fetcherURL = '/services/v5_0/RestService.svc/projects?';
     return fetcher(currentUser, fetcherURL);
@@ -157,32 +158,41 @@ function getProjects(currentUser) {
 
 
 // Gets components for selected project.
-function getComponents(currentUser, proj) {
-    var fetcherURL = '/services/v5_0/RestService.svc/projects/' + proj + '/components?active_only=true&include_deleted=false&';
+// @param: currentUser - object with details about the current user
+// @param: projectId - int id for current project
+function getComponents(currentUser, projectId) {
+    var fetcherURL = '/services/v5_0/RestService.svc/projects/' + projectId + '/components?active_only=true&include_deleted=false&';
     return fetcher(currentUser, fetcherURL);
 }
 
 
 
 // Gets custom fields for selected project and artifact
-function getCustoms(currentUser, proj, artifact) {
-    var fetcherURL = '/services/v5_0/RestService.svc/projects/' + proj + '/custom-properties/' + artifact + '?';
+// @param: currentUser - object with details about the current user
+// @param: projectId - int id for current project
+// @param: artifactName - string name of the current artifact
+function getCustoms(currentUser, projectId, artifactName) {
+    var fetcherURL = '/services/v5_0/RestService.svc/projects/' + projectId + '/custom-properties/' + artifactName + '?';
     return fetcher(currentUser, fetcherURL);
 }
 
 
 
-// Gets releases for selected project.
-function getReleases(currentUser, proj) {
-    var fetcherURL = '/services/v5_0/RestService.svc/projects/' + proj + '/releases?';
+// Gets releases for selected project
+// @param: currentUser - object with details about the current user
+// @param: projectId - int id for current project
+function getReleases(currentUser, projectId) {
+    var fetcherURL = '/services/v5_0/RestService.svc/projects/' + projectId + '/releases?';
     return fetcher(currentUser, fetcherURL);
 }
 
 
 
 // Gets users for selected project
-function getUsers(currentUser, proj) {
-    var fetcherURL = '/services/v5_0/RestService.svc/projects/' + proj + '/users?';
+// @param: currentUser - object with details about the current user
+// @param: projectId - int id for current project
+function getUsers(currentUser, projectId) {
+    var fetcherURL = '/services/v5_0/RestService.svc/projects/' + projectId + '/users?';
     return fetcher(currentUser, fetcherURL);
 }
 
@@ -204,7 +214,11 @@ function getUsers(currentUser, proj) {
  * 
  */
 
-function poster(body, postUrl, currentUser) {
+// General fetch function, using Google's built in fetch api
+// @param: body - json object
+// @param: currentUser - user object storing login data from client
+// @param: postUrl - url string passed in to connect with Spira
+function poster(body, currentUser, postUrl) {
     //encryption
     var decoded = Utilities.base64Decode(currentUser.api_key);
     var APIKEY = Utilities.newBlob(decoded).getDataAsString();
@@ -224,13 +238,18 @@ function poster(body, postUrl, currentUser) {
     return UrlFetchApp.fetch(url, params);
 }
 
-// post new requirements
-// takes the stringifyed object, project number, current user, and the position number (for indenting)
-function postRequirementToSpira(body, projectId, currentUser, positionNumber) {
+
+
+// post new requirement
+// @param: body - stringified object of all relevant fields
+// @param: currentUser - object with details about the current user
+// @param: projectId - int id for current project
+// @param: positionNumber - int used for setting the relative indenting position
+function postRequirementToSpira(body, currentUser, projectId, positionNumber) {
     //unique url for requirement POST
     var postUrl = '/services/v5_0/RestService.svc/projects/' + projectId + '/requirements/indent/' + positionNumber + "?";
     
-    poster(body, postUrl, currentUser);
+    poster(body, currentUser, postUrl);
 }
 
 
@@ -274,10 +293,11 @@ function success(string) {
 
 
 // Alert pop up for data clear warning
-function warn(messageString) {
+// @param: string - message to be displayed
+function warn(string) {
     var ui = SpreadsheetApp.getUi();
     //alert popup with yes and no button
-    var response = ui.alert(messageString, ui.ButtonSet.YES_NO);
+    var response = ui.alert(srting, ui.ButtonSet.YES_NO);
 
     //returns with user choice
     if (response == ui.Button.YES) {
@@ -299,12 +319,17 @@ function exportSuccess(err) {
     }
 }
 
+
+
 // Alert pop up for no template present
 function noTemplate() {
     okWarn('Please load a template to continue.');
 }
 
-// Google alert popup with Ok button
+
+
+// Google alert popup with OK button
+// @param: dialog - message to show
 function okWarn(dialog) {
     var ui = SpreadsheetApp.getUi();
     var response = ui.alert(dialog, ui.ButtonSet.OK);
@@ -444,7 +469,7 @@ function contentValidationSetter (sheet, model, fieldType) {
             case fieldType.user:
                 var list = [];
                 for (var i = 0; i < model.projectUsers.length; i++) {
-                    list.push(model.projectUsers[i].fullName);
+                    list.push(model.projectUsers[i].name);
                 }
                 setDropdownValidation(sheet, columnNumber, model.rowsToFormat, list, false);
                 break;
@@ -604,110 +629,34 @@ function protectColumn (sheet, columnNumber, rowLength, bgColor, name, hide) {
 // function that manages exporting data from the sheet - creating an array of objects based on entered data, then sending to Spira
 // @param: model - full model object from client containing field data for specific artifact, list of project users, components, etc
 // @param: fieldType - list of fieldType enums from client params object
-// @param: artifacts - list of artifacts with metadata from client params object (eg is artifact x hierarchical, has folders)
-function exporter(model, fieldType, artifacts) {
+function exporter(model, fieldType) {
     // get the active spreadsheet and first sheet
     // TODO rework this to be the active sheet - not the first one
     var spreadSheet = SpreadsheetApp.getActiveSpreadsheet(),
         sheet = spreadSheet.getSheets()[0],
         fields = model.fields,
-        rowsWithData = findFirstBlankRow(fields.length, model.rowsToFormat, 1);
+        artifact = model.currentArtifact,
+        artifactIsHierarchical = artifact.hierarchical,
+        artifactHasFolders = artifact.hasFolders,
 
-    // full area on the sheet where data may be
-    var range = sheet.getRange(1, 1, model.rowsToFormat, fields.length);
+        sheetData = sheet.getRange(2,1, sheet.getLastRow() - 1, fields.length).getValues(),
+        entriesForExport = new Array;
 
-    //range of cells in a row for custom fields
-    var customRange = sheet.getRange(data.templateData.requirements.customCellRange);
-
-    //final arrays that hold finished objects for export
-    var responses = [];
-    var entriesForExport = [];
-
-    //shorten variable
-    var reqs = data.templateData.requirements;
+    for (var rows = 0; rows < sheetData.length; rows++) {
+        // stop at the first row that is fully blank
+        if (!sheetData[row].join() || !rowHasRequiredFields(sheetData[row], fields)) {
+            break;
+        } else {
+            var entry = createEntryFromRow( sheetData[row], model, fieldType );
+            entriesForExport.push(entry);
+        }
+    }
 
     // Create and show a window to tell the user what is going on
     var exportMessageToUser = HtmlService.createHtmlOutput('<p>Preparing your data for export!</p>').setWidth(250).setHeight(75);
     SpreadsheetApp.getUi().showModalDialog(exportMessageToUser, 'Progress');
 
 
-    //loop through standard data rows
-    for (var j = 0; j < rowsWithData + 1; j++) {
-
-        //initialize/clear new object for row values
-        var xObj = {}
-
-        //send data model and current row to custom data function
-        var row = customRange.offset(j, 0)
-        xObj['CustomProperties'] = customHeaderRowBuilder(data, row)
-
-        //set position number
-        //used for indent
-        xObj['positionNumber'] = 0;
-
-        //loop through cells in row according to the JSON headings
-        for (var i = 0; i < reqs.JSON_headings.length; i++) {
-
-            //get cell value
-            var cell = range.offset(j, i).getValue();
-
-            //get cell Range for id number insertion after export
-            if (i === 0.0) { xObj['idField'] = range.offset(j, i).getCell(1, 1) }
-
-            //call indent checker and set indent amount
-            if (i === 1.0) {
-                //call indent function
-                //counts the number of ">"s to assign an indent value
-                xObj['indentCount'] = indenter(cell)
-
-                //remove '>' symbols from requirement name string
-                while (cell[0] == '>' || cell[0] == ' ') {
-                    //removes first character if it's a space or ">"
-                    cell = cell.slice(1)
-                }
-            }
-
-            //shorten variables
-            var users = data.userData.projUserWNum;
-
-            //pass values to getIdFromName function
-            //getIdFromName iterates and assigns the values number based on the list order
-            if (i === 3.0) { xObj['ReleaseId'] = getIdFromName(cell, reqs.dropdowns['Version Number']) }
-
-            if (i === 4.0) { cell = getIdFromName(cell, reqs.dropdowns['Type']) }
-
-            if (i === 5.0) { xObj['ImportanceId'] = getIdFromName(cell, reqs.dropdowns['Importance']) }
-
-            if (i === 6.0) { xObj['StatusId'] = getIdFromName(cell, reqs.dropdowns['Status']) }
-
-            if (i === 8.0) { xObj['AuthorId'] = getIdFromName(cell, users) }
-
-            if (i === 9.0) { xObj['OwnerId'] = getIdFromName(cell, users) }
-
-            if (i === 10.0) { xObj['ComponentId'] = getIdFromName(cell, reqs.dropdowns['Components']) }
-
-            //if empty add null otherwise add the cell to the object under the proper key relative to its location on the template
-            //Offset by 2 for proj name and indent level
-            //this only handles values for a couple of cases and could be refactored out.
-            if (cell === "") {
-                xObj[reqs.JSON_headings[i]] = null;
-            } else {
-                xObj[reqs.JSON_headings[i]] = cell;
-            }
-
-        } //end standard cell loop
-
-        //if not empty add object
-        //entry MUST have a name
-        if (xObj.Name) {
-            xObj['ProjectName'] = data.templateData.currentProjectName;
-
-            entriesForExport.push(xObj);
-           
-        }
-
-        entriesForExport = parentChildSetter(entriesForExport);
-    } //end object creator loop
 
     // set up to individually add each requirement to spirateam
     //error flag, set to true on error
@@ -722,7 +671,12 @@ function exporter(model, fieldType, artifacts) {
         var JSON_body = JSON.stringify(entriesForExport[i]);
 
         //send JSON, project number, current user data, and indent position to export function
-        var response = postRequirementToSpira(JSON_body, data.templateData.currentProjectNumber, data.userData.currentUser, entriesForExport[i].positionNumber);
+        var response = postRequirementToSpira(
+            JSON_body, 
+            data.userData.currentUser, 
+            data.templateData.currentProjectNumber, 
+            entriesForExport[i].positionNumber
+        );
 
         //parse response
         if (response.getResponseCode() === 200) {
@@ -754,30 +708,150 @@ function exporter(model, fieldType, artifacts) {
 
 
 
-function createEntryFromRow() {
-    var newEntry = {};
-}
 
 
 
-// checks each row in a range for data, stopping at the first blank row - returns number of rows containing data
-// @param: columsnInRange - number of columns to include the check
-// @param: maxRowsToCheck - how many rows to check for data/blank
-// @param: rowsToExclude - how many rows to start down from - eg 1 means skip the topmost row
-function findFirstBlankRow(columnsInRange, maxRowsToCheck, rowsToExclude) {
-    //loop through and collect number of rows that contain data
-    var i = 0;
-    for (i; i < maxRowsToCheck; i++) {
-        // the offset method moves the row down each iteration
-        // i + 1: used to exclude the header row
-        var newRange = range.offset(i + rowsToExclude, 0, columnsInRange);
-        //check if the row is empty
-        if (newRange.isBlank()) {
-            break;
+// check to see if a row of data has entries for all required fields
+// returns true if all required fields have (any) values, otherwise returns false
+// @param: row - a 'row' of data that contains a single object representing all fields
+// @param: fields - the relevant fields for specific artifact, along with all metadata about each
+function rowHasRequiredFields(row, fields) {
+    var result = true;
+    for (var column = 0; column < row.length; column++) {
+        if (fields[column].required && !row[column]) {
+            result = false;
         }
     }
-    return i;
+    return result;
 }
+
+
+
+// function creates a correctly formatted artifact object ready to send to Spira
+// it works through each field type to validate and parse the values so object is in correct form
+// any field that does not pass validation receives a null value
+// @param: row - a 'row' of data that contains a single object representing all fields
+// @param: model - full model with info about fields, dropdowns, users, etc
+// @param: fieldType - object of all field types with enums
+function createEntryFromRow(row, model, fieldType) {
+    //create empty 'entry' object - include custom properties array here to avoid it being undefined later if needed
+    var entry = {
+            "CustomProperties": new Array
+        },
+        fields = model.fields;
+
+    //we need to turn an array of values in the row into a validated object 
+    for (var index = 0; index < row.length; index++) {
+        var value = null,
+            customType = "";
+
+        // double check data validation, convert dropdowns to required int values
+        // sets both the value, and custom types - so that custom fields are handled correctly
+        switch (fields[index].type) {
+            
+            // ID fields: restricted to numbers and blank on push, otherwise put
+            case fieldType.id:
+
+                customType = "IntegerValue";
+                break;
+            
+            // INT and NUM fields are both treated by Sheets as numbers
+            case fieldType.int:
+            case fieldType.num:
+                // only set the value if a number has been returned
+                if (!isNaN(row[index])) {
+                    value = row[index];
+                    customType = "IntegerValue";
+                };
+                break;
+
+            // BOOL as Sheets has no bool validation, a yes/no dropdown is used
+            case fieldType.bool:
+                // 'True' and 'False' don't work as dropdown choices, so have to convert back
+                if (row[index] == "Yes") {
+                    value = true;
+                    customType = "BooleanValue";
+                } else if (row[index] == "No") {
+                    value = false;
+                    customType = "BooleanValue";
+                };
+                break;
+
+            // DATES - parse the data and add prefix/suffix for WCF
+            case fieldType.date:
+                if (row[index]) {
+                    value = "\/Date(" + Date.parse(row[index]) + ")\/";
+                    customType = "DateTimeValue";
+                }
+                break;
+
+            // DROPDOWNS - get id from relevant name, if one is present
+            case fieldType.drop:
+                var idFromName = getIdFromName(row[index], fields[index].values);
+                if (idFromName) {
+                    value = idFromName;
+                    customType = "IntegerValue";
+                }
+                break;
+
+            // MULTIDROPDOWNS - get id from relevant name, if one is present, set customtype to list value
+            case fieldType.multi:
+                var idFromName = getIdFromName(row[index], fields[index].values);
+                if (idFromName) {
+                    value = idFromName;
+                    customType = "IntegerListValue";
+                }
+                break;
+
+            // USER fields - get id from relevant name, if one is present
+            case fieldType.user:
+                var idFromName = getIdFromName(row[index], model.projectUsers);
+                if (idFromName) {
+                    value = idFromName;
+                    customType = "IntegerValue";
+                }
+                break;
+
+            // COMPONENT fields - get id from relevant name, if one is present
+            case fieldType.component:
+                var idFromName = getIdFromName(row[index], model.projectComponents);
+                if (idFromName) {
+                    value = idFromName;
+                    customType = "IntegerValue";
+                }
+                break;
+              
+            // RELEASE fields - get id from relevant name, if one is present
+            case fieldType.release:
+                var idFromName = getIdFromName(row[index], model.projectReleases);
+                if (idFromName) {
+                    value = idFromName;
+                    customType = "IntegerValue";
+                }
+                break;
+            
+            // All other types
+            default:
+                // just assign the value to the cell - used for text
+                value = row[index];
+                customType = "StringValue";
+                break;
+        }
+
+        // check whether field is marked as a custom field and as the required property number 
+        if (fields[index].isCustom && fields[index].propertyNumber) {
+            entry.CustomProperties.push({
+                "PropertyNumber": fields[index].propertyNumber,
+                [customType]: value
+            });
+        }
+        entry[fields[index].field] = value;
+    }
+
+    return entry;
+}
+
+
 
 
 // find the corresponding ID for a string value - eg from a dropdown
