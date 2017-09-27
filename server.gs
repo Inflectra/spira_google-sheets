@@ -647,7 +647,7 @@ function exporter(model, fieldType) {
         if (!sheetData[row].join() || !rowHasRequiredFields(sheetData[row], fields)) {
             break;
         } else {
-            var entry = createEntryFromRow( sheetData[row], model, fieldType );
+            var entry = createEntryFromRow( sheetData[row], model, fieldType, artifactIsHierarchical );
             entriesForExport.push(entry);
         }
     }
@@ -733,7 +733,7 @@ function rowHasRequiredFields(row, fields) {
 // @param: row - a 'row' of data that contains a single object representing all fields
 // @param: model - full model with info about fields, dropdowns, users, etc
 // @param: fieldType - object of all field types with enums
-function createEntryFromRow(row, model, fieldType) {
+function createEntryFromRow(row, model, fieldType, artifactIsHierarchical) {
     //create empty 'entry' object - include custom properties array here to avoid it being undefined later if needed
     var entry = {
             "CustomProperties": new Array
@@ -838,6 +838,12 @@ function createEntryFromRow(row, model, fieldType) {
                 break;
         }
 
+
+        // handle hierarchy fields - if required: checks artifact type is hierarchical and if this field sets hierarchy
+        if (artifactIsHierarchical && fields[index].setsHierarchy) {
+            entry.indentLevel = getIndentLevel(row[index]);
+        }
+
         // check whether field is marked as a custom field and as the required property number 
         if (fields[index].isCustom && fields[index].propertyNumber) {
             entry.CustomProperties.push({
@@ -850,7 +856,6 @@ function createEntryFromRow(row, model, fieldType) {
 
     return entry;
 }
-
 
 
 
@@ -868,120 +873,18 @@ function getIdFromName(name, list) {
     return 0;
 }
 
-//gets full model data and custom properties cell range
-function customHeaderRowBuilder(data, rowRange) {
-    //shorten variables
-    var customs = data.templateData.requirements.customFields;
-    var users = data.userData.projUserWNum;
-    //length of custom data to optimize perf
-    var len = customs.length;
-    //custom props array of objects to be returned
-    var customProps = [];
-    //loop through cells based on custom data fields
-    for (var i = 0; i < len; i++) {
-        //assign custom property to variable
-        var customData = customs[i];
-        //get cell data
-        var cell = rowRange.offset(0, i).getValue()
-            //check if the cell is empty
-        if (cell !== "") {
-            //call custom content function and push data into array from export
-            customProps.push(customFiller(cell, customData, users))
-        }
-    }
-    //custom properties array ready for API export
-    return customProps
-}
 
-//gets specific cell and custom property data for that column
-function customFiller(cell, data, users) {
-    //all custom values need a property number
-    //set it and add to object for return
-    var propNum = data.PropertyNumber;
-    var prop = { PropertyNumber: propNum }
-
-    //check data type of custom fields and assign values if condition is met
-    if (data.CustomPropertyTypeName == 'Text') {
-        prop['StringValue'] = cell;
-    }
-
-    if (data.CustomPropertyTypeName == 'Integer') {
-        //removes floating points
-        cell = parseInt(cell);
-        prop['IntegerValue'] = cell;
-    }
-
-    if (data.CustomPropertyTypeName == 'Decimal') {
-        prop['DecimalValue'] = cell;
-    }
-
-    if (data.CustomPropertyTypeName == 'Boolean') {
-        //google cells wouldn't validate 'true' or 'false', I assume they're reserved keywords.
-        //Used yes and no instead and here they are converted to true and false;
-        cell == "Yes" ? prop['BooleanValue'] = true : prop['BooleanValue'] = false;
-    }
-
-    if (data.CustomPropertyTypeName == 'List') {
-        var len = data.CustomList.Values.length;
-        //loop through custom list and match name to cell value
-        for (var i = 0; i < len; i++) {
-            if (cell == data.CustomList.Values[i].Name) {
-                //assign list value number to integer
-                prop['IntegerValue'] = data.CustomList.Values[i].CustomPropertyValueId
-            }
-        }
-    }
-
-    if (data.CustomPropertyTypeName == 'Date') {
-        //parse date into milliseconds
-        cell = Date.parse(cell);
-        //concat values accepted by spira and assign to correct prop
-        prop['DateTimeValue'] = "\/Date(" + cell + ")\/";
-    }
-
-
-    if (data.CustomPropertyTypeName == 'MultiList') {
-        //TODO add some sort of multiList functionality
-        //currently 4/2017 Google app script does not support multi select on google sheets
-
-        //single item exported in an array
-        var listArray = [];
-        var len = data.CustomList.Values.length;
-        //loop through custom list and match name to cell value
-        for (var i = 0; i < len; i++) {
-            if (cell == data.CustomList.Values[i].Name) {
-                //assign list value number to integer
-                listArray.push(data.CustomList.Values[i].CustomPropertyValueId)
-                prop['IntegerListValue'] = listArray;
-            }
-        }
-    }
-
-    if (data.CustomPropertyTypeName == 'User') {
-        //loop through users list and assign the id to the property value
-        var len = users.length
-        for (var i = 0; i < len; i++) {
-            if (cell == users[i][1]) {
-                prop['IntegerValue'] = users[i][0];
-            }
-        }
-    }
-
-    //return prop object with id and correct value
-    return prop;
-}
-
-//This function counts the number of '>'s and returns the value
-function indenter(cell) {
+// This function counts the number of '>'s and returns the value
+function getIndentLevel(field) {
     var indentCount = 0;
-    //check for cell value and indent character '>'
-    if (cell && cell[0] === '>') {
+    //check for field value and indent character '>'
+    if (field && field[0] === '>') {
         //increment indent counter while there are '>'s present
-        while (cell[0] === '>') {
+        while (field[0] === '>') {
             //get entry length for slice
-            var len = cell.length;
+            var len = field.length;
             //slice the first character off of the entry
-            cell = cell.slice(1, len);
+            field = field.slice(1, len);
             indentCount++;
         }
     }
