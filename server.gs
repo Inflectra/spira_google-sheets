@@ -846,10 +846,13 @@ function createEntryFromRow(row, model, fieldType, artifactIsHierarchical) {
 
         // check whether field is marked as a custom field and as the required property number 
         if (fields[index].isCustom && fields[index].propertyNumber) {
-            entry.CustomProperties.push({
-                "PropertyNumber": fields[index].propertyNumber,
-                [customType]: value
-            });
+
+            //
+            var customObject = {};
+            customObject.PropertyNumber = fields[index].propertyNumber;
+            customObject[customType] = value;
+
+            entry.CustomProperties.push(customObject);
         }
         entry[fields[index].field] = value;
     }
