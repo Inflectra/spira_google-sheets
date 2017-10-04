@@ -12,22 +12,20 @@
 
 // on init make sure to run any required startup functions
 (function () {
-    setDevStuff();
+    // for dev mode only - comment out or set to false to disable any UI dev features
+    setDevStuff(true);
 })();
 
 
 
-// for dev mode only - comment out or set to false to disable any UI dev features
-let devMode = true;
-
 // if devmode enabled, set the required fields and show the dev button
-function setDevStuff () {
+function setDevStuff (devMode) {
     if (devMode) {
         $("#btn-dev").removeClass("hidden");
         
-        model.user.url = "https://demo.spiraservice.net/mario-ballesteros";
+        model.user.url = "https://demo.spiraservice.net/gettingstarted";
         model.user.userName = "administrator";
-        model.user.api_key = "{D6B2774D-2FAB-4A0C-B627-B5BF0627EC07}";
+        model.user.api_key = "{8604C226-E746-4629-9E47-AC0C8A52B631}";
     }
 }
 

@@ -235,7 +235,7 @@ function poster(body, currentUser, postUrl) {
     };
 
     //calls and returns google fetch function
-    return UrlFetchApp.fetch(url, params);
+    return UrlFetchApp.fetch(fullUrl, params);
 }
 
 
@@ -297,7 +297,7 @@ function success(string) {
 function warn(string) {
     var ui = SpreadsheetApp.getUi();
     //alert popup with yes and no button
-    var response = ui.alert(srting, ui.ButtonSet.YES_NO);
+    var response = ui.alert(string, ui.ButtonSet.YES_NO);
 
     //returns with user choice
     if (response == ui.Button.YES) {
@@ -642,7 +642,7 @@ function exporter(model, fieldType) {
         sheetData = sheet.getRange(2,1, sheet.getLastRow() - 1, fields.length).getValues(),
         entriesForExport = new Array;
 
-    for (var rows = 0; rows < sheetData.length; rows++) {
+    for (var row = 0; row < sheetData.length; row++) {
         // stop at the first row that is fully blank
         if (!sheetData[row].join() || !rowHasRequiredFields(sheetData[row], fields)) {
             break;
@@ -670,12 +670,12 @@ function exporter(model, fieldType) {
         //stringify
         var JSON_body = JSON.stringify(entriesForExport[i]);
 
-        //send JSON, project number, current user data, and indent position to export function
+        //send JSON object of new requirement, current user data, project number, and indent position to export function
         var response = postRequirementToSpira(
             JSON_body, 
-            data.userData.currentUser, 
-            data.templateData.currentProjectNumber, 
-            entriesForExport[i].positionNumber
+            model.user, 
+            model.currentProject.id, 
+            entriesForExport[i].positionNumber || 0
         );
 
         //parse response
@@ -864,11 +864,11 @@ function createEntryFromRow(row, model, fieldType, artifactIsHierarchical) {
 
 // find the corresponding ID for a string value - eg from a dropdown
 // dropdowns can only contain one item per row so we have to now get the IDs for sending to Spira
-// @param: name - the string of the name value specified
+// @param: string - the string of the name value specified
 // @param: list - the array of items with keys for id and name values
-function getIdFromName(name, list) {
+function getIdFromName(string, list) {
     for (var i = 0; i < list.length; i++) {
-        if (item == list[i].name) { 
+        if (list[i].name == string) { 
             return list[i].id;
         }
     }
