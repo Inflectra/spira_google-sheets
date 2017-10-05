@@ -376,11 +376,12 @@ function sendToSpiraAttempt () {
     }
 }
 function sendToSpira (data) {
-    //Array holds any error responses
-    let errorArr = data[1];
-
-    //if errors present
-    if (errorArr.length) {
+    console.log(data);
+    
+    //if array (which holds error responses) is present, and errors present
+    if (data && data[1] && data[1].length) {
+        // array point containing errors
+        let errorArr = data[1];
         //log all errors to the console.
         errorArr.map(function(error) {
             console.log(error);
@@ -389,8 +390,9 @@ function sendToSpira (data) {
     hideLoadingSpinner();
     
     //runs the export success function, passes a boolean flag, if there are errors the flag is true.
-    google.script.run.exportSuccess(data[0]);
-
+    if (data && data[0]) {
+        google.script.run.exportSuccess(data[0]);
+    }
 }
 
 
@@ -529,7 +531,6 @@ function getCustomsSuccess(data) {
             return customField;
         }
     );
-
     if (allGetsSucceeded()) templateLoader();
 }
 

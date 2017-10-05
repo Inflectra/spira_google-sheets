@@ -137,6 +137,7 @@ function fetcher(currentUser, fetcherURL) {
     var fullUrl = currentUser.url + fetcherURL + "username=" + currentUser.userName + APIKEY;
     //set MIME type
     var params = { 'content-type': 'application/json' };
+    
     //call Google fetch function
     var response = UrlFetchApp.fetch(fullUrl, params);
     
@@ -234,8 +235,13 @@ function poster(body, currentUser, postUrl) {
         'payload': body
     };
 
-    //calls and returns google fetch function
-    return UrlFetchApp.fetch(fullUrl, params);
+    //call Google fetch function
+    var response = UrlFetchApp.fetch(fullUrl, params);
+    
+    //returns parsed JSON
+    //unparsed response contains error codes if needed
+    return response;
+    //return JSON.parse(response);
 }
 
 
@@ -651,6 +657,8 @@ function exporter(model, fieldType) {
             entriesForExport.push(entry);
         }
     }
+  
+    return entriesForExport;
 
     // Create and show a window to tell the user what is going on
     var exportMessageToUser = HtmlService.createHtmlOutput('<p>Preparing your data for export!</p>').setWidth(250).setHeight(75);
@@ -675,8 +683,10 @@ function exporter(model, fieldType) {
             JSON_body, 
             model.user, 
             model.currentProject.id, 
-            entriesForExport[i].positionNumber || 0
+            entriesForExport[i].positionNumber
         );
+      
+       return response;
 
         //parse response
         if (response.getResponseCode() === 200) {
@@ -847,14 +857,19 @@ function createEntryFromRow(row, model, fieldType, artifactIsHierarchical) {
         // check whether field is marked as a custom field and as the required property number 
         if (fields[index].isCustom && fields[index].propertyNumber) {
 
-            //
-            var customObject = {};
-            customObject.PropertyNumber = fields[index].propertyNumber;
-            customObject[customType] = value;
+            // if field has data create the object
+            if (value) {
+                var customObject = {};
+                customObject.PropertyNumber = fields[index].propertyNumber;
+                customObject[customType] = value;
 
-            entry.CustomProperties.push(customObject);
+                entry.CustomProperties.push(customObject);
+            }
+          
+        // add standard fields in standard way - only add if field contains data
+        } else if (value) {
+            entry[fields[index].field] = value;
         }
-        entry[fields[index].field] = value;
     }
 
     return entry;
