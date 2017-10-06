@@ -944,7 +944,7 @@ function setRelativePosition(indentCount, lastIndentPosition) {
         // set the indent positions to be the same as the last
         return lastIndentPosition;
 
-    } else if (indentCount === 0) 
+    } else if (indentCount === 0) {
         // this is a hack to push item (hopefully) all the way to the root position. 
         // Currently the API does not support a call to place an artifact at a certain location.
         return -10;
