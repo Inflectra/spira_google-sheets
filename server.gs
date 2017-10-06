@@ -250,10 +250,10 @@ function poster(body, currentUser, postUrl) {
 // @param: body - stringified object of all relevant fields
 // @param: currentUser - object with details about the current user
 // @param: projectId - int id for current project
-// @param: positionNumber - int used for setting the relative indenting position
-function postRequirementToSpira(body, currentUser, projectId, positionNumber) {
+// @param: indentPosition - int used for setting the relative indenting position
+function postRequirementToSpira(body, currentUser, projectId, indentPosition) {
     //unique url for requirement POST
-    var postUrl = '/services/v5_0/RestService.svc/projects/' + projectId + '/requirements/indent/' + positionNumber + "?";
+    var postUrl = '/services/v5_0/RestService.svc/projects/' + projectId + '/requirements/indent/' + indentPosition + "?";
     
     poster(body, currentUser, postUrl);
 }
@@ -648,13 +648,20 @@ function exporter(model, fieldType) {
         sheetData = sheet.getRange(2,1, sheet.getLastRow() - 1, fields.length).getValues(),
         entriesForExport = new Array;
 
+    
+    var lastIndentPosition = "";
     for (var row = 0; row < sheetData.length; row++) {
         // stop at the first row that is fully blank
         if (!sheetData[row].join() || !rowHasRequiredFields(sheetData[row], fields)) {
             break;
         } else {
-            var entry = createEntryFromRow( sheetData[row], model, fieldType, artifactIsHierarchical );
+            var entry = createEntryFromRow( sheetData[row], model, fieldType, artifactIsHierarchical, lastIndentPosition );
             entriesForExport.push(entry);
+            
+            // update the last indent position before going to the next entry to make sure relative indent is set correctly
+            if (artifactIsHierarchical) {
+                lastIndentPosition = ( entry.indentPosition < 0 ) ? 0 : entry.indentPosition;
+            }
         }
     }
   
@@ -683,7 +690,7 @@ function exporter(model, fieldType) {
             JSON_body, 
             model.user, 
             model.currentProject.id, 
-            entriesForExport[i].positionNumber
+            entriesForExport[i].indentPosition
         );
       
        return response;
@@ -743,7 +750,9 @@ function rowHasRequiredFields(row, fields) {
 // @param: row - a 'row' of data that contains a single object representing all fields
 // @param: model - full model with info about fields, dropdowns, users, etc
 // @param: fieldType - object of all field types with enums
-function createEntryFromRow(row, model, fieldType, artifactIsHierarchical) {
+// @param: artifactIsHierarchical - bool to tell function if this artifact has hierarchy (eg RQ and RL)
+// @param: lastIndentPosition - global int used for calculating relative indents for hierarchical artifacts
+function createEntryFromRow(row, model, fieldType, artifactIsHierarchical, lastIndentPosition) {
     //create empty 'entry' object - include custom properties array here to avoid it being undefined later if needed
     var entry = {
             "CustomProperties": new Array
@@ -851,7 +860,16 @@ function createEntryFromRow(row, model, fieldType, artifactIsHierarchical) {
 
         // handle hierarchy fields - if required: checks artifact type is hierarchical and if this field sets hierarchy
         if (artifactIsHierarchical && fields[index].setsHierarchy) {
-            entry.indentLevel = getIndentLevel(row[index]);
+            // first get the number of indent characters
+            var indentCount = countAndRemoveIndentCharacaters(value, indentCharacter);
+            var indentPosition = setRelativePosition(indentCount, lastIndentPosition);
+            
+            // make sure to slice off the indent characters from the front
+            // TODO should also trim white space at start
+            value = value.slice(indentCount, value.length);
+
+            // set the indent position for this row
+            entry.indentPosition = indentPosition;
         }
 
         // check whether field is marked as a custom field and as the required property number 
@@ -892,13 +910,16 @@ function getIdFromName(string, list) {
 }
 
 
-// This function counts the number of '>'s and returns the value
-function getIndentLevel(field) {
+
+// returns the count of the number of indent characters and returns the value
+// @param: field - a single field string - one already designated as containing hierarchy info
+// @param: indentCharacter - the character used to denote an indent - e.g. ">"
+function countIndentCharacaters(field, indentCharacter) {
     var indentCount = 0;
-    //check for field value and indent character '>'
-    if (field && field[0] === '>') {
+    //check for field value and indent character
+    if (field && field[0] === indentCharacter) {
         //increment indent counter while there are '>'s present
-        while (field[0] === '>') {
+        while (field[0] === indentCharacter) {
             //get entry length for slice
             var len = field.length;
             //slice the first character off of the entry
@@ -906,9 +927,40 @@ function getIndentLevel(field) {
             indentCount++;
         }
     }
-    return indentCount
+    return indentCount;
 }
 
+
+
+// returns the correct relative indent position - based on the previous relative indent and other logic
+// @param: indentCount - int of the number of indent characters set by user
+// @param: lastIndentPosition - int of the actual indent position used for the preceding entry/row
+function setRelativePosition(indentCount, lastIndentPosition) {
+    if (indentCount !== lastIndentPosition) {
+        // set the indent positions relative to the previous position (can be negative or positive)
+        return indentCount - lastIndentPosition;
+
+    } else if (indentCount === lastIndentPosition) {
+        // set the indent positions to be the same as the last
+        return lastIndentPosition;
+
+    } else if (indentCount === 0) 
+        // this is a hack to push item (hopefully) all the way to the root position. 
+        // Currently the API does not support a call to place an artifact at a certain location.
+        return -10;
+
+    } else {
+        // otherwise just set it to zero
+        return 0;
+    }
+}
+
+
+
+
+
+//DONT THINK NEED THIS ANYMORE BUT HERE IN CASE MY CODE IS WRONG
+/*
 function parentChildSetter(arr) {
     //takes the entire array of objects to be sent
     var len = arr.length;
@@ -938,7 +990,7 @@ function parentChildSetter(arr) {
     }
     //return indented array
     return arr;
-}
+}*/
 
 
 
