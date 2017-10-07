@@ -252,10 +252,10 @@ function poster(body, currentUser, postUrl) {
 // @param: projectId - int id for current project
 // @param: indentPosition - int used for setting the relative indenting position
 function postRequirementToSpira(body, currentUser, projectId, indentPosition) {
-    //unique url for requirement POST
+    // unique url for requirement POST
     var postUrl = '/services/v5_0/RestService.svc/projects/' + projectId + '/requirements/indent/' + indentPosition + "?";
     
-    poster(body, currentUser, postUrl);
+    return poster(body, currentUser, postUrl);
 }
 
 
@@ -646,10 +646,10 @@ function exporter(model, fieldType) {
         artifactHasFolders = artifact.hasFolders,
 
         sheetData = sheet.getRange(2,1, sheet.getLastRow() - 1, fields.length).getValues(),
-        entriesForExport = new Array;
-
-    
-    var lastIndentPosition = "";
+        entriesForExport = new Array,
+        lastIndentPosition = null;
+  
+    // loop to create artifact objects from each row taken from the spreadsheet
     for (var row = 0; row < sheetData.length; row++) {
         // stop at the first row that is fully blank
         if (!sheetData[row].join() || !rowHasRequiredFields(sheetData[row], fields)) {
@@ -665,7 +665,7 @@ function exporter(model, fieldType) {
         }
     }
   
-    return entriesForExport;
+    //return entriesForExport;
 
     // Create and show a window to tell the user what is going on
     var exportMessageToUser = HtmlService.createHtmlOutput('<p>Preparing your data for export!</p>').setWidth(250).setHeight(75);
@@ -677,7 +677,8 @@ function exporter(model, fieldType) {
     //error flag, set to true on error
     var isError = null;
     //error log, holds the HTTP error response values
-    var errorLog = [];
+    var errorLog = [],
+        responses = [];
 
     //loop through objects to send
     var len = entriesForExport.length;
@@ -693,15 +694,15 @@ function exporter(model, fieldType) {
             entriesForExport[i].indentPosition
         );
       
-       return response;
 
         //parse response
         if (response.getResponseCode() === 200) {
             //get body information
             response = JSON.parse(response.getContentText())
             responses.push(response.RequirementId)
-                //set returned ID to id field
-            entriesForExport[i].idField.setValue(response.RequirementId)
+            
+            // TODO set returned ID to id field
+            // entriesForExport[i].idField.setValue(response.RequirementId)
 
             //modal that displays the status of each artifact sent
             htmlOutputSuccess = HtmlService.createHtmlOutput('<p>' + (i + 1) + ' of ' + (len) + ' sent!</p>').setWidth(250).setHeight(75);
@@ -858,10 +859,11 @@ function createEntryFromRow(row, model, fieldType, artifactIsHierarchical, lastI
         }
 
 
-        // handle hierarchy fields - if required: checks artifact type is hierarchical and if this field sets hierarchy
+      // HIERARCHICAL ARTIFACTS:
+      // handle hierarchy fields - if required: checks artifact type is hierarchical and if this field sets hierarchy
         if (artifactIsHierarchical && fields[index].setsHierarchy) {
             // first get the number of indent characters
-            var indentCount = countAndRemoveIndentCharacaters(value, indentCharacter);
+            var indentCount = countIndentCharacaters(value, model.indentCharacter);
             var indentPosition = setRelativePosition(indentCount, lastIndentPosition);
             
             // make sure to slice off the indent characters from the front
@@ -872,7 +874,8 @@ function createEntryFromRow(row, model, fieldType, artifactIsHierarchical, lastI
             entry.indentPosition = indentPosition;
         }
 
-        // check whether field is marked as a custom field and as the required property number 
+      // CUSTOM FIELDS:
+      // check whether field is marked as a custom field and as the required property number 
         if (fields[index].isCustom && fields[index].propertyNumber) {
 
             // if field has data create the object
@@ -883,7 +886,8 @@ function createEntryFromRow(row, model, fieldType, artifactIsHierarchical, lastI
 
                 entry.CustomProperties.push(customObject);
             }
-          
+        
+          // STANDARD FIELDS:
         // add standard fields in standard way - only add if field contains data
         } else if (value) {
             entry[fields[index].field] = value;
@@ -936,7 +940,7 @@ function countIndentCharacaters(field, indentCharacter) {
 // @param: indentCount - int of the number of indent characters set by user
 // @param: lastIndentPosition - int of the actual indent position used for the preceding entry/row
 function setRelativePosition(indentCount, lastIndentPosition) {
-    if (indentCount !== lastIndentPosition) {
+    if (indentCount !== lastIndentPosition && lastIndentPosition !== null) {
         // set the indent positions relative to the previous position (can be negative or positive)
         return indentCount - lastIndentPosition;
 
