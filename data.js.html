@@ -84,11 +84,11 @@ let params = {
 // each artifact has all its standard fields listed, along with important metadata - display name, field type, hard coded values set by system
 var templateFields = {
     requirements: [
-        {field: "RequirementId", name: "Requirement ID", type: params.fieldType.id, width: 100},
-        {field: "Name", name: "Requirement Name", type: params.fieldType.text, width: 250, required: true, setsHierarchy: true},
-        {field: "Description", name: "Requirement Description", type: params.fieldType.text, width: 350},
-        {field: "ReleaseVersionNumber", name: "Release Version", type: params.fieldType.release, width: 250},
-        {field: "RequirementTypeId", name: "Type", type: params.fieldType.drop, width: 100,
+        {field: "RequirementId", name: "Requirement ID", type: params.fieldType.id},
+        {field: "Name", name: "Requirement Name", type: params.fieldType.text, required: true, setsHierarchy: true},
+        {field: "Description", name: "Requirement Description", type: params.fieldType.text},
+        {field: "ReleaseVersionNumber", name: "Release Version", type: params.fieldType.release},
+        {field: "RequirementTypeId", name: "Type", type: params.fieldType.drop,
             values: [
                 {id: -1, name: "Package"},
                 {id: 1, name: "Need"},
@@ -99,7 +99,7 @@ var templateFields = {
                 {id: 6, name: "Design Elemen"}
             ]
         },
-        {field: "ImportanceName", name: "Importance", type: params.fieldType.drop, width: 100, 
+        {field: "ImportanceName", name: "Importance", type: params.fieldType.drop, 
             values: [
                 {id: 1, name: "1 -Critical"},
                 {id: 2, name: "2 -High"},
@@ -107,7 +107,7 @@ var templateFields = {
                 {id: 4, name: "4 -Low"}
             ]
         },
-        {field: "StatusId", name: "Status", type: params.fieldType.drop, width: 100, 
+        {field: "StatusId", name: "Status", type: params.fieldType.drop, 
             values: [
                 {id: 1, name: "Requested"},
                 {id: 2, name: "Planned"},
@@ -121,17 +121,17 @@ var templateFields = {
                 {id: 10, name: "Completed"}
             ]
         },
-        {field: "EstimatePoints", name: "Estimate", type: params.fieldType.num, width: 100},
-        {field: "AuthorName", name: "Author", type: params.fieldType.user, width: 100},
-        {field: "OwnerName", name: "Owner", type: params.fieldType.user, width: 100},
-        {field: "ComponentName", name: "Component", type: params.fieldType.component, width: 200},
+        {field: "EstimatePoints", name: "Estimate", type: params.fieldType.num},
+        {field: "AuthorName", name: "Author", type: params.fieldType.user},
+        {field: "OwnerName", name: "Owner", type: params.fieldType.user},
+        {field: "ComponentName", name: "Component", type: params.fieldType.component},
         {field: "LinkedRequirementIds", name: "Linked Requirements", type: params.fieldType.arr, unsupported: true},
-        {field: "Comment", name: "Comment", type: params.fieldType.text, width: 400, unsupported: true}        
+        {field: "Comment", name: "Comment", type: params.fieldType.text, unsupported: true}        
     ],
 
     releases: [
         {field: "ReleaseId", name: "Release ID", type: params.fieldType.id},
-        {field: "Name", name: "Release Name", type: params.fieldType.text},
+        {field: "Name", name: "Release Name", type: params.fieldType.text, required: true, setsHierarchy: true},
         {field: "Description", name: "Release Description", type: params.fieldType.text},
         {field: "VersionNumber", name: "Version Number", type: params.fieldType.text},
         {field: "ReleaseStatusId", name: "Status", type: params.fieldType.drop, col: 6, width: 100, 
@@ -182,7 +182,7 @@ var templateFields = {
                 {id: 4, name: "4 - Low"}
             ]
         },
-        {field: "TaskStatusId", name: "Status", type: params.fieldType.drop,
+        {field: "TaskStatusId", name: "Status", type: params.fieldType.drop, required: true,
             values: [
                 {id: 1, name: "Not Started"},
                 {id: 2, name: "In Progress"},

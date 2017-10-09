@@ -737,7 +737,7 @@ function exporter(model, fieldType) {
     for (var i = 0; i < entriesForExport.length; i++) {
 
         // send object to relevant artifact post service
-        var response = postArtifactToSpira ( entriesForExport[i], model );
+        var response = postArtifactToSpira ( entriesForExport[i], model, artifact );
       
 
         //parse response
@@ -750,7 +750,7 @@ function exporter(model, fieldType) {
             // entriesForExport[i].idField.setValue(response.RequirementId)
 
             //modal that displays the status of each artifact sent
-            htmlOutputSuccess = HtmlService.createHtmlOutput('<p>' + (i + 1) + ' of ' + (len) + ' sent!</p>').setWidth(250).setHeight(75);
+            htmlOutputSuccess = HtmlService.createHtmlOutput('<p>' + (i + 1) + ' of ' + (entriesForExport.length) + ' sent!</p>').setWidth(250).setHeight(75);
             SpreadsheetApp.getUi().showModalDialog(htmlOutputSuccess, 'Progress');
         } else {
             //push errors into error log
@@ -761,7 +761,7 @@ function exporter(model, fieldType) {
             //xObjArr[i].idField.setValue('Error')
 
             //Sets error HTML modal
-            htmlOutput = HtmlService.createHtmlOutput('<p>Error for ' + (i + 1) + ' of ' + (len) + '</p>').setWidth(250).setHeight(75);
+            htmlOutput = HtmlService.createHtmlOutput('<p>Error for ' + (i + 1) + ' of ' + (entriesForExport.length) + '</p>').setWidth(250).setHeight(75);
             SpreadsheetApp.getUi().showModalDialog(htmlOutput, 'Progress');
         }
     }
