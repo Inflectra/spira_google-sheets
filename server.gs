@@ -1,5 +1,16 @@
 // globals
-var API_BASE = '/services/v5_0/RestService.svc/projects/';
+var API_BASE = '/services/v5_0/RestService.svc/projects/',
+    API_BASE_NO_SLASH = '/services/v5_0/RestService.svc/projects',
+    ENUMS = {
+        requirements: 1,
+        testCases: 2,
+        incidents: 3,
+        releases: 4,
+        testRuns: 5,
+        tasks: 6,
+        testSteps: 7,
+        testSets: 8
+    };
 
 /*
  * ======================
@@ -155,7 +166,7 @@ function fetcher(currentUser, fetcherURL) {
 // This function is called on initial log in and therefore also acts as user validation
 // @param: currentUser - object with details about the current user
 function getProjects(currentUser) {
-    var fetcherURL = API_BASE + '?';
+    var fetcherURL = API_BASE_NO_SLASH + '?';
     return fetcher(currentUser, fetcherURL);
 }
 
@@ -254,8 +265,7 @@ function poster(body, currentUser, postUrl) {
 // @param: entry - object of single specific entry to send to Spira
 // @param: model - full model object from client so APIs can access relevant info
 // @param: currentArtifact - object of the current artifact - not row specific
-// @param: artifactEnums - object of all artifact names and ids for use by switch statement
-function postArtifactToSpira(entry, model, currentArtifact, artifactEnums) {
+function postArtifactToSpira(entry, model, currentArtifact) {
     
     //stringify
     var JSON_body = JSON.stringify(entry),
@@ -265,31 +275,31 @@ function postArtifactToSpira(entry, model, currentArtifact, artifactEnums) {
     switch (currentArtifact.id) {
 
         // REQUIREMENTS
-        case artifactEnums.requirements:
+        case ENUMS.requirements:
             var postUrl = API_BASE + model.currentProject.id + '/requirements/indent/' + entry.indentPosition + '?';
             response = poster(JSON_body, model.user, postUrl);
             break;
 
         // TEST CASES
-        case artifactEnums.testCases:
+        case ENUMS.testCases:
             var postUrl = API_BASE + model.currentProject.id + '/test-cases?';
             response = poster(JSON_body, model.user, postUrl);
             break;
 
         // INCIDENTS
-        case artifactEnums.incidents:
+        case ENUMS.incidents:
             var postUrl = API_BASE + model.currentProject.id + '/incidents?';
             response = poster(JSON_body, model.user, postUrl);
             break;
 
         // RELEASES
-        case artifactEnums.releases:
+        case ENUMS.releases:
             var postUrl = API_BASE + model.currentProject.id + '/releases?';
             response = poster(JSON_body, model.user, postUrl);
             break;
 
         // TASKS
-        case artifactEnums.tasks:
+        case ENUMS.tasks:
             var postUrl = API_BASE + model.currentProject.id + '/tasks?';
             response = poster(JSON_body, model.user, postUrl);
             break;
@@ -675,8 +685,7 @@ function protectColumn (sheet, columnNumber, rowLength, bgColor, name, hide) {
 // function that manages exporting data from the sheet - creating an array of objects based on entered data, then sending to Spira
 // @param: model - full model object from client containing field data for specific artifact, list of project users, components, etc
 // @param: fieldType - list of fieldType enums from client params object
-// @param: artifacts - list of artifact enums from client params object
-function exporter(model, fieldType, artifactEnums) {
+function exporter(model, fieldType) {
 
     // get the active spreadsheet and first sheet
     // TODO rework this to be the active sheet - not the first one
@@ -728,7 +737,7 @@ function exporter(model, fieldType, artifactEnums) {
     for (var i = 0; i < entriesForExport.length; i++) {
 
         // send object to relevant artifact post service
-        var response = postArtifactToSpira ( entriesForExport[i], model, artifactEnums );
+        var response = postArtifactToSpira ( entriesForExport[i], model );
       
 
         //parse response

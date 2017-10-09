@@ -369,7 +369,7 @@ function sendToSpiraAttempt () {
         google.script.run
             .withFailureHandler(errorImpExp)
             .withSuccessHandler(sendToSpira)
-            .exporter(model, params.fieldType, params.artifactEnums);
+            .exporter(model, params.fieldType);
     } else {
         //if no template popup a warning
         google.script.run.noTemplate();
