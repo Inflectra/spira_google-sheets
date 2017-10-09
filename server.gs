@@ -636,6 +636,7 @@ function protectColumn (sheet, columnNumber, rowLength, bgColor, name, hide) {
 // @param: model - full model object from client containing field data for specific artifact, list of project users, components, etc
 // @param: fieldType - list of fieldType enums from client params object
 function exporter(model, fieldType) {
+
     // get the active spreadsheet and first sheet
     // TODO rework this to be the active sheet - not the first one
     var spreadSheet = SpreadsheetApp.getActiveSpreadsheet(),
@@ -648,6 +649,12 @@ function exporter(model, fieldType) {
         sheetData = sheet.getRange(2,1, sheet.getLastRow() - 1, fields.length).getValues(),
         entriesForExport = new Array,
         lastIndentPosition = null;
+
+    var timing = {
+        createData: [],
+        preSend: [],
+        postSend: []
+    };
   
     // loop to create artifact objects from each row taken from the spreadsheet
     for (var row = 0; row < sheetData.length; row++) {
@@ -663,9 +670,9 @@ function exporter(model, fieldType) {
                 lastIndentPosition = ( entry.indentPosition < 0 ) ? 0 : entry.indentPosition;
             }
         }
+
+        timing.createData.push(new Date());
     }
-  
-    //return entriesForExport;
 
     // Create and show a window to tell the user what is going on
     var exportMessageToUser = HtmlService.createHtmlOutput('<p>Preparing your data for export!</p>').setWidth(250).setHeight(75);
@@ -673,11 +680,9 @@ function exporter(model, fieldType) {
 
 
 
-    // set up to individually add each requirement to spirateam
-    //error flag, set to true on error
-    var isError = null;
-    //error log, holds the HTTP error response values
-    var errorLog = [],
+    // create required variables for managing responses for sending data to spirateam 
+    var isError = null,  //error flag, set to true on error
+        errorLog = [],   //error log, holds the HTTP error response values
         responses = [];
 
     //loop through objects to send
@@ -686,6 +691,10 @@ function exporter(model, fieldType) {
         //stringify
         var JSON_body = JSON.stringify(entriesForExport[i]);
 
+
+        timing.preSend.push(new Date());
+
+
         //send JSON object of new requirement, current user data, project number, and indent position to export function
         var response = postRequirementToSpira(
             JSON_body, 
@@ -693,6 +702,8 @@ function exporter(model, fieldType) {
             model.currentProject.id, 
             entriesForExport[i].indentPosition
         );
+
+        timing.postSend.push(new Date());
       
 
         //parse response
@@ -720,6 +731,10 @@ function exporter(model, fieldType) {
             SpreadsheetApp.getUi().showModalDialog(htmlOutput, 'Progress');
         }
     }
+
+
+    return timing;
+
     //return the error flag and array with error text responses
     return [isError, errorLog];
 }
@@ -859,8 +874,8 @@ function createEntryFromRow(row, model, fieldType, artifactIsHierarchical, lastI
         }
 
 
-      // HIERARCHICAL ARTIFACTS:
-      // handle hierarchy fields - if required: checks artifact type is hierarchical and if this field sets hierarchy
+        // HIERARCHICAL ARTIFACTS:
+        // handle hierarchy fields - if required: checks artifact type is hierarchical and if this field sets hierarchy
         if (artifactIsHierarchical && fields[index].setsHierarchy) {
             // first get the number of indent characters
             var indentCount = countIndentCharacaters(value, model.indentCharacter);
@@ -874,8 +889,8 @@ function createEntryFromRow(row, model, fieldType, artifactIsHierarchical, lastI
             entry.indentPosition = indentPosition;
         }
 
-      // CUSTOM FIELDS:
-      // check whether field is marked as a custom field and as the required property number 
+        // CUSTOM FIELDS:
+        // check whether field is marked as a custom field and as the required property number 
         if (fields[index].isCustom && fields[index].propertyNumber) {
 
             // if field has data create the object
@@ -887,7 +902,7 @@ function createEntryFromRow(row, model, fieldType, artifactIsHierarchical, lastI
                 entry.CustomProperties.push(customObject);
             }
         
-          // STANDARD FIELDS:
+        // STANDARD FIELDS:
         // add standard fields in standard way - only add if field contains data
         } else if (value) {
             entry[fields[index].field] = value;
@@ -936,66 +951,15 @@ function countIndentCharacaters(field, indentCharacter) {
 
 
 
-// returns the correct relative indent position - based on the previous relative indent and other logic
+// returns the correct relative indent position - based on the previous relative indent and other logic (int neg, pos, or zero)
+// the first time this is called, last position will be null 
+// setting indent to -10 is a hack to push the first item (hopefully) all the way to the root position - ie ignore any indents placed by user on first item
+// Currently the API does not support a call to place an artifact at a certain location.
 // @param: indentCount - int of the number of indent characters set by user
 // @param: lastIndentPosition - int of the actual indent position used for the preceding entry/row
-function setRelativePosition(indentCount, lastIndentPosition) {
-    if (indentCount !== lastIndentPosition && lastIndentPosition !== null) {
-        // set the indent positions relative to the previous position (can be negative or positive)
-        return indentCount - lastIndentPosition;
-
-    } else if (indentCount === lastIndentPosition) {
-        // set the indent positions to be the same as the last
-        return lastIndentPosition;
-
-    } else if (indentCount === 0) {
-        // this is a hack to push item (hopefully) all the way to the root position. 
-        // Currently the API does not support a call to place an artifact at a certain location.
-        return -10;
-
-    } else {
-        // otherwise just set it to zero
-        return 0;
-    }
+function setRelativePosition(indentCount, lastIndentPosition) { 
+    return (lastIndentPosition === null) ? -10 : indentCount - lastIndentPosition;
 }
-
-
-
-
-
-//DONT THINK NEED THIS ANYMORE BUT HERE IN CASE MY CODE IS WRONG
-/*
-function parentChildSetter(arr) {
-    //takes the entire array of objects to be sent
-    var len = arr.length;
-    //this acts as the indent reset
-    //when this is 0 it means that the object has a '0' indent level, meaning it should be sitting at the root level (far left)
-    var location = 0;
-
-    //loop through the export array
-    for (var i = 0; i < len; i++) {
-        //if the object has an indent level and the level IS NOT the same as the previous object
-        if (arr[i].indentCount > 0 && arr[i].indentCount !== location) {
-            //change the position number
-            //this can be negative or positive
-            arr[i].positionNumber = arr[i].indentCount - location;
-
-            //set the current location for the next object in line
-            location = arr[i].indentCount;
-        }
-
-        //if the object DOES NOT have an indent level. For example the object is sitting at the root or there was an entry error.
-        if (arr[i].indentCount == 0) {
-            //this is a hack to push the object all the way to the root position. Currently the API does not support a call to place an artifact at a certain location.
-            arr[i].positionNumber = -10;
-            //reset location variable
-            location = 0;
-        }
-    }
-    //return indented array
-    return arr;
-}*/
-
 
 
 
