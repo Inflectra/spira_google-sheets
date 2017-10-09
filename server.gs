@@ -1,3 +1,6 @@
+// globals
+var API_BASE = '/services/v5_0/RestService.svc/projects/';
+
 /*
  * ======================
  * INITIAL LOAD FUNCTIONS
@@ -152,7 +155,7 @@ function fetcher(currentUser, fetcherURL) {
 // This function is called on initial log in and therefore also acts as user validation
 // @param: currentUser - object with details about the current user
 function getProjects(currentUser) {
-    var fetcherURL = '/services/v5_0/RestService.svc/projects?';
+    var fetcherURL = API_BASE + '?';
     return fetcher(currentUser, fetcherURL);
 }
 
@@ -162,7 +165,7 @@ function getProjects(currentUser) {
 // @param: currentUser - object with details about the current user
 // @param: projectId - int id for current project
 function getComponents(currentUser, projectId) {
-    var fetcherURL = '/services/v5_0/RestService.svc/projects/' + projectId + '/components?active_only=true&include_deleted=false&';
+    var fetcherURL = API_BASE + projectId + '/components?active_only=true&include_deleted=false&';
     return fetcher(currentUser, fetcherURL);
 }
 
@@ -173,7 +176,7 @@ function getComponents(currentUser, projectId) {
 // @param: projectId - int id for current project
 // @param: artifactName - string name of the current artifact
 function getCustoms(currentUser, projectId, artifactName) {
-    var fetcherURL = '/services/v5_0/RestService.svc/projects/' + projectId + '/custom-properties/' + artifactName + '?';
+    var fetcherURL = API_BASE + projectId + '/custom-properties/' + artifactName + '?';
     return fetcher(currentUser, fetcherURL);
 }
 
@@ -183,7 +186,7 @@ function getCustoms(currentUser, projectId, artifactName) {
 // @param: currentUser - object with details about the current user
 // @param: projectId - int id for current project
 function getReleases(currentUser, projectId) {
-    var fetcherURL = '/services/v5_0/RestService.svc/projects/' + projectId + '/releases?';
+    var fetcherURL = API_BASE + projectId + '/releases?';
     return fetcher(currentUser, fetcherURL);
 }
 
@@ -193,7 +196,7 @@ function getReleases(currentUser, projectId) {
 // @param: currentUser - object with details about the current user
 // @param: projectId - int id for current project
 function getUsers(currentUser, projectId) {
-    var fetcherURL = '/services/v5_0/RestService.svc/projects/' + projectId + '/users?';
+    var fetcherURL = API_BASE + projectId + '/users?';
     return fetcher(currentUser, fetcherURL);
 }
 
@@ -246,16 +249,53 @@ function poster(body, currentUser, postUrl) {
 
 
 
-// post new requirement
-// @param: body - stringified object of all relevant fields
-// @param: currentUser - object with details about the current user
-// @param: projectId - int id for current project
-// @param: indentPosition - int used for setting the relative indenting position
-function postRequirementToSpira(body, currentUser, projectId, indentPosition) {
-    // unique url for requirement POST
-    var postUrl = '/services/v5_0/RestService.svc/projects/' + projectId + '/requirements/indent/' + indentPosition + "?";
+// effectively a switch to manage which artifact we have and therefore which API call to use with what data 
+// returns the response from the specific post service to Spira
+// @param: entry - object of single specific entry to send to Spira
+// @param: model - full model object from client so APIs can access relevant info
+// @param: currentArtifact - object of the current artifact - not row specific
+// @param: artifactEnums - object of all artifact names and ids for use by switch statement
+function postArtifactToSpira(entry, model, currentArtifact, artifactEnums) {
     
-    return poster(body, currentUser, postUrl);
+    //stringify
+    var JSON_body = JSON.stringify(entry),
+        response = "";
+    
+    //send JSON object of new item to artifact specific export function
+    switch (currentArtifact.id) {
+
+        // REQUIREMENTS
+        case artifactEnums.requirements:
+            var postUrl = API_BASE + model.currentProject.id + '/requirements/indent/' + entry.indentPosition + '?';
+            response = poster(JSON_body, model.user, postUrl);
+            break;
+
+        // TEST CASES
+        case artifactEnums.testCases:
+            var postUrl = API_BASE + model.currentProject.id + '/test-cases?';
+            response = poster(JSON_body, model.user, postUrl);
+            break;
+
+        // INCIDENTS
+        case artifactEnums.incidents:
+            var postUrl = API_BASE + model.currentProject.id + '/incidents?';
+            response = poster(JSON_body, model.user, postUrl);
+            break;
+
+        // RELEASES
+        case artifactEnums.releases:
+            var postUrl = API_BASE + model.currentProject.id + '/releases?';
+            response = poster(JSON_body, model.user, postUrl);
+            break;
+
+        // TASKS
+        case artifactEnums.tasks:
+            var postUrl = API_BASE + model.currentProject.id + '/tasks?';
+            response = poster(JSON_body, model.user, postUrl);
+            break;
+    }
+    
+    return response;
 }
 
 
@@ -939,31 +979,6 @@ function countIndentCharacaters(field, indentCharacter) {
 // @param: lastIndentPosition - int of the actual indent position used for the preceding entry/row
 function setRelativePosition(indentCount, lastIndentPosition) { 
     return (lastIndentPosition === null) ? -10 : indentCount - lastIndentPosition;
-}
-
-
-
-// effectively a switch to manage which artifact we have and therefore which API call to use with what data 
-// returns the response from the specific post service to Spira
-// @param: entry - object of single specific entry to send to Spira
-// @param: model - full model object from client so APIs can access relevant info
-// @param: currentArtifact - object of the current artifact - not row specific
-// @param: artifactEnums - object of all artifact names and ids for use by switch statement
-function postArtifactToSpira(entry, model, currentArtifact, artifactEnums) {
-
-    //stringify
-    var JSON_body = JSON.stringify(entry),
-        response = "";
-    
-    //send JSON object of new item to artifact specific export function
-    switch (currentArtifact.id) {
-        case artifactEnums.requirement:
-            // unique url for requirement POST
-            var postUrl = '/services/v5_0/RestService.svc/projects/' + model.currentProject.id + '/requirements/indent/' + entry.indentPosition + "?";
-            response = poster(JSON_body, model.user, postUrl);
-    }
-    
-    return response;
 }
 
 
