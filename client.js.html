@@ -369,14 +369,13 @@ function sendToSpiraAttempt () {
         google.script.run
             .withFailureHandler(errorImpExp)
             .withSuccessHandler(sendToSpira)
-            .exporter(model, params.fieldType, params.artifacts);
+            .exporter(model, params.fieldType, params.artifactEnums);
     } else {
         //if no template popup a warning
         google.script.run.noTemplate();
     }
 }
 function sendToSpira (data) {
-    console.log(data);
     //if array (which holds error responses) is present, and errors present
     if (data && data[1] && data[1].length) {
         // array point containing errors

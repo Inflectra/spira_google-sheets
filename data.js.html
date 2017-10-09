@@ -78,7 +78,19 @@ let params = {
         {field: 'tasks',        name: 'Tasks',        id: 6, hasFolders: true, disabled: false},
         {field: 'testSteps',    name: 'Test Steps',   id: 7, disabled: true, hidden: true},
         {field: 'testSets',     name: 'Test Sets',    id: 8, hasFolders: true, disabled: true}
-    ]
+    ],
+
+    // just artifact enums
+    artifactEnums: {
+        requirements: 1,
+        testCases: 2,
+        incidents: 3,
+        releases: 4,
+        testRuns: 5,
+        tasks: 6,
+        testSteps: 7,
+        testSets: 8
+    }
 };
 
 // each artifact has all its standard fields listed, along with important metadata - display name, field type, hard coded values set by system

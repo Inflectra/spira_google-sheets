@@ -635,7 +635,8 @@ function protectColumn (sheet, columnNumber, rowLength, bgColor, name, hide) {
 // function that manages exporting data from the sheet - creating an array of objects based on entered data, then sending to Spira
 // @param: model - full model object from client containing field data for specific artifact, list of project users, components, etc
 // @param: fieldType - list of fieldType enums from client params object
-function exporter(model, fieldType) {
+// @param: artifacts - list of artifact enums from client params object
+function exporter(model, fieldType, artifactEnums) {
 
     // get the active spreadsheet and first sheet
     // TODO rework this to be the active sheet - not the first one
@@ -650,11 +651,7 @@ function exporter(model, fieldType) {
         entriesForExport = new Array,
         lastIndentPosition = null;
 
-    var timing = {
-        createData: [],
-        preSend: [],
-        postSend: []
-    };
+
   
     // loop to create artifact objects from each row taken from the spreadsheet
     for (var row = 0; row < sheetData.length; row++) {
@@ -670,8 +667,6 @@ function exporter(model, fieldType) {
                 lastIndentPosition = ( entry.indentPosition < 0 ) ? 0 : entry.indentPosition;
             }
         }
-
-        timing.createData.push(new Date());
     }
 
     // Create and show a window to tell the user what is going on
@@ -685,25 +680,15 @@ function exporter(model, fieldType) {
         errorLog = [],   //error log, holds the HTTP error response values
         responses = [];
 
+
+    //postManager(entriesForExport, model, artifact, artifactEnums);
+
+
     //loop through objects to send
-    var len = entriesForExport.length;
-    for (var i = 0; i < len; i++) {
-        //stringify
-        var JSON_body = JSON.stringify(entriesForExport[i]);
+    for (var i = 0; i < entriesForExport.length; i++) {
 
-
-        timing.preSend.push(new Date());
-
-
-        //send JSON object of new requirement, current user data, project number, and indent position to export function
-        var response = postRequirementToSpira(
-            JSON_body, 
-            model.user, 
-            model.currentProject.id, 
-            entriesForExport[i].indentPosition
-        );
-
-        timing.postSend.push(new Date());
+        // send object to relevant artifact post service
+        var response = postArtifactToSpira ( entriesForExport[i], model, artifactEnums );
       
 
         //parse response
@@ -733,14 +718,9 @@ function exporter(model, fieldType) {
     }
 
 
-    return timing;
-
     //return the error flag and array with error text responses
     return [isError, errorLog];
 }
-
-
-
 
 
 
@@ -959,6 +939,31 @@ function countIndentCharacaters(field, indentCharacter) {
 // @param: lastIndentPosition - int of the actual indent position used for the preceding entry/row
 function setRelativePosition(indentCount, lastIndentPosition) { 
     return (lastIndentPosition === null) ? -10 : indentCount - lastIndentPosition;
+}
+
+
+
+// effectively a switch to manage which artifact we have and therefore which API call to use with what data 
+// returns the response from the specific post service to Spira
+// @param: entry - object of single specific entry to send to Spira
+// @param: model - full model object from client so APIs can access relevant info
+// @param: currentArtifact - object of the current artifact - not row specific
+// @param: artifactEnums - object of all artifact names and ids for use by switch statement
+function postArtifactToSpira(entry, model, currentArtifact, artifactEnums) {
+
+    //stringify
+    var JSON_body = JSON.stringify(entry),
+        response = "";
+    
+    //send JSON object of new item to artifact specific export function
+    switch (currentArtifact.id) {
+        case artifactEnums.requirement:
+            // unique url for requirement POST
+            var postUrl = '/services/v5_0/RestService.svc/projects/' + model.currentProject.id + '/requirements/indent/' + entry.indentPosition + "?";
+            response = poster(JSON_body, model.user, postUrl);
+    }
+    
+    return response;
 }
 
 
