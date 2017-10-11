@@ -88,7 +88,7 @@ var templateFields = {
         {field: "Name", name: "Requirement Name", type: params.fieldType.text, required: true, setsHierarchy: true},
         {field: "Description", name: "Requirement Description", type: params.fieldType.text},
         {field: "ReleaseVersionNumber", name: "Release Version", type: params.fieldType.release},
-        {field: "RequirementTypeId", name: "Type", type: params.fieldType.drop,
+        {field: "RequirementTypeId", name: "Type", type: params.fieldType.drop, required: true, 
             values: [
                 {id: -1, name: "Package"},
                 {id: 1, name: "Need"},
@@ -134,7 +134,7 @@ var templateFields = {
         {field: "Name", name: "Release Name", type: params.fieldType.text, required: true, setsHierarchy: true},
         {field: "Description", name: "Release Description", type: params.fieldType.text},
         {field: "VersionNumber", name: "Version Number", type: params.fieldType.text},
-        {field: "ReleaseStatusId", name: "Status", type: params.fieldType.drop, col: 6, width: 100, 
+        {field: "ReleaseStatusId", name: "Status", type: params.fieldType.drop, required: true, 
             values: [
                 {id: 1, name: "Planned"},
                 {id: 2, name: "In Progress"} ,
@@ -144,7 +144,7 @@ var templateFields = {
                 {id: 6, name: "Cancelled"}
             ]
         },
-        {field: "ReleaseTypeId", name: "Type", type: params.fieldType.drop,
+        {field: "ReleaseTypeId", name: "Type", type: params.fieldType.drop, required: true,
             values: [
                 {id: 1, name: 'Major Release'},
                 {id: 2, name: 'Minor Release'},
@@ -153,8 +153,8 @@ var templateFields = {
             ]
         },
         {field: "CreatorId", name: "Creator", type: params.fieldType.user},
-        {field: "StartDate", name: "Start Date", type: params.fieldType.date},
-        {field: "EndDate", name: "End Date", type: params.fieldType.date},
+        {field: "StartDate", name: "Start Date", type: params.fieldType.date, required: true},
+        {field: "EndDate", name: "End Date", type: params.fieldType.date, required: true},
         {field: "ResourceCount", name: "Resources", type: params.fieldType.num},
         {field: "DaysNonWorking", name: "Non Working Days", type: params.fieldType.int},
         {field: "Comment", name: "Comment", type: params.fieldType.text, unsuppored: true}
@@ -162,7 +162,7 @@ var templateFields = {
 
     tasks: [
         {field: "TaskId", name: "Task ID", type: params.fieldType.id},
-        {field: "Name", name: "Task Name", type: params.fieldType.text},
+        {field: "Name", name: "Task Name", type: params.fieldType.text, required: true},
         {field: "Description", name: "Task Description", type: params.fieldType.text},
         {field: "ReleaseId", name: "Release/Iteration", type: params.fieldType.release},
         {field: "TaskTypeId", name: "Type", type: params.fieldType.drop,
