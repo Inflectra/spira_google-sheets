@@ -253,19 +253,32 @@ function logout (shouldLogout) {
 
 // handles changing project dropdown - what should be enabled or disabled
 $('#select-project').change(function(e) {
-    //if the project field has not been selected all other selected buttons are disabled
+    // if the project field has not been selected all other selected buttons are disabled
     if (e.target.value == 0) {
         $("#select-artifact, #btn-template").prop('disabled', true);
     } else {
-        //enable artifacts dropdown
+        // enable artifacts dropdown
         $('#select-artifact').prop('disabled', false);
 
-        //if artifact already selected, also enable the template button
+        //i f artifact already selected, also enable the template button
         if ($('#select-artifact option:selected').val() != 0) {
             $('#btn-template').prop('disabled', false)
         }
         
-        //
+        // get the project object and update project information if project has changed
+        let chosenProject = getSelectedProject(),
+
+        if (chosenProject !== model.currentProject) {
+            model.currentProject = chosenProject;
+            model.projectGetRequestsMade = 0;
+
+            // get project information
+            getUsers(model.user, model.currentProject.id);
+            getCustoms(model.user, model.currentProject.id, model.currentArtifact.id);
+            getComponents(model.user, model.currentProject.id);
+            getReleases(model.user, model.currentProject.id);
+            
+        }
     }
 });
 
@@ -292,12 +305,9 @@ function createTemplateAttempt() {
 function createTemplate (shouldClearForm) {
     if (shouldClearForm) {
         clearSheet();
-        
-        let selectedProject = getSelectedProject(),
-            selectedArtifact = getSelectedArtifact();
 
-        model.currentProject = selectedProject;
-        model.currentArtifact = selectedArtifact;
+        model.currentProject = getSelectedProject();
+        model.currentArtifact = getSelectedArtifact();
       
         // get all relevant information for chosen project and artifact
         getTemplateDataFromSpira();  
@@ -445,6 +455,7 @@ function getSelectedProject () {
         return project.id == projectDropdownVal;
     })[0];
 
+
     return projectSelected;
 }
 
@@ -486,8 +497,7 @@ function getComponentsSuccess(data) {
             name: item.Name
         }
     });
-
-    if (allGetsSucceeded()) templateLoader();
+    model.projectGetRequestsMade++;
 }
 
 
@@ -529,7 +539,7 @@ function getCustomsSuccess(data) {
             return customField;
         }
     );
-    if (allGetsSucceeded()) templateLoader();
+    model.projectGetRequestsMade++;
 }
 
 
@@ -555,8 +565,7 @@ function getReleasesSuccess(data) {
             name: item.Name
         }
     })
-
-    if (allGetsSucceeded()) templateLoader();
+    model.projectGetRequestsMade++;
 }
 
 
@@ -583,7 +592,7 @@ function getUsersSuccess(data) {
             name: item.FullName,
         }
     }) 
-    if (allGetsSucceeded()) templateLoader();
+    model.projectGetRequestsMade++;;
 }
 
 
@@ -604,10 +613,11 @@ function getTemplateDataFromSpira() {
 
     showLoadingSpinner();
 
-    getUsers(model.user, model.currentProject.id);
-    getCustoms(model.user, model.currentProject.id, model.currentArtifact.id);
-    getComponents(model.user, model.currentProject.id);
-    getReleases(model.user, model.currentProject.id);
+    if (model.projectGetRequestsToMake === model.projectGetRequestsMade) {
+        templateLoader();
+    } else {
+        //TODO need to handle what happens if network is slow
+    }
 }
 
 function templateLoader () {
