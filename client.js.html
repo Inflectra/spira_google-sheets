@@ -10,10 +10,11 @@
  *
  */
 
+let devMode = true;
 // on init make sure to run any required startup functions
 (function () {
     // for dev mode only - comment out or set to false to disable any UI dev features
-    setDevStuff(true);
+    setDevStuff(devMode);
 })();
 
 
@@ -61,7 +62,8 @@ function hideLoadingSpinner () {
 // clear spreadsheet, model
 function clearAddonData () {
     clearSheet();
-    modelReset();
+    model = new Data;
+    setDevStuff(devMode);
 }
 
 
@@ -228,8 +230,6 @@ function showMainPanel () {
     showPanel("main");
     hideLoadingSpinner();
 
-    // server side 'slide up' pop-up window (aka 'toast') notifying user on success
-    google.script.run.success('Projects loaded');
 }
 
 
@@ -259,25 +259,19 @@ $('#select-project').change(function(e) {
     } else {
         // enable artifacts dropdown
         $('#select-artifact').prop('disabled', false);
-
-        //i f artifact already selected, also enable the template button
-        if ($('#select-artifact option:selected').val() != 0) {
-            $('#btn-template').prop('disabled', false)
-        }
         
         // get the project object and update project information if project has changed
-        let chosenProject = getSelectedProject(),
+        let chosenProject = getSelectedProject();
 
         if (chosenProject !== model.currentProject) {
+            //set the models project to the one selected;
             model.currentProject = chosenProject;
-            model.projectGetRequestsMade = 0;
-
-            // get project information
-            getUsers(model.user, model.currentProject.id);
-            getCustoms(model.user, model.currentProject.id, model.currentArtifact.id);
-            getComponents(model.user, model.currentProject.id);
-            getReleases(model.user, model.currentProject.id);
             
+            // enable template button only when all info is received - otherwise keep it disabled
+            manageTemplateBtnState();
+        
+            // kick off API calls
+            getProjectSpecificInformation();
         }
     }
 });
@@ -288,10 +282,47 @@ $('#select-project').change(function(e) {
 $('#select-artifact').change(function(e) {
     if (e.target.value == 0) {
         $('#btn-template').prop('disabled', true);
-    } else {
-        $('#btn-template').prop('disabled', false);
+    }
+    
+    // get the artifact object and update artifact information if artifact has changed
+    let chosenArtifact = getSelectedArtifact();
+
+    if (chosenArtifact !== model.currentArtifact) {
+        //set the models artifact to the one selected;
+        model.currentArtifact = chosenArtifact;
+        
+        // enable template button only when all info is received - otherwise keep it disabled
+        manageTemplateBtnState();
+        
+        // kick off API calls
+        getArtifactSpecificInformation();
+        
+
     }
 });
+
+
+
+// disables and enables the template creation button based on status of required API calls
+function manageTemplateBtnState() {
+    // initially disable the button, because required API calls not completed
+    $('#btn-template').prop('disabled', true);
+    
+    // only try to enable the button when both a project and artifact have been chosen
+    if (model.currentProject && model.currentArtifact) {
+        // set a function to run repeatedly until all gets are done
+        // then enable the button, and stop the timer loop
+        var checkGetsSuccess = setInterval (updateButtonStatus, 500);
+        
+        function updateButtonStatus() {
+        console.log('interval is running');
+            if ( allGetsSucceeded() ) {
+                $('#btn-template').prop('disabled', false);
+                clearInterval(checkGetsSuccess);
+            }
+        }
+    }
+}
 
 
 
@@ -305,12 +336,26 @@ function createTemplateAttempt() {
 function createTemplate (shouldClearForm) {
     if (shouldClearForm) {
         clearSheet();
-
-        model.currentProject = getSelectedProject();
-        model.currentArtifact = getSelectedArtifact();
+        
+        showLoadingSpinner();
       
-        // get all relevant information for chosen project and artifact
-        getTemplateDataFromSpira();  
+        // all data should already be loaded (as otherwise template button is disabled)
+        // but check again that all data is present before kicking off template creation
+        // if so, kicks off template creation, otherwise waits and tries again
+        if (allGetsSucceeded()) {
+            templateLoader();
+            
+        // otherwise, run an interval loop (should never get called as template button should be disabled)
+        } else {
+            var checkGetsSuccess = setInterval (attemptTemplateLoader, 500);
+            function attemptTemplateLoader() {
+                if ( allGetsSucceeded() ) {
+                    startTemplateLoader();
+                    clearInterval(checkGetsSuccess);
+                }
+            }
+        }
+        
     }
 }
 
@@ -459,6 +504,8 @@ function getSelectedProject () {
     return projectSelected;
 }
 
+
+
 function getSelectedArtifact() {
     // store dropdown values
     let artifactDropdownVal = $('#select-artifact option:selected').val();
@@ -473,9 +520,27 @@ function getSelectedArtifact() {
 
 
 
-function getComponents(user, projectId) {
-    model.getRequest.components = true;
+function getProjectSpecificInformation() {
+    model.projectGetRequestsMade = 0;
 
+    // get project information
+    getUsers(model.user, model.currentProject.id);
+    getComponents(model.user, model.currentProject.id);
+    getReleases(model.user, model.currentProject.id);
+}
+
+
+
+function getArtifactSpecificInformation() {
+    model.artifactGetRequestsMade = 0;
+
+    // get artifact information
+    getCustoms(model.user, model.currentProject.id, model.currentArtifact.id);
+}
+
+
+
+function getComponents(user, projectId) {
     // call server side fetch
     google.script.run
         .withSuccessHandler(getComponentsSuccess)
@@ -483,8 +548,6 @@ function getComponents(user, projectId) {
         .getComponents(model.user, model.currentProject.id);
 }
 function getComponentsSuccess(data) {
-    model.getSuccess.components = true;
-    
     // clear old values
     model.projectComponents = [];
 
@@ -503,8 +566,6 @@ function getComponentsSuccess(data) {
 
 
 function getCustoms(user, projectId, artifactId) {
-    model.getRequest.customs = true;
-
     // call server side fetch
     google.script.run
         .withSuccessHandler(getCustomsSuccess)
@@ -512,7 +573,6 @@ function getCustoms(user, projectId, artifactId) {
         .getCustoms(user, projectId, artifactId);
 }
 function getCustomsSuccess(data) {
-    model.getSuccess.customs = true;
     // assign unparsed data to data object
     // these values are parsed later depending on function needs
     model.customFieldsTempStore = data
@@ -539,22 +599,18 @@ function getCustomsSuccess(data) {
             return customField;
         }
     );
-    model.projectGetRequestsMade++;
+    model.artifactGetRequestsMade++;
 }
 
 
 function getReleases(user, projectId, artifactId) {
-    model.getRequest.releases = true;
-
     // call server side fetch
     google.script.run
         .withSuccessHandler(getReleasesSuccess)
         .withFailureHandler(errorNetwork)
         .getReleases(user, projectId);
 }
-function getReleasesSuccess(data) {
-    model.getSuccess.releases = true;
-    
+function getReleasesSuccess(data) {    
     // clear old values
     model.projectReleases = [];
 
@@ -570,8 +626,6 @@ function getReleasesSuccess(data) {
 
 
 function getUsers(user, projectId) {
-    model.getRequest.users = true;
-
     // call server side fetch
     google.script.run
         .withSuccessHandler(getUsersSuccess)
@@ -579,8 +633,6 @@ function getUsers(user, projectId) {
         .getUsers(user, projectId)
 }
 function getUsersSuccess(data) {
-    model.getSuccess.users = true;
-
     // clear old values
     model.projectUsers = [];
 
@@ -598,32 +650,15 @@ function getUsersSuccess(data) {
 
 
 function allGetsSucceeded () {
-    var request = model.getRequest,
-        success = model.getSuccess,
-        isRequestDone = request.components && request.customs && request.releases && request.users,
-        isSuccessDone = success.components && success.customs && success.releases && success.users;
+    var projectGetsDone = model.projectGetRequestsToMake === model.projectGetRequestsMade,
+        artifactGetsDone = model.artifactGetRequestsToMake === model.artifactGetRequestsMade;
 
-    return isRequestDone && isSuccessDone;
+    return projectGetsDone && artifactGetsDone;
 }
 
-// retrieves all relevant data for template creation.
-// calls functions that each check for completion of all calls
-// on final success, kick off template creation
-function getTemplateDataFromSpira() {
 
-    showLoadingSpinner();
-
-    if (model.projectGetRequestsToMake === model.projectGetRequestsMade) {
-        templateLoader();
-    } else {
-        //TODO need to handle what happens if network is slow
-    }
-}
 
 function templateLoader () {
-    // all data loaded, call success notification
-    google.script.run.success('All data loaded');
-
     // collate data
     var customs = model.customFieldsTempStore,
         fields = templateFields[model.currentArtifact.field];

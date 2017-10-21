@@ -10,44 +10,6 @@
  *
  */
 
-
-// This is a hack to reset the data, see below for more details.
-function modelReset(){
-   // model = new Store;
-
-   // hack - this data is reset here, but the main location is in function Store() below
-   model.userData = {
-        currentUser: {
-            url: '',
-            userName: '',
-            api_key: '',
-        },
-        currentUserRoleId: '',
-        projects: [],
-        projUserWNum: [],
-        artifacts: [
-          {name: 'requirements', id: 1},
-          {name: 'testCases', id: 2},
-          {name: 'incidents', id: 3},
-          {name: 'releases', id: 4},
-          {name: 'testRuns', id: 5},
-          {name: 'tasks', id: 6},
-          {name: 'testSteps', id: 7},
-          {name: 'testSets', id: 8}
-        ]
-    };
-}
-
-
-
-
-
-
-
-
-
-
-
 // main store for hard coded enums and metadata that define fields and artifacts
 let params = {
     // enums for different types of field - match custom field prop types where relevant
@@ -225,21 +187,12 @@ function Data() {
 
     // TODO - for incidents, more calls are required to get lists of statuses etc, and checks for their completion will be required
     // TODO - one way to do the above: set a number based on calls required - eg 4. Each success decrements that, then checks if it is at 0.
-    // TODO - 4 is default and required on any project change. Additional ones required as soon as particular artifacts selected (eg incidents)
-    this.getRequest = {
-        components: false,
-        customs: false,
-        releases: false,
-        users: false
-    };
-    this.getSuccess = {
-        components: false,
-        customs: false,
-        releases: false,
-        users: false
-    };
-    this.projectGetRequestsToMake = 4;
+    // TODO - 4 is default and required on any project change. Additional ones required as soon as particular artifacts selected (eg incidents)    
+    this.projectGetRequestsToMake = 3; // users, components, releases
     this.projectGetRequestsMade = 0;
+    
+    this.artifactGetRequestsToMake = 1; // custom fields, 
+    this.artifactGetRequestsMade = 0;
     
     this.isTemplateLoaded = false;
 
