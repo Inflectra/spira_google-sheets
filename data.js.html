@@ -24,17 +24,20 @@ let params = {
         user: 8,
         // following types don't exist as custom property types as set by Spira - but useful for defining standard field types here
         id: 9,
-        component: 10,
-        release: 11,
-        arr: 12,
-        folder: 13
+        component: 10, // project level field
+        release: 11, // project level field
+        arr: 12, // used for comma separated lists in a single cell (eg linked Ids)
+        folder: 13 // don't think in reality this will be need
     },
 
     // enums and various metadata for all artifacts potentially used by the system
     artifacts: [
         {field: 'requirements', name: 'Requirements', id: 1, hierarchical: true},
         {field: 'testCases',    name: 'Test Cases',   id: 2, hasFolders: true, disabled: true},
-        {field: 'incidents',    name: 'Incidents',    id: 3, disabled: true},
+        {field: 'incidents',    name: 'Incidents',    id: 3, disabled: true, 
+            bespokeFields: [
+            ]
+        },
         {field: 'releases',     name: 'Releases',     id: 4, hierarchical: true},
         {field: 'testRuns',     name: 'Test Runs',    id: 5, disabled: true, hidden: true},
         {field: 'tasks',        name: 'Tasks',        id: 6, hasFolders: true},
@@ -191,7 +194,8 @@ function Data() {
     this.projectGetRequestsToMake = 3; // users, components, releases
     this.projectGetRequestsMade = 0;
     
-    this.artifactGetRequestsToMake = 1; // custom fields, 
+    this.baselineArtifactGetRequests = 1;
+    this.artifactGetRequestsToMake = baselineArtifactGetRequests; 
     this.artifactGetRequestsMade = 0;
     
     this.isTemplateLoaded = false;

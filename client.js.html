@@ -271,7 +271,7 @@ $('#select-project').change(function(e) {
             manageTemplateBtnState();
         
             // kick off API calls
-            getProjectSpecificInformation();
+            getProjectSpecificInformation(model.user, model.currentProject.id);
         }
     }
 });
@@ -295,7 +295,7 @@ $('#select-artifact').change(function(e) {
         manageTemplateBtnState();
         
         // kick off API calls
-        getArtifactSpecificInformation();
+        getArtifactSpecificInformation(model.user, model.currentProject.id, moel.currentArtifact);
         
 
     }
@@ -333,8 +333,9 @@ function createTemplateAttempt() {
         .withSuccessHandler(createTemplate)
         .warn('All data on the first sheet will be replaced. Continue?');
 }
-function createTemplate (shouldClearForm) {
-    if (shouldClearForm) {
+//@param: shouldClearForm - boolean response from confirmation dialog above
+function createTemplate (shouldContinue) {
+    if (shouldContinue) {
         clearSheet();
         
         showLoadingSpinner();
@@ -360,7 +361,7 @@ function createTemplate (shouldClearForm) {
 }
 
 
-
+// manages request from user to clear sheet - shows confirmation dialog
 function clearSheetAttempt () {
     //warn that data will be erased
     google.script.run
@@ -491,6 +492,8 @@ function showChosenHelpSection (choice) {
  *
  */
 
+// retrieves the project object that matches the project selected in the dropdown
+// returns a project object
 function getSelectedProject () {
     // store dropdown value
     let projectDropdownVal = $('#select-project option:selected').val();
@@ -506,6 +509,8 @@ function getSelectedProject () {
 
 
 
+// retrieves the artifact object that matches the artifact selected in the dropdown
+// returns an artifact object
 function getSelectedArtifact() {
     // store dropdown values
     let artifactDropdownVal = $('#select-artifact option:selected').val();
@@ -520,33 +525,54 @@ function getSelectedArtifact() {
 
 
 
-function getProjectSpecificInformation() {
+// kicks off all relevant API calls to get project specific information
+// @param: user - the user object of the logged in user
+// @param: projectId - int of the reqested project
+function getProjectSpecificInformation(user, projectId) {
     model.projectGetRequestsMade = 0;
 
     // get project information
-    getUsers(model.user, model.currentProject.id);
-    getComponents(model.user, model.currentProject.id);
-    getReleases(model.user, model.currentProject.id);
+    getUsers(user, projectId);
+    getComponents(user, projectId);
+    getReleases(user, projectId);
 }
 
 
 
-function getArtifactSpecificInformation() {
+// kicks off all relevant API calls to get artifact specific information
+// @param: user - the user object of the logged in user
+// @param: projectId - int of the reqested project
+// @param: artifact- object of the reqested artifact - needed to query on different parts of object
+function getArtifactSpecificInformation(user, projectId, artifact) {
+    // first reset get counts
     model.artifactGetRequestsMade = 0;
+    model.artifactGetRequestsToMake = model.baselineArtifactGetRequests;
 
-    // get artifact information
-    getCustoms(model.user, model.currentProject.id, model.currentArtifact.id);
+    // increase the count if any bespoke fields are present (eg folders or incident types)
+    if (artifact.bespokeFields && artifact.bespokeFields.length > 0) {
+        model.artifactGetRequestsToMake += artifact.besokeFields.length;
+    }
+
+    // get standard artifact information - eg custom fields
+    getCustoms(user, projectId, artifact.id);
+
+    // get any bespoke field information
+
 }
 
 
 
+// starts GET request to Spira for project components
+// @param: user - the user object of the logged in user
+// @param: projectId - int of the reqested project
 function getComponents(user, projectId) {
     // call server side fetch
     google.script.run
         .withSuccessHandler(getComponentsSuccess)
         .withFailureHandler(errorNetwork)
-        .getComponents(model.user, model.currentProject.id);
+        .getComponents(user, projectId);
 }
+// formats and sets component data on the model
 function getComponentsSuccess(data) {
     // clear old values
     model.projectComponents = [];
@@ -565,6 +591,10 @@ function getComponentsSuccess(data) {
 
 
 
+// starts GET request to Spira for project / artifact custom properties
+// @param: user - the user object of the logged in user
+// @param: projectId - int of the reqested project
+// @param: artifactId - int of the reqested artifact
 function getCustoms(user, projectId, artifactId) {
     // call server side fetch
     google.script.run
@@ -572,7 +602,11 @@ function getCustoms(user, projectId, artifactId) {
         .withFailureHandler(errorNetwork)
         .getCustoms(user, projectId, artifactId);
 }
+// formats and sets custom field data on the model - adding to a temp holding area, to allow for changes before template creation
 function getCustomsSuccess(data) {
+    // clear old values
+    model.customFieldsTempStore = [];
+
     // assign unparsed data to data object
     // these values are parsed later depending on function needs
     model.customFieldsTempStore = data
@@ -603,6 +637,10 @@ function getCustomsSuccess(data) {
 }
 
 
+
+// starts GET request to Spira for project releases properties
+// @param: user - the user object of the logged in user
+// @param: projectId - int of the reqested project
 function getReleases(user, projectId, artifactId) {
     // call server side fetch
     google.script.run
@@ -610,6 +648,7 @@ function getReleases(user, projectId, artifactId) {
         .withFailureHandler(errorNetwork)
         .getReleases(user, projectId);
 }
+// formats and sets release data on the model
 function getReleasesSuccess(data) {    
     // clear old values
     model.projectReleases = [];
@@ -625,6 +664,10 @@ function getReleasesSuccess(data) {
 }
 
 
+
+// starts GET request to Spira for project users properties
+// @param: user - the user object of the logged in user
+// @param: projectId - int of the reqested project
 function getUsers(user, projectId) {
     // call server side fetch
     google.script.run
@@ -632,6 +675,7 @@ function getUsers(user, projectId) {
         .withFailureHandler(errorNetwork)
         .getUsers(user, projectId)
 }
+// formats and sets user data on the model
 function getUsersSuccess(data) {
     // clear old values
     model.projectUsers = [];
@@ -649,6 +693,8 @@ function getUsersSuccess(data) {
 
 
 
+// check to see that all project and artifact requests have been made - ie that successes match required requests
+// returns boolean
 function allGetsSucceeded () {
     var projectGetsDone = model.projectGetRequestsToMake === model.projectGetRequestsMade,
         artifactGetsDone = model.artifactGetRequestsToMake === model.artifactGetRequestsMade;
@@ -658,8 +704,9 @@ function allGetsSucceeded () {
 
 
 
+// send data to server to manage the creation of the template on the relevant sheet
 function templateLoader () {
-    // collate data
+    // collate standard fields and custom fields
     var customs = model.customFieldsTempStore,
         fields = templateFields[model.currentArtifact.field];
         
@@ -670,7 +717,8 @@ function templateLoader () {
         .withSuccessHandler(templateLoaderSuccess)
         .withFailureHandler(errorUnknown)
         .templateLoader(model, params.fieldType);
-}    
+}  
+// once template is loaded, enable the "send to Spira" button
 function templateLoaderSuccess(data) {
         
     model.isTemplateLoaded = true;
