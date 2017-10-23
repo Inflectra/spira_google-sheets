@@ -79,7 +79,8 @@ function clearSheet (shouldClear) {
 
 // resets the sidebar following logout
 function resetSidebar () {
-    clearAuthForm();
+    // clear input field values
+    $('#input-url, #input-userName, #input-password').val('');
     
     // hide other panels, so login page is visible
     $(".panel:not(#panel-auth)").addClass("offscreen");
@@ -89,7 +90,12 @@ function resetSidebar () {
 
     // reset artifact dropdown to 'Select an Artifact'
     $("#select-artifact option[value='Select an Artifact']").attr("selected", "selected");
-    
+
+    // hide and clear the template info box
+    $("#template-data-box").hide();
+    $("#template-project").text("");
+    $("#template-artifact").text("");
+
     // reset anything required if in devmode
     setDevStuff();
 }
@@ -154,13 +160,6 @@ function setAuthDetails () {
     $('#input-url').val(model.user.url);
     $('#input-userName').val(model.user.userName);
     $('#input-password').val(model.user.api_key);
-}
-
-
-
-// clear input field values
-function clearAuthForm () {
-    $('#input-url, #input-userName, #input-password').val('');
 }
 
 
@@ -263,9 +262,9 @@ $('#select-project').change(function(e) {
         // get the project object and update project information if project has changed
         let chosenProject = getSelectedProject();
 
-        if (chosenProject !== model.currentProject) {
-            //set the models project to the one selected;
-            model.currentProject = chosenProject;
+        if (chosenProject !== uiSelection.currentProject) {
+            //set the temp data store project to the one selected;
+            uiSelection.currentProject = chosenProject;
             
             // enable template button only when all info is received - otherwise keep it disabled
             manageTemplateBtnState();
@@ -287,9 +286,9 @@ $('#select-artifact').change(function(e) {
     // get the artifact object and update artifact information if artifact has changed
     let chosenArtifact = getSelectedArtifact();
 
-    if (chosenArtifact !== model.currentArtifact) {
-        //set the models artifact to the one selected;
-        model.currentArtifact = chosenArtifact;
+    if (chosenArtifact !== uiSelection.currentArtifact) {
+        //set the temp date store artifact to the one selected;
+        uiSelection.currentArtifact = chosenArtifact;
         
         // enable template button only when all info is received - otherwise keep it disabled
         manageTemplateBtnState();
@@ -575,10 +574,10 @@ function getComponents(user, projectId) {
 // formats and sets component data on the model
 function getComponentsSuccess(data) {
     // clear old values
-    model.projectComponents = [];
+    uiSelection.projectComponents = [];
 
     // add relevant data to the main model store
-    model.projectComponents = data
+    uiSelection.projectComponents = data
         .filter(function(item) { return item.IsActive;})
         .map(function(item) {
         return {
@@ -605,11 +604,11 @@ function getCustoms(user, projectId, artifactId) {
 // formats and sets custom field data on the model - adding to a temp holding area, to allow for changes before template creation
 function getCustomsSuccess(data) {
     // clear old values
-    model.customFieldsTempStore = [];
+    uiSelection.artifactCustomFields = [];
 
     // assign unparsed data to data object
     // these values are parsed later depending on function needs
-    model.customFieldsTempStore = data
+    uiSelection.artifactCustomFields = data
         .filter(function(item) { return !item.IsDeleted;})
         .map(function(item) {
             var customField = {
@@ -651,10 +650,10 @@ function getReleases(user, projectId, artifactId) {
 // formats and sets release data on the model
 function getReleasesSuccess(data) {    
     // clear old values
-    model.projectReleases = [];
+    uiSelection.projectReleases = [];
 
     // add relevant data to the main model store
-    model.projectReleases = data.map(function(item) {
+    uiSelection.projectReleases = data.map(function(item) {
         return {
             id: item.ReleaseId,
             name: item.Name
@@ -678,10 +677,10 @@ function getUsers(user, projectId) {
 // formats and sets user data on the model
 function getUsersSuccess(data) {
     // clear old values
-    model.projectUsers = [];
+    uiSelection.projectUsers = [];
 
     // map through user obj and assign names
-    model.projectUsers = data.map(function(item) {
+    uiSelection.projectUsers = data.map(function(item) {
         return {
             id: item.UserId,
             username: item.UserName,
@@ -705,9 +704,20 @@ function allGetsSucceeded () {
 
 
 // send data to server to manage the creation of the template on the relevant sheet
-function templateLoader () {
+function templateLoader () {    
+    // set the model based on data stored based on current dropdown selections
+    model.currentProject = uiSelection.currentProject;
+    model.currentArtifact = uiSelection.currentArtifact;
+
+    model.projectComponents = [];
+    model.projectReleases = [];
+    model.projectUsers = [];
+    model.projectComponents = uiSelection.projectComponents;
+    model.projectReleases = uiSelection.projectReleases;
+    model.projectUsers = uiSelection.projectUsers;
+
     // collate standard fields and custom fields
-    var customs = model.customFieldsTempStore,
+    var customs = uiSelection.artifactCustomFields,
         fields = templateFields[model.currentArtifact.field];
         
     model.fields = fields.concat(customs);
@@ -728,6 +738,11 @@ function templateLoaderSuccess(data) {
             
     //enable the send to spira button
     $("#btn-toSpira").prop('disabled', false);
+
+    //show text in the sidebar that tells the user what the template is set to:
+    $("#template-project").text(model.currentProject.name);
+    $("#template-artifact").text(model.currentArtifact.name);
+    $("#template-data-box").show();
 }
 
 

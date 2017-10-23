@@ -1,7 +1,7 @@
 // globals
 var API_BASE = '/services/v5_0/RestService.svc/projects/',
     API_BASE_NO_SLASH = '/services/v5_0/RestService.svc/projects',
-    ENUMS = {
+    ART_ENUMS = {
         requirements: 1,
         testCases: 2,
         incidents: 3,
@@ -11,6 +11,11 @@ var API_BASE = '/services/v5_0/RestService.svc/projects/',
         testSteps: 7,
         testSets: 8
     };
+    FIELD_MANAGEMENT_ENUMS = {
+        all: 1,
+        standard: 2,
+        subType: 3
+    }
 
 /*
  * ======================
@@ -263,45 +268,58 @@ function poster(body, currentUser, postUrl) {
 // effectively a switch to manage which artifact we have and therefore which API call to use with what data 
 // returns the response from the specific post service to Spira
 // @param: entry - object of single specific entry to send to Spira
-// @param: model - full model object from client so APIs can access relevant info
-// @param: currentArtifact - object of the current artifact - not row specific
-function postArtifactToSpira(entry, model, currentArtifact) {
+// @param: user - user object
+// @param: projectId - int of the current project
+// @param: artifactId - int of the current artifact
+function postArtifactToSpira(entry, user, projectId, artifactId, parentId) {
     
     //stringify
     var JSON_body = JSON.stringify(entry),
         response = "";
     
     //send JSON object of new item to artifact specific export function
-    switch (currentArtifact.id) {
+    switch (artifactId) {
 
         // REQUIREMENTS
-        case ENUMS.requirements:
-            var postUrl = API_BASE + model.currentProject.id + '/requirements/indent/' + entry.indentPosition + '?';
-            response = poster(JSON_body, model.user, postUrl);
+        case ART_ENUMS.requirements:
+            var postUrl = API_BASE + projectId + '/requirements/indent/' + entry.indentPosition + '?';
+            response = poster(JSON_body, user, postUrl);
             break;
 
         // TEST CASES
-        case ENUMS.testCases:
-            var postUrl = API_BASE + model.currentProject.id + '/test-cases?';
-            response = poster(JSON_body, model.user, postUrl);
+        case ART_ENUMS.testCases:
+            var postUrl = API_BASE + projectId + '/test-cases?';
+            response = poster(JSON_body, user, postUrl);
             break;
 
         // INCIDENTS
-        case ENUMS.incidents:
-            var postUrl = API_BASE + model.currentProject.id + '/incidents?';
-            response = poster(JSON_body, model.user, postUrl);
+        case ART_ENUMS.incidents:
+            var postUrl = API_BASE + projectId + '/incidents?';
+            response = poster(JSON_body, user, postUrl);
             break;
 
         // RELEASES
-        case ENUMS.releases:
-            var postUrl = API_BASE + model.currentProject.id + '/releases?';
-            response = poster(JSON_body, model.user, postUrl);
+        case ART_ENUMS.releases:
+            var postUrl = API_BASE + projectId + '/releases?';
+            response = poster(JSON_body, user, postUrl);
             break;
 
         // TASKS
-        case ENUMS.tasks:
-            var postUrl = API_BASE + model.currentProject.id + '/tasks?';
-            response = poster(JSON_body, model.user, postUrl);
+        case ART_ENUMS.tasks:
+            var postUrl = API_BASE + projectId + '/tasks?';
+            response = poster(JSON_body, user, postUrl);
+            break;
+
+        // TEST CASES
+        case ART_ENUMS.testCases:
+            var postUrl = API_BASE + projectId + '/test-cases?';
+            response = poster(JSON_body, user, postUrl);
+            break;
+
+        // TEST STEPS
+        case ART_ENUMS.testSteps:
+            var postUrl = API_BASE + projectId + '/test-cases/' + parentId + 'test-steps?';
+            response = poster(JSON_body, user, postUrl);
             break;
     }
     
@@ -704,16 +722,92 @@ function exporter(model, fieldType) {
   
     // loop to create artifact objects from each row taken from the spreadsheet
     for (var row = 0; row < sheetData.length; row++) {
+        
         // stop at the first row that is fully blank
-        if (!sheetData[row].join() || !rowHasRequiredFields(sheetData[row], fields)) {
+        if (!sheetData[row].join()) {
             break;
-        } else {
-            var entry = createEntryFromRow( sheetData[row], model, fieldType, artifactIsHierarchical, lastIndentPosition );
-            entriesForExport.push(entry);
+        } else {    
+            // check for required fields (for normal artifacts and those with sub types - eg test cases and steps)
+            // if artifact has sub type verify if the sub type's required fields are set, otherwise (default) set to true
+            var hasRequiredFields = rowHasRequiredFields(sheetData[row], fields),
+                isArtifactWithSubType = fieldType.hasSubType,
+                entry = {};
             
+            /* 
+             * --------
+             * logic for determining what action to take
+             * based on whether required fields filled in, and dealing with subtypes
+             * --------
+             */
+
+            // a normal artifact with no sub type 
+            if (!isArtifactWithSubType) {
+                if (hasRequiredFields) {
+                    entry = createEntryFromRow( 
+                        sheetData[row], 
+                        model, 
+                        fieldType, 
+                        artifactIsHierarchical, 
+                        lastIndentPosition, 
+                        FIELD_MANAGEMENT_ENUMS.all 
+                    );
+
+                // Error - because not all required fields filled in
+                } else {
+                    entry.validationError = true;
+                    entry.validationMessage = "Fill in all required fields";
+                }
+
+            // if we are working with a sub type
+            } else {
+                var hasRequiredSubTypeFields = isArtifactWithSubType ? rowHasRequiredSubTypeFields(sheetData[row], fields) : true,
+
+                // consider artifact standard if not all subtype required fields are filled in
+                if (hasRequiredFields && !hasRequiredSubTypeFields) {
+                    // send flag to only add standard fields to entry
+                    entry = createEntryFromRow( 
+                        sheetData[row],
+                        model, 
+                        fieldType, 
+                        artifactIsHierarchical, 
+                        lastIndentPosition, 
+                        FIELD_MANAGEMENT_ENUMS.standard 
+                    );
+                
+                // consider it as subType if sub type required fields are filled in and either:
+                // normal required fields are not filled in; or there is no blocking field filled in
+                } else if (hasRequiredSubTypeFields && (!hasRequiredFields || !hasSubTypeBlock) ) {
+                    //need to remove any subtype only fields from the model fields list
+                    entry = createEntryFromRow( 
+                        sheetData[row], 
+                        model, 
+                        fieldType, 
+                        artifactIsHierarchical, 
+                        lastIndentPosition, 
+                        FIELD_MANAGEMENT_ENUMS.subType 
+                    );
+                    entry.isSubType = true;
+                
+                // otherwise we don't know what sort of artifact we should make the row so do nothing
+                } else {
+                    entry.validationError = true;
+                    entry.validationMessage = "It is unclear what artifact this is intended to be";
+                }
+
+            }
+
+
+
             // update the last indent position before going to the next entry to make sure relative indent is set correctly
             if (artifactIsHierarchical) {
                 lastIndentPosition = ( entry.indentPosition < 0 ) ? 0 : entry.indentPosition;
+            }
+            
+
+
+            // manage test cases and steps
+            if (fieldType.hasSubType) {
+                var hasRequiredSubFields
             }
         }
     }
@@ -732,18 +826,35 @@ function exporter(model, fieldType) {
 
     //postManager(entriesForExport, model, artifact, artifactEnums);
 
-
+    // set var for parent - used to designate eg a test case so it can be sent with the test step post
+    var parentId = 0;
+    
     //loop through objects to send
     for (var i = 0; i < entriesForExport.length; i++) {
-
+        //if the artifact has been designated as a subtype make sure correct artifact ID is sent to handler
+        var artifactType = ententriesForExport[i].isSubType ? ententriesForExport[i].subTypeId : artifact.id;
         // send object to relevant artifact post service
-        var response = postArtifactToSpira ( entriesForExport[i], model, artifact );
+        var response = postArtifactToSpira ( 
+            entriesForExport[i], 
+            model.user, 
+            model.currentProject.id, 
+            artifactType,
+
+        );
       
 
         //parse response
         if (response.getResponseCode() === 200) {
             //get body information
             response = JSON.parse(response.getContentText())
+            
+            //TODO
+            // Get id 
+            // set parent ID to this if necessary
+            if (fieldType.hasSubType && !ententriesForExport[i].isSubType) {
+                parentId = 'RESULT ID';
+            }
+
             responses.push(response.RequirementId)
             
             // TODO set returned ID to id field
@@ -789,6 +900,40 @@ function rowHasRequiredFields(row, fields) {
 
 
 
+
+
+// check to see if a row of a type with a sub type too (eg test cases with tests) has entries for all sub type required fields
+// returns true if all required subtype fields have (any) values, otherwise returns false
+// @param: row - a 'row' of data that contains a single object representing all fields
+// @param: fields - the relevant fields for specific artifact, along with all metadata about each
+function rowHasRequiredSubTypeFields(row, fields) {
+    var result = true;
+    for (var column = 0; column < row.length; column++) {
+        if (fields[column].requiredForSubType && !row[column]) {
+            result = false;
+        }
+    }
+    return result;
+}
+
+
+// check to see if a row for an artifact with a subtype has a field that can't be present if subtype fields are filled in
+// this can be useful to make sure that one field - eg Test Case Name would make sure a test step is not created to avoid any confusion
+// returns true if all required fields have (any) values, otherwise returns false
+// @param: row - a 'row' of data that contains a single object representing all fields
+// @param: fields - the relevant fields for specific artifact, along with all metadata about each
+function rowBlocksSubType(row, fields) {
+    var result = false;
+    for (var column = 0; column < row.length; column++) {
+        if (fields[column].forbidOnSubType && row[column]) {
+            result = true;
+        }
+    }
+    return result;
+}
+
+
+
 // function creates a correctly formatted artifact object ready to send to Spira
 // it works through each field type to validate and parse the values so object is in correct form
 // any field that does not pass validation receives a null value
@@ -796,8 +941,9 @@ function rowHasRequiredFields(row, fields) {
 // @param: model - full model with info about fields, dropdowns, users, etc
 // @param: fieldType - object of all field types with enums
 // @param: artifactIsHierarchical - bool to tell function if this artifact has hierarchy (eg RQ and RL)
-// @param: lastIndentPosition - global int used for calculating relative indents for hierarchical artifacts
-function createEntryFromRow(row, model, fieldType, artifactIsHierarchical, lastIndentPosition) {
+// @param: lastIndentPosition - int used for calculating relative indents for hierarchical artifacts
+// @param: fieldsToFilter - enum used for selecting fields to not add to object - defaults to using all if omitted
+function createEntryFromRow(row, model, fieldType, artifactIsHierarchical, lastIndentPosition, fieldsToFilter) {
     //create empty 'entry' object - include custom properties array here to avoid it being undefined later if needed
     var entry = {
             "CustomProperties": new Array
@@ -806,136 +952,150 @@ function createEntryFromRow(row, model, fieldType, artifactIsHierarchical, lastI
 
     //we need to turn an array of values in the row into a validated object 
     for (var index = 0; index < row.length; index++) {
-        var value = null,
-            customType = "";
 
-        // double check data validation, convert dropdowns to required int values
-        // sets both the value, and custom types - so that custom fields are handled correctly
-        switch (fields[index].type) {
-            
-            // ID fields: restricted to numbers and blank on push, otherwise put
-            case fieldType.id:
-
-                customType = "IntegerValue";
-                break;
-            
-            // INT and NUM fields are both treated by Sheets as numbers
-            case fieldType.int:
-            case fieldType.num:
-                // only set the value if a number has been returned
-                if (!isNaN(row[index])) {
-                    value = row[index];
-                    customType = "IntegerValue";
-                };
-                break;
-
-            // BOOL as Sheets has no bool validation, a yes/no dropdown is used
-            case fieldType.bool:
-                // 'True' and 'False' don't work as dropdown choices, so have to convert back
-                if (row[index] == "Yes") {
-                    value = true;
-                    customType = "BooleanValue";
-                } else if (row[index] == "No") {
-                    value = false;
-                    customType = "BooleanValue";
-                };
-                break;
-
-            // DATES - parse the data and add prefix/suffix for WCF
-            case fieldType.date:
-                if (row[index]) {
-                    value = "\/Date(" + Date.parse(row[index]) + ")\/";
-                    customType = "DateTimeValue";
-                }
-                break;
-
-            // DROPDOWNS - get id from relevant name, if one is present
-            case fieldType.drop:
-                var idFromName = getIdFromName(row[index], fields[index].values);
-                if (idFromName) {
-                    value = idFromName;
-                    customType = "IntegerValue";
-                }
-                break;
-
-            // MULTIDROPDOWNS - get id from relevant name, if one is present, set customtype to list value
-            case fieldType.multi:
-                var idFromName = getIdFromName(row[index], fields[index].values);
-                if (idFromName) {
-                    value = idFromName;
-                    customType = "IntegerListValue";
-                }
-                break;
-
-            // USER fields - get id from relevant name, if one is present
-            case fieldType.user:
-                var idFromName = getIdFromName(row[index], model.projectUsers);
-                if (idFromName) {
-                    value = idFromName;
-                    customType = "IntegerValue";
-                }
-                break;
-
-            // COMPONENT fields - get id from relevant name, if one is present
-            case fieldType.component:
-                var idFromName = getIdFromName(row[index], model.projectComponents);
-                if (idFromName) {
-                    value = idFromName;
-                    customType = "IntegerValue";
-                }
-                break;
-              
-            // RELEASE fields - get id from relevant name, if one is present
-            case fieldType.release:
-                var idFromName = getIdFromName(row[index], model.projectReleases);
-                if (idFromName) {
-                    value = idFromName;
-                    customType = "IntegerValue";
-                }
-                break;
-            
-            // All other types
-            default:
-                // just assign the value to the cell - used for text
-                value = row[index];
-                customType = "StringValue";
-                break;
-        }
-
-
-        // HIERARCHICAL ARTIFACTS:
-        // handle hierarchy fields - if required: checks artifact type is hierarchical and if this field sets hierarchy
-        if (artifactIsHierarchical && fields[index].setsHierarchy) {
-            // first get the number of indent characters
-            var indentCount = countIndentCharacaters(value, model.indentCharacter);
-            var indentPosition = setRelativePosition(indentCount, lastIndentPosition);
-            
-            // make sure to slice off the indent characters from the front
-            // TODO should also trim white space at start
-            value = value.slice(indentCount, value.length);
-
-            // set the indent position for this row
-            entry.indentPosition = indentPosition;
-        }
-
-        // CUSTOM FIELDS:
-        // check whether field is marked as a custom field and as the required property number 
-        if (fields[index].isCustom && fields[index].propertyNumber) {
-
-            // if field has data create the object
-            if (value) {
-                var customObject = {};
-                customObject.PropertyNumber = fields[index].propertyNumber;
-                customObject[customType] = value;
-
-                entry.CustomProperties.push(customObject);
+        // first ignore entry that does not match the requirement specified in the fieldsToFilter param
+        if (fieldsToFilter !== "undefined") {
+            if (fieldsToFilter == FIELD_MANAGEMENT_ENUMS.standard && fields[index].isSubTypeField ) {
+                // skip the field
+            }
+            if (fieldsToFilter == FIELD_MANAGEMENT_ENUMS.subType && (!fields[index].isSubTypeField || !fields[index].isTypeAndSubTypeField) ) {
+                // skip the field
             }
         
-        // STANDARD FIELDS:
-        // add standard fields in standard way - only add if field contains data
-        } else if (value) {
-            entry[fields[index].field] = value;
+        // in all other cases add the field
+        } else {
+            var value = null,
+                customType = "";
+    
+            // double check data validation, convert dropdowns to required int values
+            // sets both the value, and custom types - so that custom fields are handled correctly
+            switch (fields[index].type) {
+                
+                // ID fields: restricted to numbers and blank on push, otherwise put
+                case fieldType.id:
+    
+                    customType = "IntegerValue";
+                    break;
+                
+                // INT and NUM fields are both treated by Sheets as numbers
+                case fieldType.int:
+                case fieldType.num:
+                    // only set the value if a number has been returned
+                    if (!isNaN(row[index])) {
+                        value = row[index];
+                        customType = "IntegerValue";
+                    };
+                    break;
+    
+                // BOOL as Sheets has no bool validation, a yes/no dropdown is used
+                case fieldType.bool:
+                    // 'True' and 'False' don't work as dropdown choices, so have to convert back
+                    if (row[index] == "Yes") {
+                        value = true;
+                        customType = "BooleanValue";
+                    } else if (row[index] == "No") {
+                        value = false;
+                        customType = "BooleanValue";
+                    };
+                    break;
+    
+                // DATES - parse the data and add prefix/suffix for WCF
+                case fieldType.date:
+                    if (row[index]) {
+                        value = "\/Date(" + Date.parse(row[index]) + ")\/";
+                        customType = "DateTimeValue";
+                    }
+                    break;
+    
+                // DROPDOWNS - get id from relevant name, if one is present
+                case fieldType.drop:
+                    var idFromName = getIdFromName(row[index], fields[index].values);
+                    if (idFromName) {
+                        value = idFromName;
+                        customType = "IntegerValue";
+                    }
+                    break;
+    
+                // MULTIDROPDOWNS - get id from relevant name, if one is present, set customtype to list value
+                case fieldType.multi:
+                    var idFromName = getIdFromName(row[index], fields[index].values);
+                    if (idFromName) {
+                        value = idFromName;
+                        customType = "IntegerListValue";
+                    }
+                    break;
+    
+                // USER fields - get id from relevant name, if one is present
+                case fieldType.user:
+                    var idFromName = getIdFromName(row[index], model.projectUsers);
+                    if (idFromName) {
+                        value = idFromName;
+                        customType = "IntegerValue";
+                    }
+                    break;
+    
+                // COMPONENT fields - get id from relevant name, if one is present
+                case fieldType.component:
+                    var idFromName = getIdFromName(row[index], model.projectComponents);
+                    if (idFromName) {
+                        value = idFromName;
+                        customType = "IntegerValue";
+                    }
+                    break;
+                  
+                // RELEASE fields - get id from relevant name, if one is present
+                case fieldType.release:
+                    var idFromName = getIdFromName(row[index], model.projectReleases);
+                    if (idFromName) {
+                        value = idFromName;
+                        customType = "IntegerValue";
+                    }
+                    break;
+                
+                // All other types
+                default:
+                    // just assign the value to the cell - used for text
+                    value = row[index];
+                    customType = "StringValue";
+                    break;
+            }
+    
+    
+            // HIERARCHICAL ARTIFACTS:
+            // handle hierarchy fields - if required: checks artifact type is hierarchical and if this field sets hierarchy
+            if (artifactIsHierarchical && fields[index].setsHierarchy) {
+                // first get the number of indent characters
+                var indentCount = countIndentCharacaters(value, model.indentCharacter);
+                var indentPosition = setRelativePosition(indentCount, lastIndentPosition);
+                
+                // make sure to slice off the indent characters from the front
+                // TODO should also trim white space at start
+                value = value.slice(indentCount, value.length);
+    
+                // set the indent position for this row
+                entry.indentPosition = indentPosition;
+            }
+    
+            // CUSTOM FIELDS:
+            // check whether field is marked as a custom field and as the required property number 
+            if (fields[index].isCustom && fields[index].propertyNumber) {
+    
+                // if field has data create the object
+                if (value) {
+                    var customObject = {};
+                    customObject.PropertyNumber = fields[index].propertyNumber;
+                    customObject[customType] = value;
+    
+                    entry.CustomProperties.push(customObject);
+                }
+            
+            // STANDARD FIELDS:
+            // add standard fields in standard way - only add if field contains data
+            } else if (value) {
+                entry[fields[index].field] = value;
+            }
         }
+
     }
 
     return entry;
