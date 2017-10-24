@@ -311,15 +311,9 @@ function postArtifactToSpira(entry, user, projectId, artifactId, parentId) {
             response = poster(JSON_body, user, postUrl);
             break;
 
-        // TEST CASES
-        case ART_ENUMS.testCases:
-            var postUrl = API_BASE + projectId + '/test-cases?';
-            response = poster(JSON_body, user, postUrl);
-            break;
-
         // TEST STEPS
         case ART_ENUMS.testSteps:
-            var postUrl = API_BASE + projectId + '/test-cases/' + parentId + 'test-steps?';
+            var postUrl = API_BASE + projectId + '/test-cases/' + parentId + '/test-steps?';
             response = poster(JSON_body, user, postUrl);
             break;
     }
@@ -791,7 +785,7 @@ function exporter(model, fieldType) {
         // create required variables for managing responses for sending data to spirateam 
         var isError = null,  //error flag, set to true on error
             errorLog = [],   //error log, holds the HTTP error response values
-            responses = {artifact: artifact, entries: [], full: [], code: [], art: [], parentIds: []},
+            responses = [],
             // set var for parent - used to designate eg a test case so it can be sent with the test step post
             parentId = 0;
        
@@ -799,7 +793,9 @@ function exporter(model, fieldType) {
         // 4. SEND DATA TO SPIRA AND MANAGE RESPONSES
         //loop through objects to send
         for (var i = 0; i < entriesForExport.length; i++) {
-            var rawResponse, response = {};
+          var rawResponse, response = {};
+          response.start = new Date().getTime();
+          response.startParentId = parentId;
             // only send children requiring parent id, if there is a parent id
             if (false) { //entriesForExport[i].isSubType && !parentId
                 // skip the entry
@@ -823,20 +819,22 @@ function exporter(model, fieldType) {
                 
                 // save data for logging to client
                 response.entry = entriesForExport[i];
-                response.artifactIdSentActual = artifactIdToSend;
-                response.artifactIdSentFormula = entriesForExport[i].isSubType ? artifact.subTypeId : artifact.id;
-                response.artifactMetadata = artifact;
+                response.artifactMeta = {
+                  idSentActual: artifactIdToSend,
+                  idSentFormula: entriesForExport[i].isSubType ? artifact.subTypeId : artifact.id,
+                  metadata: artifact
+                }
                 response.httpCode = rawResponse.getResponseCode();
 
 
                 // parse the response if we have a success
                 if (rawResponse.getResponseCode() == 200) {
-                    response.return = JSON.parse(rawResponse.getContentText());
+                    response.fromSpira = JSON.parse(rawResponse.getContentText());
                     
                     // get the id of the newly created artifact
                     // if the entry is a sub type field, get the sub type id name
                     var artifactIdField = getIdFieldName(fields, fieldType, entriesForExport[i].isSubType),
-                        newId = response.return[artifactIdField];
+                        newId = response.fromSpira[artifactIdField];
         
         
                     // set parent ID to the new id only if the artifact has a subtype and this entry is NOT a subtype
@@ -870,6 +868,8 @@ function exporter(model, fieldType) {
                     SpreadsheetApp.getUi().showModalDialog(htmlOutput, 'Progress');
                 }
             }
+            response.end = new Date().getTime();
+            response.duration = response.end - response.start;
             responses.push(response);
         }
     
