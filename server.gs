@@ -705,7 +705,7 @@ function protectColumn (sheet, columnNumber, rowLength, bgColor, name, hide) {
 // @param: model - full model object from client containing field data for specific artifact, list of project users, components, etc
 // @param: fieldType - list of fieldType enums from client params object
 function exporter(model, fieldType) {
-
+    // 1. SETUP FUNCTION LEVEL VARS
     // get the active spreadsheet and first sheet
     // TODO rework this to be the active sheet - not the first one
     var spreadSheet = SpreadsheetApp.getActiveSpreadsheet(),
@@ -719,8 +719,9 @@ function exporter(model, fieldType) {
         entriesForExport = new Array,
         lastIndentPosition = null;
 
-
   
+  
+    // 2. CREATE ARRAY OF ENTRIES
     // loop to create artifact objects from each row taken from the spreadsheet
     for (var row = 0; row < sheetData.length; row++) {
         
@@ -731,9 +732,9 @@ function exporter(model, fieldType) {
             // check for required fields (for normal artifacts and those with sub types - eg test cases and steps)
             var rowChecks = {
                     hasRequiredFields: rowHasRequiredFields(sheetData[row], fields),
-                    hasSubType: fieldType.hasSubType,
-                    subTypeHasRequiredFields: !fieldType.hasSubType ? true : rowHasRequiredSubTypeFields(sheetData[row], fields),
-                    subTypeIsBlocked: !fieldType.hasSubType ? true : rowBlocksSubType(sheetData[row], fields)
+                    hasSubType: artifact.hasSubType,
+                    subTypeHasRequiredFields: !artifact.hasSubType ? true : rowHasRequiredSubTypeFields(sheetData[row], fields),
+                    subTypeIsBlocked: !artifact.hasSubType ? true : rowBlocksSubType(sheetData[row], fields)
                 },
 
                 // create entry used to populate all relevant data for this row
@@ -753,11 +754,11 @@ function exporter(model, fieldType) {
                     fieldType, 
                     artifactIsHierarchical, 
                     lastIndentPosition, 
-                    fieldsToUse 
+                    fieldsToFilter 
                 );
 
                 // FOR SUBTYPE ENTRIES add flag on entry if it is a subtype
-                if (fieldsToUse === FIELD_MANAGEMENT_ENUMS.subType) {
+                if (fieldsToFilter === FIELD_MANAGEMENT_ENUMS.subType) {
                     entry.isSubType = true;
                 }
 
@@ -766,89 +767,107 @@ function exporter(model, fieldType) {
                     lastIndentPosition = ( entry.indentPosition < 0 ) ? 0 : entry.indentPosition;
                 }
             }
+          
+            entriesForExport.push(entry);
         }
     }
 
+    //return entriesForExport;
+  
+    // 3. GET READY TO SEND DATA TO SPIRA
     // Create and show a window to tell the user what is going on
-    var exportMessageToUser = HtmlService.createHtmlOutput('<p>Preparing your data for export!</p>').setWidth(250).setHeight(75);
-    SpreadsheetApp.getUi().showModalDialog(exportMessageToUser, 'Progress');
-
-
-
-    // create required variables for managing responses for sending data to spirateam 
-    var isError = null,  //error flag, set to true on error
-        errorLog = [],   //error log, holds the HTTP error response values
-        responses = [];
-
-
-    //postManager(entriesForExport, model, artifact, artifactEnums);
-
-    // set var for parent - used to designate eg a test case so it can be sent with the test step post
-    var parentId = 0;
+  
+    // TODO DON'T SEND IF THERE IS A VALIDATION ERROR ON THE ENTRY
+  
+    if (!entriesForExport.length) {
+        var nothingToExportMessage = HtmlService.createHtmlOutput('<p>There are no entries to send to SpiraTeam</p>').setWidth(250).setHeight(75);
+        SpreadsheetApp.getUi().showModalDialog(nothingToExportMessage, 'Check Data Entry');
+    } else {
     
-    //loop through objects to send
-    for (var i = 0; i < entriesForExport.length; i++) {
-        // only send children requiring parent id, if there is a parent id
-        if (ententriesForExport[i].isSubType && !parentId) {
-            // skip the entry
-        } else {
-            // make sure correct artifact ID is sent to handler (ie type vs subtype)
-            var artifactType = ententriesForExport[i].isSubType ? ententriesForExport[i].subTypeId : artifact.id,
-                // only send a parentId value when dealing with subtypes
-                parentIdToSend = ententriesForExport[i].isSubType ? parentId : null;
-            // send object to relevant artifact post service
-            var response = postArtifactToSpira ( 
-                entriesForExport[i], 
-                model.user, 
-                model.currentProject.id, 
-                artifactType,
-                parentIdToSend
-            );
-        }
+        var exportMessageToUser = HtmlService.createHtmlOutput('<p>Preparing your data for export!</p>').setWidth(250).setHeight(75);
+        SpreadsheetApp.getUi().showModalDialog(exportMessageToUser, 'Progress');
+    
+        // create required variables for managing responses for sending data to spirateam 
+        var isError = null,  //error flag, set to true on error
+            errorLog = [],   //error log, holds the HTTP error response values
+            responses = {artifact: artifact, entries: [], full: [], code: [], art: [], parentIds: []},
+            // set var for parent - used to designate eg a test case so it can be sent with the test step post
+            parentId = 0;
+       
 
-      
-
-        // parse the response
-        if (response.getResponseCode() === 200) {
-            response = JSON.parse(response.getContentText())
-            
-            // get the id of the newly created artifact
-            // if the entry is a sub type field, get the sub type id name
-            var artifactIdField = getIdFieldName(fields, fieldType, ententriesForExport[i].isSubType),
-                newId = response[artifactIdField];
-
-
-            // set parent ID to the new id only if the artifact has a subtype and this entry is NOT a subtype
-            if (fieldType.hasSubType && !ententriesForExport[i].isSubType) {
-                parentId = newId;
+        // 4. SEND DATA TO SPIRA AND MANAGE RESPONSES
+        //loop through objects to send
+        for (var i = 0; i < entriesForExport.length; i++) {
+            // only send children requiring parent id, if there is a parent id
+          responses.entries.push(entriesForExport[i] );
+            if (entriesForExport[i].isSubType) {
+                // skip the entry
+           } else {
+                // make sure correct artifact ID is sent to handler (ie type vs subtype)
+                var artifactIdToSend = entriesForExport[i].isSubType ? artifact.subTypeId : artifact.id,
+                    // only send a parentId value when dealing with subtypes
+                    parentIdToSend = entriesForExport[i].isSubType ? parentId : null;
+                // send object to relevant artifact post service
+                var rawResponse = postArtifactToSpira ( 
+                    entriesForExport[i], 
+                    model.user, 
+                    model.currentProject.id, 
+                    artifactIdToSend,
+                    parentIdToSend                    
+                );
+                var response;
             }
-
-            responses.push(newId)
+    
             
-            // TODO set returned ID to id field
-            // entriesForExport[i].idField.setValue(response.RequirementId)
-
-            //modal that displays the status of each artifact sent
-            htmlOutputSuccess = HtmlService.createHtmlOutput('<p>' + (i + 1) + ' of ' + (entriesForExport.length) + ' sent!</p>').setWidth(250).setHeight(75);
-            SpreadsheetApp.getUi().showModalDialog(htmlOutputSuccess, 'Progress');
-
-        } else {
-            //push errors into error log
-            errorLog.push(response.getContentText());
-            isError = true;
-            //set returned ID
-            //removed by request can be added back if wanted in future versions
-            //xObjArr[i].idField.setValue('Error')
-
-            //Sets error HTML modal
-            htmlOutput = HtmlService.createHtmlOutput('<p>Error for ' + (i + 1) + ' of ' + (entriesForExport.length) + '</p>').setWidth(250).setHeight(75);
-            SpreadsheetApp.getUi().showModalDialog(htmlOutput, 'Progress');
+          responses.art.push({issub: entriesForExport[i].isSubType, artIdSent: artifactIdToSend, formulaResolve: entriesForExport[i].isSubType ? artifact.subTypeId : artifact.id, hasSubType: artifact.hasSubType} );
+            responses.code.push(rawResponse.getResponseCode() );
+            // parse the response
+            if (rawResponse.getResponseCode() == 200) {
+                response = JSON.parse(rawResponse.getContentText());
+                
+                // get the id of the newly created artifact
+                // if the entry is a sub type field, get the sub type id name
+                var artifactIdField = getIdFieldName(fields, fieldType, entriesForExport[i].isSubType),
+                    newId = response[artifactIdField];
+    
+    
+                // set parent ID to the new id only if the artifact has a subtype and this entry is NOT a subtype
+                if (artifact.hasSubType && !entriesForExport[i].isSubType) {
+                    parentId = newId;
+                }
+    
+              responses.parentIds.push(parentId );
+              responses.entries.push(entriesForExport[i] );
+                
+                // TODO set returned ID to id field
+                // entriesForExport[i].idField.setValue(response.RequirementId)
+    
+                //modal that displays the status of each artifact sent
+                htmlOutputSuccess = HtmlService.createHtmlOutput('<p>' + (i + 1) + ' of ' + (entriesForExport.length) + ' sent!</p>').setWidth(250).setHeight(75);
+                SpreadsheetApp.getUi().showModalDialog(htmlOutputSuccess, 'Progress');
+    
+            } else {
+                //push errors into error log
+              if (rawResponse && rawResponse.getContentText()) {
+                  errorLog.push(rawResponse.getContentText());
+              } else {
+                  errorLog.push("could not send");
+              }
+                isError = true;
+                //set returned ID
+                //removed by request can be added back if wanted in future versions
+                //xObjArr[i].idField.setValue('Error')
+    
+                //Sets error HTML modal
+                htmlOutput = HtmlService.createHtmlOutput('<p>Error for ' + (i + 1) + ' of ' + (entriesForExport.length) + '</p>').setWidth(250).setHeight(75);
+                SpreadsheetApp.getUi().showModalDialog(htmlOutput, 'Progress');
+            }
         }
+    
+return responses;
+        //return the error flag and array with error text responses
+        return [isError, errorLog];
     }
-
-
-    //return the error flag and array with error text responses
-    return [isError, errorLog];
 }
 
 
@@ -910,7 +929,7 @@ function rowHasProblems(rowChecks) {
     var problems = "";
     if (!rowChecks.hasSubType && !rowChecks.hasRequiredFields) {
         problems = "Fill in all required fields";
-    } else if (rowChecks.hasSubType && (rowChecks.hasRequiredFields || rowChecks.subTypeIsBlocked) ) {
+    } else if (rowChecks.hasSubType &&  rowChecks.subTypeHasRequiredFields && (rowChecks.hasRequiredFields || rowChecks.subTypeIsBlocked) ) {
         problems = "It is unclear what artifact this is intended to be";
     }
     return problems;
@@ -955,14 +974,11 @@ function createEntryFromRow(row, model, fieldType, artifactIsHierarchical, lastI
     //we need to turn an array of values in the row into a validated object 
     for (var index = 0; index < row.length; index++) {
 
-        // first ignore entry that does not match the requirement specified in the fieldsToFilter param
-        if (fieldsToFilter !== "undefined") {
-            if (fieldsToFilter == FIELD_MANAGEMENT_ENUMS.standard && fields[index].isSubTypeField ) {
-                // skip the field
-            }
-            if (fieldsToFilter == FIELD_MANAGEMENT_ENUMS.subType && (!fields[index].isSubTypeField || !fields[index].isTypeAndSubTypeField) ) {
-                // skip the field
-            }
+        // first ignore entry that does not match the requirement specified in the fieldsToFilter 
+        if (fieldsToFilter == FIELD_MANAGEMENT_ENUMS.standard && fields[index].isSubTypeField ) {
+            // skip the field
+        } else if (fieldsToFilter == FIELD_MANAGEMENT_ENUMS.subType && !(fields[index].isSubTypeField || fields[index].isTypeAndSubTypeField) ) {
+            // skip the field
         
         // in all other cases add the field
         } else {

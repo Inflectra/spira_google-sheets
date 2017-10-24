@@ -10,11 +10,11 @@
  *
  */
 
-let devMode = true;
+// let devMode = true;
 // on init make sure to run any required startup functions
 (function () {
     // for dev mode only - comment out or set to false to disable any UI dev features
-    setDevStuff(devMode);
+    setDevStuff(true);
 })();
 
 
@@ -255,6 +255,7 @@ $('#select-project').change(function(e) {
     // if the project field has not been selected all other selected buttons are disabled
     if (e.target.value == 0) {
         $("#select-artifact, #btn-template").prop('disabled', true);
+        uiSelection.currentProject = null;
     } else {
         // enable artifacts dropdown
         $('#select-artifact').prop('disabled', false);
@@ -270,7 +271,7 @@ $('#select-project').change(function(e) {
             manageTemplateBtnState();
         
             // kick off API calls
-            getProjectSpecificInformation(model.user, model.currentProject.id);
+            getProjectSpecificInformation(model.user, uiSelection.currentProject.id);
         }
     }
 });
@@ -281,6 +282,7 @@ $('#select-project').change(function(e) {
 $('#select-artifact').change(function(e) {
     if (e.target.value == 0) {
         $('#btn-template').prop('disabled', true);
+        uiSelection.currentArtifact = null;
     }
     
     // get the artifact object and update artifact information if artifact has changed
@@ -294,7 +296,7 @@ $('#select-artifact').change(function(e) {
         manageTemplateBtnState();
         
         // kick off API calls
-        getArtifactSpecificInformation(model.user, model.currentProject.id, moel.currentArtifact);
+        getArtifactSpecificInformation(model.user, uiSelection.currentProject.id, uiSelection.currentArtifact);
         
 
     }
@@ -308,13 +310,12 @@ function manageTemplateBtnState() {
     $('#btn-template').prop('disabled', true);
     
     // only try to enable the button when both a project and artifact have been chosen
-    if (model.currentProject && model.currentArtifact) {
+    if (uiSelection.currentProject && uiSelection.currentArtifact) {
         // set a function to run repeatedly until all gets are done
         // then enable the button, and stop the timer loop
         var checkGetsSuccess = setInterval (updateButtonStatus, 500);
         
         function updateButtonStatus() {
-        console.log('interval is running');
             if ( allGetsSucceeded() ) {
                 $('#btn-template').prop('disabled', false);
                 clearInterval(checkGetsSuccess);
@@ -431,6 +432,7 @@ function sendToSpiraAttempt () {
     }
 }
 function sendToSpira (data) {
+console.log(data);
     //if array (which holds error responses) is present, and errors present
     if (data && data[1] && data[1].length) {
         // array point containing errors

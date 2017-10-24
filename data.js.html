@@ -46,11 +46,8 @@ let params = {
     // enums and various metadata for all artifacts potentially used by the system
     artifacts: [
         {field: 'requirements', name: 'Requirements', id: 1, hierarchical: true},
-        {field: 'testCases',    name: 'Test Cases',   id: 2, hasFolders: true, hasSubType: true, subTypeId: params.artifactEnums.testSteps},
-        {field: 'incidents',    name: 'Incidents',    id: 3, disabled: true, 
-            bespokeFields: [
-            ]
-        },
+        {field: 'testCases',    name: 'Test Cases',   id: 2, hasFolders: true, hasSubType: true, subTypeId: 7},
+        {field: 'incidents',    name: 'Incidents',    id: 3, disabled: true},
         {field: 'releases',     name: 'Releases',     id: 4, hierarchical: true},
         {field: 'testRuns',     name: 'Test Runs',    id: 5, disabled: true, hidden: true},
         {field: 'tasks',        name: 'Tasks',        id: 6, hasFolders: true},
@@ -74,7 +71,7 @@ var templateFields = {
                 {id: 3, name: "Use Case"},
                 {id: 4, name: "User Story"},
                 {id: 5, name: "Quality"},
-                {id: 6, name: "Design Elemen"}
+                {id: 6, name: "Design Element"}
             ]
         },
         {field: "ImportanceName", name: "Importance", type: params.fieldType.drop, 
@@ -143,7 +140,7 @@ var templateFields = {
         {field: "Name", name: "Task Name", type: params.fieldType.text, required: true},
         {field: "Description", name: "Task Description", type: params.fieldType.text},
         {field: "ReleaseId", name: "Release/Iteration", type: params.fieldType.release},
-        {field: "TaskTypeId", name: "Type", type: params.fieldType.drop,
+        {field: "TaskTypeId", name: "Type", type: params.fieldType.drop, required: true, 
             values: [
                 {id: 1, name: "Development"},
                 {id: 2, name: "Infrastructure"},
@@ -217,7 +214,8 @@ var templateFields = {
             ]
         },
         {field: "OwnerId", name: "Test Case Owner", type: params.fieldType.user},
-        {field: "ComponentIds", name: "Test Case Component", type: params.fieldType.arr},
+        {field: "ComponentIds", name: "Test Case Component", type: params.fieldType.arr}
+     ]
 };
 
 function Data() {
@@ -243,14 +241,12 @@ function Data() {
     
     this.currentArtifact = '';
 
-    // TODO - for incidents, more calls are required to get lists of statuses etc, and checks for their completion will be required
-    // TODO - one way to do the above: set a number based on calls required - eg 4. Each success decrements that, then checks if it is at 0.
-    // TODO - 4 is default and required on any project change. Additional ones required as soon as particular artifacts selected (eg incidents)    
     this.projectGetRequestsToMake = 3; // users, components, releases
     this.projectGetRequestsMade = 0;
-    
+
+    // TODO - for incidents, more calls are required to get lists of statuses etc, and checks for their completion will be required
     this.baselineArtifactGetRequests = 1;
-    this.artifactGetRequestsToMake = baselineArtifactGetRequests; 
+    this.artifactGetRequestsToMake = this.baselineArtifactGetRequests; 
     this.artifactGetRequestsMade = 0;
     
 
@@ -269,7 +265,7 @@ function Data() {
 // model becomes a new instance of the data store preserving the immutability of the primary data object.
 let model = new Data;
 
-function tempDataStore () {
+function tempDataStore() {
     this.currentProject = '';
     this.projectComponents = [];
     this.projectReleases = [];
