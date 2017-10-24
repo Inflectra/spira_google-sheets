@@ -271,6 +271,7 @@ function poster(body, currentUser, postUrl) {
 // @param: user - user object
 // @param: projectId - int of the current project
 // @param: artifactId - int of the current artifact
+// @param: parentId - optional int of the relevant parent to attach the artifact too
 function postArtifactToSpira(entry, user, projectId, artifactId, parentId) {
     
     //stringify
@@ -728,86 +729,42 @@ function exporter(model, fieldType) {
             break;
         } else {    
             // check for required fields (for normal artifacts and those with sub types - eg test cases and steps)
-            // if artifact has sub type verify if the sub type's required fields are set, otherwise (default) set to true
-            var hasRequiredFields = rowHasRequiredFields(sheetData[row], fields),
-                isArtifactWithSubType = fieldType.hasSubType,
+            var rowChecks = {
+                    hasRequiredFields: rowHasRequiredFields(sheetData[row], fields),
+                    hasSubType: fieldType.hasSubType,
+                    subTypeHasRequiredFields: !fieldType.hasSubType ? true : rowHasRequiredSubTypeFields(sheetData[row], fields),
+                    subTypeIsBlocked: !fieldType.hasSubType ? true : rowBlocksSubType(sheetData[row], fields)
+                },
+
+                // create entry used to populate all relevant data for this row
                 entry = {};
             
-            /* 
-             * --------
-             * logic for determining what action to take
-             * based on whether required fields filled in, and dealing with subtypes
-             * --------
-             */
-
-            // a normal artifact with no sub type 
-            if (!isArtifactWithSubType) {
-                if (hasRequiredFields) {
-                    entry = createEntryFromRow( 
-                        sheetData[row], 
-                        model, 
-                        fieldType, 
-                        artifactIsHierarchical, 
-                        lastIndentPosition, 
-                        FIELD_MANAGEMENT_ENUMS.all 
-                    );
-
-                // Error - because not all required fields filled in
-                } else {
-                    entry.validationError = true;
-                    entry.validationMessage = "Fill in all required fields";
-                }
-
-            // if we are working with a sub type
-            } else {
-                var hasRequiredSubTypeFields = isArtifactWithSubType ? rowHasRequiredSubTypeFields(sheetData[row], fields) : true,
-
-                // consider artifact standard if not all subtype required fields are filled in
-                if (hasRequiredFields && !hasRequiredSubTypeFields) {
-                    // send flag to only add standard fields to entry
-                    entry = createEntryFromRow( 
-                        sheetData[row],
-                        model, 
-                        fieldType, 
-                        artifactIsHierarchical, 
-                        lastIndentPosition, 
-                        FIELD_MANAGEMENT_ENUMS.standard 
-                    );
-                
-                // consider it as subType if sub type required fields are filled in and either:
-                // normal required fields are not filled in; or there is no blocking field filled in
-                } else if (hasRequiredSubTypeFields && (!hasRequiredFields || !hasSubTypeBlock) ) {
-                    //need to remove any subtype only fields from the model fields list
-                    entry = createEntryFromRow( 
-                        sheetData[row], 
-                        model, 
-                        fieldType, 
-                        artifactIsHierarchical, 
-                        lastIndentPosition, 
-                        FIELD_MANAGEMENT_ENUMS.subType 
-                    );
-                    entry.isSubType = true;
-                
-                // otherwise we don't know what sort of artifact we should make the row so do nothing
-                } else {
-                    entry.validationError = true;
-                    entry.validationMessage = "It is unclear what artifact this is intended to be";
-                }
-
-            }
-
-
-
-            // update the last indent position before going to the next entry to make sure relative indent is set correctly
-            if (artifactIsHierarchical) {
-                lastIndentPosition = ( entry.indentPosition < 0 ) ? 0 : entry.indentPosition;
-            }
+            // first check for errors
+            var hasProblems = rowHasProblems(rowChecks);
+            if (hasProblems) {
+                entry.validationMessage = hasProblems;
             
+            // if error free determine what field filtering is required - needed to choose type/subtype fields if subtype is present
+            } else {
+                var fieldsToFilter = relevantFields(rowChecks);
+                entry = createEntryFromRow( 
+                    sheetData[row], 
+                    model, 
+                    fieldType, 
+                    artifactIsHierarchical, 
+                    lastIndentPosition, 
+                    fieldsToUse 
+                );
 
+                // FOR SUBTYPE ENTRIES add flag on entry if it is a subtype
+                if (fieldsToUse === FIELD_MANAGEMENT_ENUMS.subType) {
+                    entry.isSubType = true;
+                }
 
-            // manage test cases and steps
-            if (fieldType.hasSubType) {
-                var hasRequiredSubFields
+                // FOR HIERARCHICAL ARTIFACTS update the last indent position before going to the next entry to make sure relative indent is set correctly
+                if (artifactIsHierarchical) {
+                    lastIndentPosition = ( entry.indentPosition < 0 ) ? 0 : entry.indentPosition;
+                }
             }
         }
     }
@@ -831,31 +788,42 @@ function exporter(model, fieldType) {
     
     //loop through objects to send
     for (var i = 0; i < entriesForExport.length; i++) {
-        //if the artifact has been designated as a subtype make sure correct artifact ID is sent to handler
-        var artifactType = ententriesForExport[i].isSubType ? ententriesForExport[i].subTypeId : artifact.id;
-        // send object to relevant artifact post service
-        var response = postArtifactToSpira ( 
-            entriesForExport[i], 
-            model.user, 
-            model.currentProject.id, 
-            artifactType,
+        // only send children requiring parent id, if there is a parent id
+        if (ententriesForExport[i].isSubType && !parentId) {
+            // skip the entry
+        } else {
+            // make sure correct artifact ID is sent to handler (ie type vs subtype)
+            var artifactType = ententriesForExport[i].isSubType ? ententriesForExport[i].subTypeId : artifact.id,
+                // only send a parentId value when dealing with subtypes
+                parentIdToSend = ententriesForExport[i].isSubType ? parentId : null;
+            // send object to relevant artifact post service
+            var response = postArtifactToSpira ( 
+                entriesForExport[i], 
+                model.user, 
+                model.currentProject.id, 
+                artifactType,
+                parentIdToSend
+            );
+        }
 
-        );
       
 
-        //parse response
+        // parse the response
         if (response.getResponseCode() === 200) {
-            //get body information
             response = JSON.parse(response.getContentText())
             
-            //TODO
-            // Get id 
-            // set parent ID to this if necessary
+            // get the id of the newly created artifact
+            // if the entry is a sub type field, get the sub type id name
+            var artifactIdField = getIdFieldName(fields, fieldType, ententriesForExport[i].isSubType),
+                newId = response[artifactIdField];
+
+
+            // set parent ID to the new id only if the artifact has a subtype and this entry is NOT a subtype
             if (fieldType.hasSubType && !ententriesForExport[i].isSubType) {
-                parentId = 'RESULT ID';
+                parentId = newId;
             }
 
-            responses.push(response.RequirementId)
+            responses.push(newId)
             
             // TODO set returned ID to id field
             // entriesForExport[i].idField.setValue(response.RequirementId)
@@ -863,6 +831,7 @@ function exporter(model, fieldType) {
             //modal that displays the status of each artifact sent
             htmlOutputSuccess = HtmlService.createHtmlOutput('<p>' + (i + 1) + ' of ' + (entriesForExport.length) + ' sent!</p>').setWidth(250).setHeight(75);
             SpreadsheetApp.getUi().showModalDialog(htmlOutputSuccess, 'Progress');
+
         } else {
             //push errors into error log
             errorLog.push(response.getContentText());
@@ -921,7 +890,7 @@ function rowHasRequiredSubTypeFields(row, fields) {
 // this can be useful to make sure that one field - eg Test Case Name would make sure a test step is not created to avoid any confusion
 // returns true if all required fields have (any) values, otherwise returns false
 // @param: row - a 'row' of data that contains a single object representing all fields
-// @param: fields - the relevant fields for specific artifact, along with all metadata about each
+// @param: fields - object of the relevant fields for specific artifact, along with all metadata about each
 function rowBlocksSubType(row, fields) {
     var result = false;
     for (var column = 0; column < row.length; column++) {
@@ -930,6 +899,38 @@ function rowBlocksSubType(row, fields) {
         }
     }
     return result;
+}
+
+
+
+// checks to see if the row is valid - ie required fields present and correct as expected
+// returns a string - empty if no errors present (to evaluate to false), or an error message object otherwise
+// @ param: rowChecks - object with different properties for different checks required
+function rowHasProblems(rowChecks) {
+    var problems = "";
+    if (!rowChecks.hasSubType && !rowChecks.hasRequiredFields) {
+        problems = "Fill in all required fields";
+    } else if (rowChecks.hasSubType && (rowChecks.hasRequiredFields || rowChecks.subTypeIsBlocked) ) {
+        problems = "It is unclear what artifact this is intended to be";
+    }
+    return problems;
+}
+
+
+
+// based on field type and conditions, determines what fields are required for a given row
+// e.g. all fields is default and standard, if a subtype is present (eg test step) - should it send only the main type or the sub type fields
+// returns a int representing the relevant enum value
+// @ param: rowChecks - object with different properties for different checks required
+function relevantFields(rowChecks) {
+    var fields = FIELD_MANAGEMENT_ENUMS.all;
+    if (rowChecks.hasSubType) {
+        if (rowChecks.hasRequiredFields && !rowChecks.subTypeHasRequiredFields) {
+            fields = FIELD_MANAGEMENT_ENUMS.standard;
+        } else if (rowChecks.subTypeHasRequiredFields && !(rowChecks.hasRequiredFields || rowChecks.subTypeIsBlocked) ) {
+            fields = FIELD_MANAGEMENT_ENUMS.subType;
+    }
+    return fields;
 }
 
 
@@ -973,6 +974,7 @@ function createEntryFromRow(row, model, fieldType, artifactIsHierarchical, lastI
                 
                 // ID fields: restricted to numbers and blank on push, otherwise put
                 case fieldType.id:
+                case fieldType.subId:
     
                     customType = "IntegerValue";
                     break;
@@ -1117,6 +1119,21 @@ function getIdFromName(string, list) {
     return 0;
 }
 
+
+// finds and returns the field name for the specific artifiact's ID field
+// @param: fields - object of the relevant fields for specific artifact, along with all metadata about each 
+// @param: fieldType - object of all field types with enums
+// @param: getSubType - optioanl bool to specify to return the subtype Id field, not the normal field (where two exist)
+function getIdFieldName(fields, fieldType, getSubType) {
+    for (var i = 0; i < fields.length; i++) {
+        if (getSubType && fields[i].type === fieldType.subId) {
+            return fields[i].field;
+        }
+        if (fields[i].type === fieldType.id) {
+            return fields[i].field;
+        }
+    }
+}
 
 
 // returns the count of the number of indent characters and returns the value

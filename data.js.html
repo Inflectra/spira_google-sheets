@@ -36,16 +36,17 @@ let params = {
         user: 8,
         // following types don't exist as custom property types as set by Spira - but useful for defining standard field types here
         id: 9,
-        component: 10, // project level field
-        release: 11, // project level field
-        arr: 12, // used for comma separated lists in a single cell (eg linked Ids)
-        folder: 13 // don't think in reality this will be need
+        subId: 10,
+        component: 11, // project level field
+        release: 12, // project level field
+        arr: 13, // used for comma separated lists in a single cell (eg linked Ids)
+        folder: 14 // don't think in reality this will be need
     },
 
     // enums and various metadata for all artifacts potentially used by the system
     artifacts: [
         {field: 'requirements', name: 'Requirements', id: 1, hierarchical: true},
-        {field: 'testCases',    name: 'Test Cases',   id: 2, hasFolders: true, hasSubType: true, subType: params.artifactEnums.testSteps},
+        {field: 'testCases',    name: 'Test Cases',   id: 2, hasFolders: true, hasSubType: true, subTypeId: params.artifactEnums.testSteps},
         {field: 'incidents',    name: 'Incidents',    id: 3, disabled: true, 
             bespokeFields: [
             ]
@@ -176,7 +177,8 @@ var templateFields = {
     ],
 
     testCases: [
-        {field: "TaskId", name: "Test Case ID", type: params.fieldType.id},
+        {field: "TestCaseId", name: "Test Case ID", type: params.fieldType.id},
+        {field: "TestStepId", name: "Test Step ID", type: params.fieldType.subId, isSubTypeField: true},
         {field: "Name", name: "Test Case Name", type: params.fieldType.text, required: true, blocksSubType: true},
         {field: "Description", name: "Test Case/Step Description", type: params.fieldType.text, isTypeAndSubTypeField: true, requiredForSubType: true},
         {field: "ExpectedResult", name: "Test Step Expected Result", type: params.fieldType.text, isSubTypeField: true, requiredForSubType: true},
