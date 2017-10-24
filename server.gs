@@ -716,7 +716,7 @@ function exporter(model, fieldType) {
         artifactHasFolders = artifact.hasFolders,
 
         sheetData = sheet.getRange(2,1, sheet.getLastRow() - 1, fields.length).getValues(),
-        entriesForExport = new Array,
+        entriesForExport = [],
         lastIndentPosition = null;
 
   
@@ -779,9 +779,10 @@ function exporter(model, fieldType) {
   
     // TODO DON'T SEND IF THERE IS A VALIDATION ERROR ON THE ENTRY
   
-    if (!entriesForExport.length) {
+    if (!entriesForExport && !entriesForExport.length) {
         var nothingToExportMessage = HtmlService.createHtmlOutput('<p>There are no entries to send to SpiraTeam</p>').setWidth(250).setHeight(75);
         SpreadsheetApp.getUi().showModalDialog(nothingToExportMessage, 'Check Data Entry');
+        return "nothing to send";
     } else {
     
         var exportMessageToUser = HtmlService.createHtmlOutput('<p>Preparing your data for export!</p>').setWidth(250).setHeight(75);
@@ -798,73 +799,81 @@ function exporter(model, fieldType) {
         // 4. SEND DATA TO SPIRA AND MANAGE RESPONSES
         //loop through objects to send
         for (var i = 0; i < entriesForExport.length; i++) {
+            var rawResponse, response = {};
             // only send children requiring parent id, if there is a parent id
-          responses.entries.push(entriesForExport[i] );
-            if (entriesForExport[i].isSubType) {
+            if (false) { //entriesForExport[i].isSubType && !parentId
                 // skip the entry
+                response.error = true;
+                response.message = "can't add a child type when there is no corresponding parent type";
            } else {
                 // make sure correct artifact ID is sent to handler (ie type vs subtype)
                 var artifactIdToSend = entriesForExport[i].isSubType ? artifact.subTypeId : artifact.id,
                     // only send a parentId value when dealing with subtypes
                     parentIdToSend = entriesForExport[i].isSubType ? parentId : null;
                 // send object to relevant artifact post service
-                var rawResponse = postArtifactToSpira ( 
+                rawResponse = postArtifactToSpira ( 
                     entriesForExport[i], 
                     model.user, 
                     model.currentProject.id, 
                     artifactIdToSend,
                     parentIdToSend                    
                 );
-                var response;
-            }
-    
-            
-          responses.art.push({issub: entriesForExport[i].isSubType, artIdSent: artifactIdToSend, formulaResolve: entriesForExport[i].isSubType ? artifact.subTypeId : artifact.id, hasSubType: artifact.hasSubType} );
-            responses.code.push(rawResponse.getResponseCode() );
-            // parse the response
-            if (rawResponse.getResponseCode() == 200) {
-                response = JSON.parse(rawResponse.getContentText());
                 
-                // get the id of the newly created artifact
-                // if the entry is a sub type field, get the sub type id name
-                var artifactIdField = getIdFieldName(fields, fieldType, entriesForExport[i].isSubType),
-                    newId = response[artifactIdField];
-    
-    
-                // set parent ID to the new id only if the artifact has a subtype and this entry is NOT a subtype
-                if (artifact.hasSubType && !entriesForExport[i].isSubType) {
-                    parentId = newId;
+                
+                
+                // save data for logging to client
+                response.entry = entriesForExport[i];
+                response.artifactIdSentActual = artifactIdToSend;
+                response.artifactIdSentFormula = entriesForExport[i].isSubType ? artifact.subTypeId : artifact.id;
+                response.artifactMetadata = artifact;
+                response.httpCode = rawResponse.getResponseCode();
+
+
+                // parse the response if we have a success
+                if (rawResponse.getResponseCode() == 200) {
+                    response.return = JSON.parse(rawResponse.getContentText());
+                    
+                    // get the id of the newly created artifact
+                    // if the entry is a sub type field, get the sub type id name
+                    var artifactIdField = getIdFieldName(fields, fieldType, entriesForExport[i].isSubType),
+                        newId = response.return[artifactIdField];
+        
+        
+                    // set parent ID to the new id only if the artifact has a subtype and this entry is NOT a subtype
+                    if (artifact.hasSubType && !entriesForExport[i].isSubType) {
+                        parentId = newId;
+                    }
+        
+                    response.parentId = parentId;
+                    
+                    // TODO set returned ID to id field
+                    // entriesForExport[i].idField.setValue(response.RequirementId)
+        
+                    //modal that displays the status of each artifact sent
+                    htmlOutputSuccess = HtmlService.createHtmlOutput('<p>' + (i + 1) + ' of ' + (entriesForExport.length) + ' sent!</p>').setWidth(250).setHeight(75);
+                    SpreadsheetApp.getUi().showModalDialog(htmlOutputSuccess, 'Progress');
+        
+                } else {
+                    //push errors into error log
+                    if (rawResponse && rawResponse.getContentText()) {
+                        errorLog.push(rawResponse.getContentText());
+                    } else {
+                        errorLog.push("could not send");
+                    }
+                    isError = true;
+                    //set returned ID
+                    //removed by request can be added back if wanted in future versions
+                    //xObjArr[i].idField.setValue('Error')
+        
+                    //Sets error HTML modal
+                    htmlOutput = HtmlService.createHtmlOutput('<p>Error for ' + (i + 1) + ' of ' + (entriesForExport.length) + '</p>').setWidth(250).setHeight(75);
+                    SpreadsheetApp.getUi().showModalDialog(htmlOutput, 'Progress');
                 }
-    
-              responses.parentIds.push(parentId );
-              responses.entries.push(entriesForExport[i] );
-                
-                // TODO set returned ID to id field
-                // entriesForExport[i].idField.setValue(response.RequirementId)
-    
-                //modal that displays the status of each artifact sent
-                htmlOutputSuccess = HtmlService.createHtmlOutput('<p>' + (i + 1) + ' of ' + (entriesForExport.length) + ' sent!</p>').setWidth(250).setHeight(75);
-                SpreadsheetApp.getUi().showModalDialog(htmlOutputSuccess, 'Progress');
-    
-            } else {
-                //push errors into error log
-              if (rawResponse && rawResponse.getContentText()) {
-                  errorLog.push(rawResponse.getContentText());
-              } else {
-                  errorLog.push("could not send");
-              }
-                isError = true;
-                //set returned ID
-                //removed by request can be added back if wanted in future versions
-                //xObjArr[i].idField.setValue('Error')
-    
-                //Sets error HTML modal
-                htmlOutput = HtmlService.createHtmlOutput('<p>Error for ' + (i + 1) + ' of ' + (entriesForExport.length) + '</p>').setWidth(250).setHeight(75);
-                SpreadsheetApp.getUi().showModalDialog(htmlOutput, 'Progress');
             }
+            responses.push(response);
         }
     
-return responses;
+        return responses;
         //return the error flag and array with error text responses
         return [isError, errorLog];
     }
