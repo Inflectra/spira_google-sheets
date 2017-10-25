@@ -804,7 +804,7 @@ function exporter(model, fieldType) {
                 successCount: 0,
                 entriesLength: entriesForExport.length,
                 entries: []
-            }
+            },
             // set var for parent - used to designate eg a test case so it can be sent with the test step post
             parentId = 0;
        
@@ -815,7 +815,7 @@ function exporter(model, fieldType) {
           var response = {};
 
             // skip if there was an error validating the sheet row
-            if (entriesForExport[i].validationMessage !== "undefined" ) {
+            if (entriesForExport[i].validationMessage) {
                 response.error = true;
                 response.message = entriesForExport[i].validationMessage;
                 log.errorCount++;
@@ -828,7 +828,16 @@ function exporter(model, fieldType) {
 
             // send to Spira and update the response object
             } else {
-                var sentToSpira = manageSendingToSpira (entriesForExport[i], parentId, response);
+                var sentToSpira = manageSendingToSpira (
+                    entriesForExport[i],
+                    parentId, 
+                    artifact, 
+                    model.user, 
+                    model.currentProject.id,
+                    fields,
+                    fieldType
+                );
+              
                 parentId = sentToSpira.parentId;
                 response.details = sentToSpira.output;
 
@@ -929,7 +938,11 @@ function exporter(model, fieldType) {
 // @param: entry - object of the specific entry in format ready to attach to body of API request
 // @param: parentId - int of the parent id for this specific loop - used for attaching subtype children to the right parent artifact
 // @param: artifact - object of the artifact being used here to help manage what specific API call to use
-function manageSendingToSpira (entry, parentId, artifact) {
+// @param: user - user object for API call authentication
+// @param: projectId - int of project id for API call
+// @param: fields - object of the relevant fields for specific artifact, along with all metadata about each 
+// @param: fieldType - object of all field types with enums
+function manageSendingToSpira (entry, parentId, artifact, user, projectId, fields, fieldType) {
     var data, 
         output = {};
         output.parentId = parentId; // set output parent id here so we know this function will always return a value for this
@@ -937,9 +950,9 @@ function manageSendingToSpira (entry, parentId, artifact) {
     // make sure correct artifact ID is sent to handler (ie type vs subtype)
     var artifactIdToSend = entry.isSubType ? artifact.subTypeId : artifact.id,
         // only send a parentId value when dealing with subtypes
-        parentIdToSend = entry.isSubType ? parentId : null;
+        parentIdToSend = entry.isSubType ? parentId : null,
         // send object to relevant artifact post service
-        data = postArtifactToSpira ( entry, model.user, model.currentProject.id, artifactIdToSend, parentIdToSend );
+        data = postArtifactToSpira ( entry, user, projectId, artifactIdToSend, parentIdToSend );
     
     // save data for logging to client
     output.entry = entry;
