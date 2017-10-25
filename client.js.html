@@ -10,11 +10,11 @@
  *
  */
 
-// let devMode = true;
+let devMode = true;
 // on init make sure to run any required startup functions
 (function () {
     // for dev mode only - comment out or set to false to disable any UI dev features
-    setDevStuff(true);
+    setDevStuff(devMode);
 })();
 
 
@@ -74,7 +74,6 @@ function clearSheet (shouldClear) {
     var shouldClearToUse = typeof shouldClear !== 'undefined' ? shouldClear : true;
     if (shouldClearToUse) google.script.run.clearAll();
 }
-
 
 
 // resets the sidebar following logout

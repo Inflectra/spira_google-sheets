@@ -121,11 +121,13 @@ function clearAll() {
     var sheet = spreadSheet.getSheets()[0];
 
     // clear all formatting and content
-    sheet.clear();
+    var lastColumn = sheet.getMaxColumns(),
+        lastRow = sheet.getMaxRows();
+    sheet.clear(); //.showColumns(1,  lastColumn)
 
-    // clears data validations from the entire sheet
-    var range = SpreadsheetApp.getActive().getRange('A:AZ');
-    range.clearDataValidations();
+    // clears data validations and notes from the entire sheet
+    var range = sheet.getRange(1,1, lastRow, lastColumn);
+    range.clearDataValidations().clearNote();
 
     // Reset sheet name
     sheet.setName('Sheet');
@@ -435,7 +437,6 @@ function okWarn(dialog) {
 function templateLoader(model, fieldType) {
     // clear spreadsheet depending on user input, and unhide everything
     clearAll();
-    sheet.showColumns(1, sheet.getLastColumn() );
 
     // select open file and select first sheet
     // TODO rework this to be the active sheet - not the first one
@@ -482,7 +483,7 @@ function headerSetter (sheet, fields, colors) {
         headerNames.push(fields[i].name);
         
         // set field text depending on whether is required or not
-        var fontColor = (fields[i].required || fields[i].requiredForSubType) ? colors.headerRequired : header;
+        var fontColor = (fields[i].required || fields[i].requiredForSubType) ? colors.headerRequired : colors.header;
         var fontWeight = fields[i].required ? 'bold' : 'normal';
         fontColors.push(fontColor);
         fontWeights.push(fontWeight);
@@ -510,7 +511,7 @@ function headerSetter (sheet, fields, colors) {
 // @param: model - full data to acccess global params as well as all fields
 // @param: fieldType - enums for field types
 function contentValidationSetter (sheet, model, fieldType) {
-    var nonHeaderRows = sheet.getLastRow() - 1;
+    var nonHeaderRows = sheet.getMaxRows() - 1;
     for (var index = 0; index < model.fields.length; index++) {
         var columnNumber = index + 1;
         
@@ -668,7 +669,7 @@ function contentFormattingSetter (sheet, model) {
             protectColumn(
               sheet, 
               columnNumber, 
-              (sheet.getLastRow() - 1), 
+              (sheet.getMaxRows() - 1), 
               model.colors.bgReadOnly, 
               model.fields[i].name + "unsupported",
               true
@@ -732,8 +733,9 @@ function exporter(model, fieldType) {
         artifact = model.currentArtifact,
         artifactIsHierarchical = artifact.hierarchical,
         artifactHasFolders = artifact.hasFolders,
+        lastRow = sheet.getLastRow() - 1 || 10, // hack to make sure we pass in some rows to the sheetRange, otherwise it causes an error
 
-        sheetRange = sheet.getRange(2,1, sheet.getLastRow() - 1, fields.length), 
+        sheetRange = sheet.getRange(2,1, lastRow, fields.length), 
         sheetData = sheetRange.getValues(),
         entriesForExport = [],
         lastIndentPosition = null;
@@ -745,7 +747,7 @@ function exporter(model, fieldType) {
     for (var row = 0; row < sheetData.length; row++) {
         
         // stop at the first row that is fully blank
-        if (!sheetData[row].join()) {
+        if (sheetData[row].join("") == "") {
             break;
         } else {    
             // check for required fields (for normal artifacts and those with sub types - eg test cases and steps)
@@ -784,9 +786,10 @@ function exporter(model, fieldType) {
         }
     }
   
+  
     // 3. GET READY TO SEND DATA TO SPIRA
     // Create and show a window to tell the user what is going on
-    if (!entriesForExport && !entriesForExport.length) {
+    if (!entriesForExport.length) {
         var nothingToExportMessage = HtmlService.createHtmlOutput('<p>There are no entries to send to SpiraTeam</p>').setWidth(250).setHeight(75);
         SpreadsheetApp.getUi().showModalDialog(nothingToExportMessage, 'Check Data Entry');
         return "nothing to send";
@@ -865,19 +868,19 @@ function exporter(model, fieldType) {
                 rowBgColors = [];
             for (var col = 0; col < fields.length; col++) {
                 // first deal with updating values
-                // ignore blank rows
-                if (!sheetData[row].join()) {
-                    rowData[col] = "";
+                // keep blank cells blank
+                if (sheetData[row][col] == "") {
+                    rowData.push("");
 
                 // don't overwrite existing data
                 } else if (sheetData[row][col] !== "") {
-                    rowData[col] = sheetData[row][col];
+                    rowData.push(sheetData[row][col]);
                 
                 // handle errors
                 } else if (log.entries[row].error) {
                     // add the message
                     if (fields[col].type == fieldType.id) {
-                        rowData[col] = log.entries[row].message;
+                        rowData.push(log.entries[row].message);
                     }
                 // handle adding ids into right place
                 } else {
@@ -886,34 +889,33 @@ function exporter(model, fieldType) {
                     } else if (log.entries[row].entry.isSubType && fields[col].type == fieldType.subId) {
                         rowData[col] = log.entries[row].newId;
                     } else {
-                        rowData[col] = '';
+                        rowData.push("");
                     }
                 }
 
                 // then handle cell formatting
                 if (log.entries[row].error) {
                     // if we have a validation error, we can highlight the relevant cells if the art has no sub type
-                    if (!log.entries[row].entry.validationMessage) {
+                    if (log.entries[row].entry && !log.entries[row].entry.validationMessage) {
                         if (!artifact.hasSubType && fields[col].required && rowData[col] == "") {
-                            rowBgColors[col].push(model.colors.warning);
+                            rowBgColors.push(model.colors.warning);
                         }
                     // otherwise highlight the whole row as we don't know the cause of the problem
                     } else {
-                        rowBgColors[col].push(model.colors.warning);
+                        rowBgColors.push(model.colors.warning);
                     }
                 } else {
                     // keep original formatting
                     if (fields[col].type == fieldType.subId || fields[col].type == fieldType.id || fields[col].unsupported) {
-                        rowBgColors[col].push(model.colors.bgReadOnly);
+                        rowBgColors.push(model.colors.bgReadOnly);
                     } else {
-                        rowBgColors[col].push(null);
+                        rowBgColors.push(null);
                     }
                 }
             }
             outputText.push(rowData);
             bgColors.push(rowBgColors);
         }
-
         sheetRange.setValues(outputText).setBackgrounds(bgColors);
         
         return log;
