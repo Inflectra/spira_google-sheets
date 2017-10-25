@@ -59,9 +59,9 @@ let params = {
 // each artifact has all its standard fields listed, along with important metadata - display name, field type, hard coded values set by system
 var templateFields = {
     requirements: [
-        {field: "RequirementId", name: "Requirement ID", type: params.fieldType.id},
-        {field: "Name", name: "Requirement Name", type: params.fieldType.text, required: true, setsHierarchy: true},
-        {field: "Description", name: "Requirement Description", type: params.fieldType.text},
+        {field: "RequirementId", name: "ID", type: params.fieldType.id},
+        {field: "Name", name: "Name", type: params.fieldType.text, required: true, setsHierarchy: true},
+        {field: "Description", name: "Description", type: params.fieldType.text},
         {field: "ReleaseVersionNumber", name: "Release Version", type: params.fieldType.release},
         {field: "RequirementTypeId", name: "Type", type: params.fieldType.drop, required: true, 
             values: [
@@ -105,9 +105,9 @@ var templateFields = {
     ],
 
     releases: [
-        {field: "ReleaseId", name: "Release ID", type: params.fieldType.id},
-        {field: "Name", name: "Release Name", type: params.fieldType.text, required: true, setsHierarchy: true},
-        {field: "Description", name: "Release Description", type: params.fieldType.text},
+        {field: "ReleaseId", name: "ID", type: params.fieldType.id},
+        {field: "Name", name: "Name", type: params.fieldType.text, required: true, setsHierarchy: true},
+        {field: "Description", name: "Description", type: params.fieldType.text},
         {field: "VersionNumber", name: "Version Number", type: params.fieldType.text},
         {field: "ReleaseStatusId", name: "Status", type: params.fieldType.drop, required: true, 
             values: [
@@ -136,8 +136,8 @@ var templateFields = {
     ],
 
     tasks: [
-        {field: "TaskId", name: "Task ID", type: params.fieldType.id},
-        {field: "Name", name: "Task Name", type: params.fieldType.text, required: true},
+        {field: "TaskId", name: "ID", type: params.fieldType.id},
+        {field: "Name", name: "Name", type: params.fieldType.text, required: true},
         {field: "Description", name: "Task Description", type: params.fieldType.text},
         {field: "ReleaseId", name: "Release/Iteration", type: params.fieldType.release},
         {field: "TaskTypeId", name: "Type", type: params.fieldType.drop, required: true, 
@@ -174,8 +174,8 @@ var templateFields = {
     ],
 
     testCases: [
-        {field: "TestCaseId", name: "Test Case ID", type: params.fieldType.id},
-        {field: "TestStepId", name: "Test Step ID", type: params.fieldType.subId, isSubTypeField: true},
+        {field: "TestCaseId", name: "Case ID", type: params.fieldType.id},
+        {field: "TestStepId", name: "Step ID", type: params.fieldType.subId, isSubTypeField: true},
         {field: "Name", name: "Test Case Name", type: params.fieldType.text, required: true, blocksSubType: true},
         {field: "Description", name: "Test Case/Step Description", type: params.fieldType.text, isTypeAndSubTypeField: true, requiredForSubType: true},
         {field: "ExpectedResult", name: "Test Step Expected Result", type: params.fieldType.text, isSubTypeField: true, requiredForSubType: true},
@@ -236,7 +236,6 @@ function Data() {
     this.projectComponents = [];
     this.projectReleases = [];
     this.projectUsers = [];
-    this.rowsToFormat = 500;
     this.indentCharacter = ">";
     
     this.currentArtifact = '';
@@ -254,8 +253,11 @@ function Data() {
 
     this.colors = {
         bgHeader: '#f1a42b',
+        bgHeaderSubType: '#fdcb26',
         bgReadOnly: '#eeeeee',
-        header: '#ffffff' 
+        header: '#ffffff',
+        headerRequired: '#000000',
+        warning: 'red'
     }
 
     this.isTemplateLoaded = false;

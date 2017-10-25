@@ -16,6 +16,11 @@ var API_BASE = '/services/v5_0/RestService.svc/projects/',
         standard: 2,
         subType: 3
     };
+    STATUS_ENUM = {
+        allSuccess: 1,
+        allError: 2,
+        someError: 3
+    }
 
 /*
  * ======================
@@ -379,12 +384,14 @@ function warn(string) {
 
 
 // Alert pop up for export success
-// @param: err - boolean sent from the export function
-function exportSuccess(err) {
-    if (err) {
-        okWarn('Operation complete, some errors occurred. Clear sheet to export more artifacts.');
-    } else {
-        okWarn('Operation complete. Clear sheet to export more artifacts.');
+// @param: message - string sent from the export function
+function exportSuccess(message) {
+    if (message ==  STATUS_ENUM.allSuccess) {
+        okWarn("All complete and successfully created in SpiraTeam! To send more data over, clear the sheet first.");
+    } else if (message == STATUS_ENUM.someError) {
+        okWarn("All complete, but unfortunately there were some problems. Check the ID field for explanations.");
+    } else if (message == STATUS_ENUM.alLError){
+        okWarn("We're really sorry, but we couldn't send anything to SpiraTeam - please check the ID field on the sheet for more information.");
     }
 }
 
@@ -426,8 +433,9 @@ function okWarn(dialog) {
 // @param: model - full model object from client containing field data for specific artifact, list of project users, components, etc
 // @param: fieldType - list of fieldType enums from client params object
 function templateLoader(model, fieldType) {
-    // clear spreadsheet depending on user input
+    // clear spreadsheet depending on user input, and unhide everything
     clearAll();
+    sheet.showColumns(1, sheet.getLastColumn() );
 
     // select open file and select first sheet
     // TODO rework this to be the active sheet - not the first one
@@ -465,17 +473,31 @@ function templateLoader(model, fieldType) {
 function headerSetter (sheet, fields, colors) {
     
     var headerNames = [],
+        backgrounds = [],
+        fontColors = [],
+        fontWeights = [],
         fieldsLength = fields.length;
 
     for (var i = 0; i < fieldsLength; i++) {
         headerNames.push(fields[i].name);
+        
+        // set field text depending on whether is required or not
+        var fontColor = (fields[i].required || fields[i].requiredForSubType) ? colors.headerRequired : header;
+        var fontWeight = fields[i].required ? 'bold' : 'normal';
+        fontColors.push(fontColor);
+        fontWeights.push(fontWeight);
+
+        // set background colors based on if it is a subtype only field or not
+        var background = fields[i].isSubTypeField ? colors.bgHeaderSubType : colors.bgHeader;
+        backgrounds.push(background);
     }
 
     sheet.getRange(1, 1, 1, fieldsLength)
         .setWrap(true)
-        .setBackground(colors.bgHeader)
-        .setFontColor(colors.header)
-        // the headerNames array needs to be in an array as setValues expects a 2D for managing 2D ranges
+        // the arrays need to be in an array as methods expect a 2D array for managing 2D ranges
+        .setBackgrounds([backgrounds])
+        .setFontColors([fontColors])
+        .setFontWeights([fontWeights])
         .setValues([headerNames])
         .protect().setDescription("header row").setWarningOnly(true);
 }
@@ -488,6 +510,7 @@ function headerSetter (sheet, fields, colors) {
 // @param: model - full data to acccess global params as well as all fields
 // @param: fieldType - enums for field types
 function contentValidationSetter (sheet, model, fieldType) {
+    var nonHeaderRows = sheet.getLastRow() - 1;
     for (var index = 0; index < model.fields.length; index++) {
         var columnNumber = index + 1;
         
@@ -495,11 +518,12 @@ function contentValidationSetter (sheet, model, fieldType) {
             
             // ID fields: restricted to numbers and protected
             case fieldType.id:
-                setNumberValidation(sheet, columnNumber, model.rowsToFormat, false);
+            case fieldType.subId:
+                setNumberValidation(sheet, columnNumber, nonHeaderRows, false);
                 protectColumn(
                     sheet, 
                     columnNumber, 
-                    model.rowsToFormat, 
+                    nonHeaderRows, 
                     model.colors.bgReadOnly, 
                     "ID field",
                     false
@@ -509,18 +533,18 @@ function contentValidationSetter (sheet, model, fieldType) {
             // INT and NUM fields are both treated by Sheets as numbers
             case fieldType.int:
             case fieldType.num:
-                setNumberValidation(sheet, columnNumber, model.rowsToFormat, false);
+                setNumberValidation(sheet, columnNumber, nonHeaderRows, false);
                 break;
 
             // BOOL as Sheets has no bool validation, a yes/no dropdown is used
             case fieldType.bool:
                 // 'True' and 'False' don't work as dropdown choices
                 var list = ["Yes", "No"];
-                setDropdownValidation(sheet, columnNumber, model.rowsToFormat, list, false);
+                setDropdownValidation(sheet, columnNumber, nonHeaderRows, list, false);
                 break;
 
             case fieldType.date:
-                setDateValidation(sheet, columnNumber, model.rowsToFormat, false);
+                setDateValidation(sheet, columnNumber, nonHeaderRows, false);
                 break;
 
             // DROPDOWNS and MULTIDROPDOWNS are both treated as simple dropdowns (Sheets does not have multi selects)
@@ -531,7 +555,7 @@ function contentValidationSetter (sheet, model, fieldType) {
                 for (var i = 0; i < fieldList.length; i++) {
                     list.push(fieldList[i].name);
                 }
-                setDropdownValidation(sheet, columnNumber, model.rowsToFormat, list, false);
+                setDropdownValidation(sheet, columnNumber, nonHeaderRows, list, false);
                 break;
 
             // USER fields are dropdowns with the values coming from a project wide set list
@@ -540,7 +564,7 @@ function contentValidationSetter (sheet, model, fieldType) {
                 for (var i = 0; i < model.projectUsers.length; i++) {
                     list.push(model.projectUsers[i].name);
                 }
-                setDropdownValidation(sheet, columnNumber, model.rowsToFormat, list, false);
+                setDropdownValidation(sheet, columnNumber, nonHeaderRows, list, false);
                 break;
 
             // COMPONENT fields are dropdowns with the values coming from a project wide set list
@@ -549,7 +573,7 @@ function contentValidationSetter (sheet, model, fieldType) {
                 for (var i = 0; i < model.projectComponents.length; i++) {
                     list.push(model.projectComponents[i].name);
                 }
-                setDropdownValidation(sheet, columnNumber, model.rowsToFormat, list, false);
+                setDropdownValidation(sheet, columnNumber, nonHeaderRows, list, false);
                 break;
               
             // RELEASE fields are dropdowns with the values coming from a project wide set list
@@ -558,7 +582,7 @@ function contentValidationSetter (sheet, model, fieldType) {
                 for (var i = 0; i < model.projectReleases.length; i++) {
                     list.push(model.projectReleases[i].name);
                 }
-                setDropdownValidation(sheet, columnNumber, model.rowsToFormat, list, false);
+                setDropdownValidation(sheet, columnNumber, nonHeaderRows, list, false);
                 break;
             
             // All other types
@@ -644,7 +668,7 @@ function contentFormattingSetter (sheet, model) {
             protectColumn(
               sheet, 
               columnNumber, 
-              model.rowsToFormat, 
+              (sheet.getLastRow() - 1), 
               model.colors.bgReadOnly, 
               model.fields[i].name + "unsupported",
               true
@@ -709,7 +733,8 @@ function exporter(model, fieldType) {
         artifactIsHierarchical = artifact.hierarchical,
         artifactHasFolders = artifact.hasFolders,
 
-        sheetData = sheet.getRange(2,1, sheet.getLastRow() - 1, fields.length).getValues(),
+        sheetRange = sheet.getRange(2,1, sheet.getLastRow() - 1, fields.length), 
+        sheetData = sheetRange.getValues(),
         entriesForExport = [],
         lastIndentPosition = null;
 
@@ -742,14 +767,7 @@ function exporter(model, fieldType) {
             // if error free determine what field filtering is required - needed to choose type/subtype fields if subtype is present
             } else {
                 var fieldsToFilter = relevantFields(rowChecks);
-                entry = createEntryFromRow( 
-                    sheetData[row], 
-                    model, 
-                    fieldType, 
-                    artifactIsHierarchical, 
-                    lastIndentPosition, 
-                    fieldsToFilter 
-                );
+                entry = createEntryFromRow( sheetData[row], model, fieldType, artifactIsHierarchical, lastIndentPosition, fieldsToFilter );
 
                 // FOR SUBTYPE ENTRIES add flag on entry if it is a subtype
                 if (fieldsToFilter === FIELD_MANAGEMENT_ENUMS.subType) {
@@ -765,14 +783,9 @@ function exporter(model, fieldType) {
             entriesForExport.push(entry);
         }
     }
-
-    //return entriesForExport;
   
     // 3. GET READY TO SEND DATA TO SPIRA
     // Create and show a window to tell the user what is going on
-  
-    // TODO DON'T SEND IF THERE IS A VALIDATION ERROR ON THE ENTRY
-  
     if (!entriesForExport && !entriesForExport.length) {
         var nothingToExportMessage = HtmlService.createHtmlOutput('<p>There are no entries to send to SpiraTeam</p>').setWidth(250).setHeight(75);
         SpreadsheetApp.getUi().showModalDialog(nothingToExportMessage, 'Check Data Entry');
@@ -783,9 +796,12 @@ function exporter(model, fieldType) {
         SpreadsheetApp.getUi().showModalDialog(exportMessageToUser, 'Progress');
     
         // create required variables for managing responses for sending data to spirateam 
-        var isError = null,  //error flag, set to true on error
-            errorLog = [],   //error log, holds the HTTP error response values
-            responses = [],
+        var log = {
+                errorCount: 0,
+                successCount: 0,
+                entriesLength: entriesForExport.length,
+                entries: []
+            }
             // set var for parent - used to designate eg a test case so it can be sent with the test step post
             parentId = 0;
        
@@ -793,92 +809,174 @@ function exporter(model, fieldType) {
         // 4. SEND DATA TO SPIRA AND MANAGE RESPONSES
         //loop through objects to send
         for (var i = 0; i < entriesForExport.length; i++) {
-          var rawResponse, response = {};
-          response.start = new Date().getTime();
-          response.startParentId = parentId;
-            // only send children requiring parent id, if there is a parent id
-            if (false) { //entriesForExport[i].isSubType && !parentId
-                // skip the entry
+          var response = {};
+
+            // skip if there was an error validating the sheet row
+            if (entriesForExport[i].validationMessage !== "undefined" ) {
+                response.error = true;
+                response.message = entriesForExport[i].validationMessage;
+                log.errorCount++;
+            }
+            // skip if a sub type row does not have a parent to hook to
+            else if (entriesForExport[i].isSubType && !parentId) {
                 response.error = true;
                 response.message = "can't add a child type when there is no corresponding parent type";
-           } else {
-                // make sure correct artifact ID is sent to handler (ie type vs subtype)
-                var artifactIdToSend = entriesForExport[i].isSubType ? artifact.subTypeId : artifact.id,
-                    // only send a parentId value when dealing with subtypes
-                    parentIdToSend = entriesForExport[i].isSubType ? parentId : null;
-                // send object to relevant artifact post service
-                rawResponse = postArtifactToSpira ( 
-                    entriesForExport[i], 
-                    model.user, 
-                    model.currentProject.id, 
-                    artifactIdToSend,
-                    parentIdToSend                    
-                );
-                
-                
-                
-                // save data for logging to client
-                response.entry = entriesForExport[i];
-                response.artifactMeta = {
-                  idSentActual: artifactIdToSend,
-                  idSentFormula: entriesForExport[i].isSubType ? artifact.subTypeId : artifact.id,
-                  metadata: artifact
-                }
-                response.httpCode = rawResponse.getResponseCode();
+                log.errorCount++;
 
+            // send to Spira and update the response object
+            } else {
+                var sentToSpira = manageSendingToSpira (entriesForExport[i], parentId, response);
+                parentId = sentToSpira.parentId;
+                response.details = sentToSpira.output;
 
-                // parse the response if we have a success
-                if (rawResponse.getResponseCode() == 200) {
-                    response.fromSpira = JSON.parse(rawResponse.getContentText());
-                    
-                    // get the id of the newly created artifact
-                    // if the entry is a sub type field, get the sub type id name
-                    var artifactIdField = getIdFieldName(fields, fieldType, entriesForExport[i].isSubType),
-                        newId = response.fromSpira[artifactIdField];
-        
-        
-                    // set parent ID to the new id only if the artifact has a subtype and this entry is NOT a subtype
-                    if (artifact.hasSubType && !entriesForExport[i].isSubType) {
-                        parentId = newId;
-                    }
-        
-                    response.parentId = parentId;
-                    
-                    // TODO set returned ID to id field
-                    // entriesForExport[i].idField.setValue(response.RequirementId)
-        
-                    //modal that displays the status of each artifact sent
-                    htmlOutputSuccess = HtmlService.createHtmlOutput('<p>' + (i + 1) + ' of ' + (entriesForExport.length) + ' sent!</p>').setWidth(250).setHeight(75);
-                    SpreadsheetApp.getUi().showModalDialog(htmlOutputSuccess, 'Progress');
-        
-                } else {
-                    //push errors into error log
-                    if (rawResponse && rawResponse.getContentText()) {
-                        errorLog.push(rawResponse.getContentText());
-                    } else {
-                        errorLog.push("could not send");
-                    }
-                    isError = true;
-                    //set returned ID
-                    //removed by request can be added back if wanted in future versions
-                    //xObjArr[i].idField.setValue('Error')
-        
+                // handle success and error cases
+                if (sentToSpira.error) {
+                    log.errorCount++;
+                    response.error = true;
+                    response.message = sentToSpira.message;
+                                
                     //Sets error HTML modal
                     htmlOutput = HtmlService.createHtmlOutput('<p>Error for ' + (i + 1) + ' of ' + (entriesForExport.length) + '</p>').setWidth(250).setHeight(75);
                     SpreadsheetApp.getUi().showModalDialog(htmlOutput, 'Progress');
+
+                } else {
+                    log.successCount++;
+                    response.newId = sentToSpira.newId;
+
+                    //modal that displays the status of each artifact sent
+                    htmlOutputSuccess = HtmlService.createHtmlOutput('<p>' + (i + 1) + ' of ' + (entriesForExport.length) + ' sent!</p>').setWidth(250).setHeight(75);
+                    SpreadsheetApp.getUi().showModalDialog(htmlOutputSuccess, 'Progress');
                 }
             }
-            response.end = new Date().getTime();
-            response.duration = response.end - response.start;
-            responses.push(response);
+                
+            log.entries.push(response);
         }
-    
-        return responses;
-        //return the error flag and array with error text responses
-        return [isError, errorLog];
+
+        // review all activity and set final status
+        log.status = log.errorCount ? 
+            log.errorCount == log.entriesLength ? STATUS_ENUM.allError : STATUS_ENUM.someError
+            : STATUS_ENUM.allSuccess;
+
+        // update the ID field(s) with the returned data or messages from the server
+        var bgColors = [],
+            outputText = [];
+        for (var row = 0; row < sheetData.length; row++) {
+            var rowData = [],
+                rowBgColors = [];
+            for (var col = 0; col < fields.length; col++) {
+                // first deal with updating values
+                // ignore blank rows
+                if (!sheetData[row].join()) {
+                    rowData[col] = "";
+
+                // don't overwrite existing data
+                } else if (sheetData[row][col] !== "") {
+                    rowData[col] = sheetData[row][col];
+                
+                // handle errors
+                } else if (log.entries[row].error) {
+                    // add the message
+                    if (fields[col].type == fieldType.id) {
+                        rowData[col] = log.entries[row].message;
+                    }
+                // handle adding ids into right place
+                } else {
+                    if (!log.entries[row].entry.isSubType && fields[col].type == fieldType.id) {
+                        rowData[col] = log.entries[row].newId;
+                    } else if (log.entries[row].entry.isSubType && fields[col].type == fieldType.subId) {
+                        rowData[col] = log.entries[row].newId;
+                    } else {
+                        rowData[col] = '';
+                    }
+                }
+
+                // then handle cell formatting
+                if (log.entries[row].error) {
+                    // if we have a validation error, we can highlight the relevant cells if the art has no sub type
+                    if (!log.entries[row].entry.validationMessage) {
+                        if (!artifact.hasSubType && fields[col].required && rowData[col] == "") {
+                            rowBgColors[col].push(model.colors.warning);
+                        }
+                    // otherwise highlight the whole row as we don't know the cause of the problem
+                    } else {
+                        rowBgColors[col].push(model.colors.warning);
+                    }
+                } else {
+                    // keep original formatting
+                    if (fields[col].type == fieldType.subId || fields[col].type == fieldType.id || fields[col].unsupported) {
+                        rowBgColors[col].push(model.colors.bgReadOnly);
+                    } else {
+                        rowBgColors[col].push(null);
+                    }
+                }
+            }
+            outputText.push(rowData);
+            bgColors.push(rowBgColors);
+        }
+
+        sheetRange.setValues(outputText).setBackgrounds(bgColors);
+        
+        return log;
+
     }
 }
 
+
+
+// on determining that an entry should be sent to Spira, this function handles calling the API function, and parses the data on both success and failure
+// @param: entry - object of the specific entry in format ready to attach to body of API request
+// @param: parentId - int of the parent id for this specific loop - used for attaching subtype children to the right parent artifact
+// @param: artifact - object of the artifact being used here to help manage what specific API call to use
+function manageSendingToSpira (entry, parentId, artifact) {
+    var data, 
+        output = {};
+        output.parentId = parentId; // set output parent id here so we know this function will always return a value for this
+
+        // make sure correct artifact ID is sent to handler (ie type vs subtype)
+        var artifactIdToSend = entry.isSubType ? artifact.subTypeId : artifact.id,
+            // only send a parentId value when dealing with subtypes
+            parentIdToSend = entry.isSubType ? parentId : null;
+            // send object to relevant artifact post service
+            data = postArtifactToSpira ( entry, model.user, model.currentProject.id, artifactIdToSend, parentIdToSend );
+        
+        // save data for logging to client
+        output.entry = entry;
+        output.httpCode = data.getResponseCode();
+        output.artifact = {
+            artifactId: artifactIdToSend,
+            artifactObject: artifact
+        };
+
+        // parse the data if we have a success
+        if (output.httpCode == 200) {
+            output.fromSpira = JSON.parse(data.getContentText());
+            
+            // get the id/subType id of the newly created artifact
+            var artifactIdField = getIdFieldName(fields, fieldType, entry.isSubType);
+            output.newId = output.fromSpira[artifactIdField];
+
+
+            // update the output parent ID to the new id only if the artifact has a subtype and this entry is NOT a subtype
+            if (artifact.hasSubType && !entry.isSubType) {
+                output.parentId = output.newId;
+            }
+
+        } else {
+            //we have an error - so set the flag and the message
+            output.error = true;
+            if (data && data.getContentText()) {
+                output.errorMessage = data.getContentText();
+            } else {
+                output.errorMessage = "send attempt failed";
+            }
+            
+            // reset the parentId if we are not on a subType - to make sure subTypes are not added to the wrong parent            
+            if (artifact.hasSubType && !entry.isSubType) {            
+                output.parentId = 0;            
+            }            
+        }
+      }
+}
 
 
 // check to see if a row of data has entries for all required fields
