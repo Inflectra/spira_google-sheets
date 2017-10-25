@@ -932,50 +932,49 @@ function manageSendingToSpira (entry, parentId, artifact) {
         output = {};
         output.parentId = parentId; // set output parent id here so we know this function will always return a value for this
 
-        // make sure correct artifact ID is sent to handler (ie type vs subtype)
-        var artifactIdToSend = entry.isSubType ? artifact.subTypeId : artifact.id,
-            // only send a parentId value when dealing with subtypes
-            parentIdToSend = entry.isSubType ? parentId : null;
-            // send object to relevant artifact post service
-            data = postArtifactToSpira ( entry, model.user, model.currentProject.id, artifactIdToSend, parentIdToSend );
+    // make sure correct artifact ID is sent to handler (ie type vs subtype)
+    var artifactIdToSend = entry.isSubType ? artifact.subTypeId : artifact.id,
+        // only send a parentId value when dealing with subtypes
+        parentIdToSend = entry.isSubType ? parentId : null;
+        // send object to relevant artifact post service
+        data = postArtifactToSpira ( entry, model.user, model.currentProject.id, artifactIdToSend, parentIdToSend );
+    
+    // save data for logging to client
+    output.entry = entry;
+    output.httpCode = data.getResponseCode();
+    output.artifact = {
+        artifactId: artifactIdToSend,
+        artifactObject: artifact
+    };
+
+    // parse the data if we have a success
+    if (output.httpCode == 200) {
+        output.fromSpira = JSON.parse(data.getContentText());
         
-        // save data for logging to client
-        output.entry = entry;
-        output.httpCode = data.getResponseCode();
-        output.artifact = {
-            artifactId: artifactIdToSend,
-            artifactObject: artifact
-        };
-
-        // parse the data if we have a success
-        if (output.httpCode == 200) {
-            output.fromSpira = JSON.parse(data.getContentText());
-            
-            // get the id/subType id of the newly created artifact
-            var artifactIdField = getIdFieldName(fields, fieldType, entry.isSubType);
-            output.newId = output.fromSpira[artifactIdField];
+        // get the id/subType id of the newly created artifact
+        var artifactIdField = getIdFieldName(fields, fieldType, entry.isSubType);
+        output.newId = output.fromSpira[artifactIdField];
 
 
-            // update the output parent ID to the new id only if the artifact has a subtype and this entry is NOT a subtype
-            if (artifact.hasSubType && !entry.isSubType) {
-                output.parentId = output.newId;
-            }
-
-        } else {
-            //we have an error - so set the flag and the message
-            output.error = true;
-            if (data && data.getContentText()) {
-                output.errorMessage = data.getContentText();
-            } else {
-                output.errorMessage = "send attempt failed";
-            }
-            
-            // reset the parentId if we are not on a subType - to make sure subTypes are not added to the wrong parent            
-            if (artifact.hasSubType && !entry.isSubType) {            
-                output.parentId = 0;            
-            }            
+        // update the output parent ID to the new id only if the artifact has a subtype and this entry is NOT a subtype
+        if (artifact.hasSubType && !entry.isSubType) {
+            output.parentId = output.newId;
         }
-      }
+
+    } else {
+        //we have an error - so set the flag and the message
+        output.error = true;
+        if (data && data.getContentText()) {
+            output.errorMessage = data.getContentText();
+        } else {
+            output.errorMessage = "send attempt failed";
+        }
+        
+        // reset the parentId if we are not on a subType - to make sure subTypes are not added to the wrong parent            
+        if (artifact.hasSubType && !entry.isSubType) {            
+            output.parentId = 0;            
+        }            
+    }
 }
 
 
