@@ -100,8 +100,8 @@ var templateFields = {
         {field: "AuthorName", name: "Author", type: params.fieldType.user},
         {field: "OwnerName", name: "Owner", type: params.fieldType.user},
         {field: "ComponentName", name: "Component", type: params.fieldType.component},
-        {field: "LinkedRequirementIds", name: "Linked Requirements", type: params.fieldType.arr, unsupported: true},
-        {field: "Comment", name: "Comment", type: params.fieldType.text, unsupported: true}        
+        // unsupported {field: "LinkedRequirementIds", name: "Linked Requirements", type: params.fieldType.arr, unsupported: true},
+        // unsupported {field: "Comment", name: "Comment", type: params.fieldType.text, unsupported: true}        
     ],
 
     releases: [
@@ -132,7 +132,7 @@ var templateFields = {
         {field: "EndDate", name: "End Date", type: params.fieldType.date, required: true},
         {field: "ResourceCount", name: "Resources", type: params.fieldType.num},
         {field: "DaysNonWorking", name: "Non Working Days", type: params.fieldType.int},
-        {field: "Comment", name: "Comment", type: params.fieldType.text, unsuppored: true}
+        // unsupported {field: "Comment", name: "Comment", type: params.fieldType.text, unsuppored: true}
     ],
 
     tasks: [
@@ -257,7 +257,7 @@ function Data() {
         bgReadOnly: '#eeeeee',
         header: '#ffffff',
         headerRequired: '#000000',
-        warning: 'red'
+        warning: '#ffcccc'
     }
 
     this.isTemplateLoaded = false;

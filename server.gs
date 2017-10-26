@@ -127,7 +127,16 @@ function clearAll() {
 
     // clears data validations and notes from the entire sheet
     var range = sheet.getRange(1,1, lastRow, lastColumn);
-    range.clearDataValidations().clearNote();
+    range.clearDataValidations().clearNote()
+    
+    // remove any protections on the sheet
+    var protections = spreadSheet.getProtections(SpreadsheetApp.ProtectionType.RANGE);
+    for (var i = 0; i < protections.length; i++) {
+       var protection = protections[i];
+       if (protection.canEdit()) {
+           protection.remove();
+       }
+   }
 
     // Reset sheet name
     sheet.setName('Sheet');
@@ -808,6 +817,7 @@ function exporter(model, fieldType) {
             // set var for parent - used to designate eg a test case so it can be sent with the test step post
             parentId = 0;
        
+      
 
         // 4. SEND DATA TO SPIRA AND MANAGE RESPONSES
         //loop through objects to send
@@ -839,7 +849,7 @@ function exporter(model, fieldType) {
                 );
               
                 parentId = sentToSpira.parentId;
-                response.details = sentToSpira.output;
+                response.details = sentToSpira;
 
                 // handle success and error cases
                 if (sentToSpira.error) {
@@ -865,54 +875,38 @@ function exporter(model, fieldType) {
         }
 
         // review all activity and set final status
-        log.status = log.errorCount ? 
-            log.errorCount == log.entriesLength ? STATUS_ENUM.allError : STATUS_ENUM.someError
-            : STATUS_ENUM.allSuccess;
-
-        // update the ID field(s) with the returned data or messages from the server
+        log.status = log.errorCount ? (log.errorCount == log.entriesLength ? STATUS_ENUM.allError : STATUS_ENUM.someError) : STATUS_ENUM.allSuccess;
+      
+        // 5. SET MESSAGES AND FORMATTING ON SHEET
         var bgColors = [],
-            outputText = [];
+            notes = [],
+            cellText = [];
+        // first handle cell formatting
         for (var row = 0; row < sheetData.length; row++) {
-            var rowData = [],
-                rowBgColors = [];
+            var rowBgColors = [],
+                rowNotes = [],
+                rowText = [];
             for (var col = 0; col < fields.length; col++) {
-                // first deal with updating values
-                // keep blank cells blank
-                if (sheetData[row][col] == "") {
-                    rowData.push("");
-
-                // don't overwrite existing data
-                } else if (sheetData[row][col] !== "") {
-                    rowData.push(sheetData[row][col]);
-                
-                // handle errors
-                } else if (log.entries[row].error) {
-                    // add the message
-                    if (fields[col].type == fieldType.id) {
-                        rowData.push(log.entries[row].message);
-                    }
-                // handle adding ids into right place
-                } else {
-                    if (!log.entries[row].entry.isSubType && fields[col].type == fieldType.id) {
-                        rowData[col] = log.entries[row].newId;
-                    } else if (log.entries[row].entry.isSubType && fields[col].type == fieldType.subId) {
-                        rowData[col] = log.entries[row].newId;
-                    } else {
-                        rowData.push("");
-                    }
-                }
-
-                // then handle cell formatting
                 if (log.entries[row].error) {
                     // if we have a validation error, we can highlight the relevant cells if the art has no sub type
-                    if (log.entries[row].entry && !log.entries[row].entry.validationMessage) {
-                        if (!artifact.hasSubType && fields[col].required && rowData[col] == "") {
+                    if (!artifact.hasSubType) {
+                        if (fields[col].required && sheetData[row][col] == "") {
                             rowBgColors.push(model.colors.warning);
+                        } else {
+                            // keep original formatting
+                            if (fields[col].type == fieldType.subId || fields[col].type == fieldType.id || fields[col].unsupported) {
+                                rowBgColors.push(model.colors.bgReadOnly);
+                            } else {
+                                rowBgColors.push(null);
+                            }
                         }
+               
                     // otherwise highlight the whole row as we don't know the cause of the problem
                     } else {
                         rowBgColors.push(model.colors.warning);
                     }
+                  
+                // no errors
                 } else {
                     // keep original formatting
                     if (fields[col].type == fieldType.subId || fields[col].type == fieldType.id || fields[col].unsupported) {
@@ -921,12 +915,41 @@ function exporter(model, fieldType) {
                         rowBgColors.push(null);
                     }
                 }
+              
+
+                // handle entries with errors
+                if (log.entries[row].error) {
+                    // add error into notes for the id field
+                    if (fields[col].type == fieldType.id) {
+                        rowNotes.push(log.entries[row].message);
+                    } else {
+                        rowNotes.push(null);
+                    }
+                    // when there is an error we don't change any of the cell data
+                    rowText.push(sheetData[row][col]);
+                    
+                } else {
+                    // first no notes on the row if no errors
+                    rowNotes.push(null);
+                  
+                    // handle successful entries - ie add ids into right place
+                    var newIdToEnter =  log.entries[row].newId || "";
+                    if (!log.entries[row].details.entry.isSubType && fields[col].type == fieldType.id) {
+                        rowText.push(newIdToEnter);
+                    } else if (log.entries[row].details.entry.isSubType && fields[col].type == fieldType.subId) {
+                        rowText.push(newIdToEnter);
+                    } else {
+                        rowText.push(sheetData[row][col]);
+                    }
+                }
             }
-            outputText.push(rowData);
             bgColors.push(rowBgColors);
+            notes.push(rowNotes);
+            cellText.push(rowText);
         }
-        sheetRange.setValues(outputText).setBackgrounds(bgColors);
-        
+        sheetRange.setBackgrounds(bgColors).setNotes(notes).setValues(cellText);
+          
+        //return {log: log, fields: fields, fieldType: fieldType, cellText: cellText, bgColors: bgColors, sheetData: sheetData, notes: notes};
         return log;
 
     }
@@ -990,6 +1013,7 @@ function manageSendingToSpira (entry, parentId, artifact, user, projectId, field
             output.parentId = 0;            
         }            
     }
+    return output;
 }
 
 
@@ -1264,10 +1288,8 @@ function getIdFromName(string, list) {
 // @param: getSubType - optioanl bool to specify to return the subtype Id field, not the normal field (where two exist)
 function getIdFieldName(fields, fieldType, getSubType) {
     for (var i = 0; i < fields.length; i++) {
-        if (getSubType && fields[i].type === fieldType.subId) {
-            return fields[i].field;
-        }
-        if (fields[i].type === fieldType.id) {
+        var fieldToLookup = getSubType ? "subId" : "id";
+        if (fields[i].type == fieldType[fieldToLookup]) {
             return fields[i].field;
         }
     }
