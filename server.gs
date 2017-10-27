@@ -20,7 +20,8 @@ var API_BASE = '/services/v5_0/RestService.svc/projects/',
         allSuccess: 1,
         allError: 2,
         someError: 3
-    }
+    },
+    INLINE_STYLING = "style='font-family: sans-serif'";
 
 /*
  * ======================
@@ -761,9 +762,11 @@ function exporter(model, fieldType) {
         } else {    
             // check for required fields (for normal artifacts and those with sub types - eg test cases and steps)
             var rowChecks = {
-                    hasRequiredFields: rowHasRequiredFields(sheetData[row], fields),
                     hasSubType: artifact.hasSubType,
-                    subTypeHasRequiredFields: !artifact.hasSubType ? true : rowHasRequiredSubTypeFields(sheetData[row], fields),
+                    fieldsRequiredCount: countRequiredFieldsByType(fields, false),
+                    subTypeFieldsRequiredCount: artifact.hasSubType ? countRequiredFieldsByType(fields, true) : 0,
+                    countRequiredFieldsFilled: rowCountRequiredFieldsByType(sheetData[row], fields, false),
+                    countSubTypeRequiredFieldsFilled: artifact.hasSubType ? rowCountRequiredFieldsByType(sheetData[row], fields, true) : 0,
                     subTypeIsBlocked: !artifact.hasSubType ? true : rowBlocksSubType(sheetData[row], fields)
                 },
 
@@ -784,13 +787,11 @@ function exporter(model, fieldType) {
                 if (fieldsToFilter === FIELD_MANAGEMENT_ENUMS.subType) {
                     entry.isSubType = true;
                 }
-
                 // FOR HIERARCHICAL ARTIFACTS update the last indent position before going to the next entry to make sure relative indent is set correctly
                 if (artifactIsHierarchical) {
                     lastIndentPosition = ( entry.indentPosition < 0 ) ? 0 : entry.indentPosition;
                 }
             }
-          
             entriesForExport.push(entry);
         }
     }
@@ -799,12 +800,12 @@ function exporter(model, fieldType) {
     // 3. GET READY TO SEND DATA TO SPIRA
     // Create and show a window to tell the user what is going on
     if (!entriesForExport.length) {
-        var nothingToExportMessage = HtmlService.createHtmlOutput('<p>There are no entries to send to SpiraTeam</p>').setWidth(250).setHeight(75);
-        SpreadsheetApp.getUi().showModalDialog(nothingToExportMessage, 'Check Data Entry');
+        var nothingToExportMessage = HtmlService.createHtmlOutput('<p ' + INLINE_STYLING + '>There are no entries to send to SpiraTeam</p>').setWidth(250).setHeight(75);
+        SpreadsheetApp.getUi().showModalDialog(nothingToExportMessage, 'Check Sheet');
         return "nothing to send";
     } else {
     
-        var exportMessageToUser = HtmlService.createHtmlOutput('<p>Preparing your data for export!</p>').setWidth(250).setHeight(75);
+        var exportMessageToUser = HtmlService.createHtmlOutput('<p ' + INLINE_STYLING + '>Sending to SpiraTeam...</p>').setWidth(150).setHeight(75);
         SpreadsheetApp.getUi().showModalDialog(exportMessageToUser, 'Progress');
     
         // create required variables for managing responses for sending data to spirateam 
@@ -838,15 +839,7 @@ function exporter(model, fieldType) {
 
             // send to Spira and update the response object
             } else {
-                var sentToSpira = manageSendingToSpira (
-                    entriesForExport[i],
-                    parentId, 
-                    artifact, 
-                    model.user, 
-                    model.currentProject.id,
-                    fields,
-                    fieldType
-                );
+                var sentToSpira = manageSendingToSpira ( entriesForExport[i], parentId, artifact, model.user, model.currentProject.id, fields, fieldType );
               
                 parentId = sentToSpira.parentId;
                 response.details = sentToSpira;
@@ -858,7 +851,7 @@ function exporter(model, fieldType) {
                     response.message = sentToSpira.message;
                                 
                     //Sets error HTML modal
-                    htmlOutput = HtmlService.createHtmlOutput('<p>Error for ' + (i + 1) + ' of ' + (entriesForExport.length) + '</p>').setWidth(250).setHeight(75);
+                    htmlOutput = HtmlService.createHtmlOutput('<p ' + INLINE_STYLING + '>Error sending ' + (i + 1) + ' of ' + (entriesForExport.length) + '</p>').setWidth(250).setHeight(75);
                     SpreadsheetApp.getUi().showModalDialog(htmlOutput, 'Progress');
 
                 } else {
@@ -866,7 +859,7 @@ function exporter(model, fieldType) {
                     response.newId = sentToSpira.newId;
 
                     //modal that displays the status of each artifact sent
-                    htmlOutputSuccess = HtmlService.createHtmlOutput('<p>' + (i + 1) + ' of ' + (entriesForExport.length) + ' sent!</p>').setWidth(250).setHeight(75);
+                    htmlOutputSuccess = HtmlService.createHtmlOutput('<p ' + INLINE_STYLING + '>' + (i + 1) + ' of ' + (entriesForExport.length) + ' sent!</p>').setWidth(250).setHeight(75);
                     SpreadsheetApp.getUi().showModalDialog(htmlOutputSuccess, 'Progress');
                 }
             }
@@ -880,13 +873,21 @@ function exporter(model, fieldType) {
         // 5. SET MESSAGES AND FORMATTING ON SHEET
         var bgColors = [],
             notes = [],
-            cellText = [];
+            values = [];
         // first handle cell formatting
         for (var row = 0; row < sheetData.length; row++) {
             var rowBgColors = [],
                 rowNotes = [],
-                rowText = [];
+                rowValues = [];
             for (var col = 0; col < fields.length; col++) {
+                var bgColor = setFeedbackBgColor(sheetData[row][col], log.entries[row].error, fields[col], fieldType, artifact, model.colors );
+                var note = setFeedbackNote(sheetData[row][col], log.entries[row].error, fields[col], fieldType, log.entries[row].message );
+                var value = setFeedbackValue(sheetData[row][col], log.entries[row].error, fields[col], fieldType, log.entries[row].newId || "", log.entries[row].details.entry.isSubType );
+                
+                rowBgColors.push(bgColor);
+                rowNotes.push(note);
+                rowValues.push(value);
+                /*
                 if (log.entries[row].error) {
                     // if we have a validation error, we can highlight the relevant cells if the art has no sub type
                     if (!artifact.hasSubType) {
@@ -914,9 +915,9 @@ function exporter(model, fieldType) {
                     } else {
                         rowBgColors.push(null);
                     }
-                }
+                }*/
               
-
+/*
                 // handle entries with errors
                 if (log.entries[row].error) {
                     // add error into notes for the id field
@@ -945,13 +946,91 @@ function exporter(model, fieldType) {
             }
             bgColors.push(rowBgColors);
             notes.push(rowNotes);
-            cellText.push(rowText);
+            values.push(rowText);*/
         }
-        sheetRange.setBackgrounds(bgColors).setNotes(notes).setValues(cellText);
+        sheetRange.setBackgrounds(bgColors).setNotes(notes).setValues(values);
           
         //return {log: log, fields: fields, fieldType: fieldType, cellText: cellText, bgColors: bgColors, sheetData: sheetData, notes: notes};
         return log;
 
+    }
+}
+
+
+
+// function that reviews a specific cell against it's field and errors for providing UI feedback on errors
+// @param: cell - value contained in specific cell beinq queried
+// @param: error - bool flag as to whether the entire row the cell is in contains an error
+// @param: field - the field specific to the cell
+// @param: fieldType - enum information about field types
+// @param: artifact - the currently selected artifact
+// @param: colors - object of colors to use based on different conditions
+function setFeedbackBgColor (cell, error, field, fieldType, artifact, colors) {
+    if (error) {
+        // if we have a validation error, we can highlight the relevant cells if the art has no sub type
+        if (!artifact.hasSubType) {
+            if (field.required && cell == "") {
+                rowBgColors.push(colors.warning);
+            } else {
+                // keep original formatting
+                if (field.type == fieldType.subId || field.type == fieldType.id || field.unsupported) {
+                    return colors.bgReadOnly;
+                } else {
+                    return null;
+                }
+            }
+   
+        // otherwise highlight the whole row as we don't know the cause of the problem
+        } else {
+            return colors.warning;
+        }
+      
+    // no errors
+    } else {
+        // keep original formatting
+        if (field.type == fieldType.subId || field.type == fieldType.id || field.unsupported) {
+            return colors.bgReadOnly;
+        } else {
+            return null;
+        }
+    }
+}
+
+
+
+// function that reviews a specific cell against it's field and sets any notes required
+// currently only adds error message as note to ID field
+// @param: cell - value contained in specific cell beinq queried
+// @param: error - bool flag as to whether the entire row the cell is in contains an error
+// @param: field - the field specific to the cell
+// @param: fieldType - enum information about field types
+// @param: message - relevant error message from the entry for this row
+function setFeedbackNote (cell, error, field, fieldType, message) {
+    // handle entries with errors - add error notes into ID field
+    if (error && field.type == fieldType.id) {
+        return message;
+    } else {
+        return null;
+    }
+}
+
+
+
+function setFeedbackValue (cell, error, field, fieldType, newId, isSubType) {
+    // when there is an error we don't change any of the cell data
+    if (error) {
+        return cell) 
+    
+        // handle successful entries - ie add ids into right place
+    } else {  
+        var newIdToEnter =  newId || "";
+        if (!isSubType && field.type == fieldType.id) {
+            return newIdToEnter;
+        } else if (isSubType && field.type == fieldType.subId) {
+            return newIdToEnter;
+        } else {
+            return cell;
+        }
     }
 }
 
@@ -1017,37 +1096,43 @@ function manageSendingToSpira (entry, parentId, artifact, user, projectId, field
 }
 
 
+
+// returns an int of the total number of required fields for the passed in artifact
+// @param: fields - the relevant fields for specific artifact, along with all metadata about each
+// @param: forSubType - bool to determine whether to check for sub type required fields (true), or not - defaults to false
+function countRequiredFieldsByType(fields, forSubType) {
+    var count = 0;
+    for (var i = 0; i < fields.length; i++) {
+        if (forSubType != "undefined" && forSubType) {
+            if (fields[i].requiredForSubType) {
+                count++;
+        } else if (fields[i].required) {
+            count++
+        }
+    }
+    return count;
+}
+
+
+
 // check to see if a row of data has entries for all required fields
 // returns true if all required fields have (any) values, otherwise returns false
 // @param: row - a 'row' of data that contains a single object representing all fields
 // @param: fields - the relevant fields for specific artifact, along with all metadata about each
-function rowHasRequiredFields(row, fields) {
-    var result = true;
+function rowCountRequiredFieldsByType(row, fields, forSubType) {
+    var count = 0;
     for (var column = 0; column < row.length; column++) {
-        if (fields[column].required && !row[column]) {
-            result = false;
+        if (forSubType != "undefined" && forSubType) {
+            if (fields[i].requiredForSubType && !row[column]) {
+                count++;
+        } else if (fields[i].required && !row[column]) {
+            count++;
         }
+
     }
-    return result;
+    return count;
 }
 
-
-
-
-
-// check to see if a row of a type with a sub type too (eg test cases with tests) has entries for all sub type required fields
-// returns true if all required subtype fields have (any) values, otherwise returns false
-// @param: row - a 'row' of data that contains a single object representing all fields
-// @param: fields - the relevant fields for specific artifact, along with all metadata about each
-function rowHasRequiredSubTypeFields(row, fields) {
-    var result = true;
-    for (var column = 0; column < row.length; column++) {
-        if (fields[column].requiredForSubType && !row[column]) {
-            result = false;
-        }
-    }
-    return result;
-}
 
 
 // check to see if a row for an artifact with a subtype has a field that can't be present if subtype fields are filled in
@@ -1071,11 +1156,17 @@ function rowBlocksSubType(row, fields) {
 // returns a string - empty if no errors present (to evaluate to false), or an error message object otherwise
 // @ param: rowChecks - object with different properties for different checks required
 function rowHasProblems(rowChecks) {
-    var problems = "";
-    if (!rowChecks.hasSubType && !rowChecks.hasRequiredFields) {
+    var problems = null;
+    if (!rowChecks.hasSubType && rowChecks.countRequiredFieldsFilled < rowChecks.fieldsRequiredCount) {
         problems = "Fill in all required fields";
-    } else if (rowChecks.hasSubType &&  rowChecks.subTypeHasRequiredFields && (rowChecks.hasRequiredFields || rowChecks.subTypeIsBlocked) ) {
-        problems = "It is unclear what artifact this is intended to be";
+    } else if (rowChecks.hasSubType) {
+        if (rowChecks.countSubTypeRequiredFieldsFilled < rowChecks.subTypeFieldsRequiredCount && !rowChecks.countRequiredFieldsFilled) {
+            problems = "Fill in all required fields";
+        } else if (rowChecks.countRequiredFieldsFilled < rowChecks.fieldsRequiredCount && !rowChecks.countSubTypeRequiredFieldsFilled) {
+            problems = "Fill in all required fields";
+        } else if (rowChecks.countRequiredFieldsFilled && (rowChecks.countRequiredFieldsFilled == rowChecks.fieldsRequiredCount || rowChecks.subTypeIsBlocked) {
+            problems = "It is unclear what artifact this is intended to be";
+        }
     }
     return problems;
 }
@@ -1089,9 +1180,9 @@ function rowHasProblems(rowChecks) {
 function relevantFields(rowChecks) {
     var fields = FIELD_MANAGEMENT_ENUMS.all;
     if (rowChecks.hasSubType) {
-        if (rowChecks.hasRequiredFields && !rowChecks.subTypeHasRequiredFields) {
+        if (rowChecks.countRequiredFieldsFilled == rowChecks.fieldsRequiredCount && !rowChecks.countSubTypeRequiredFieldsFilled) {
             fields = FIELD_MANAGEMENT_ENUMS.standard;
-        } else if (rowChecks.subTypeHasRequiredFields && !(rowChecks.hasRequiredFields || rowChecks.subTypeIsBlocked) ) {
+        } else if (rowChecks.countSubTypeRequiredFieldsFilled == rowChecks.subTypeFieldsRequiredCount && !(rowChecks.countRequiredFieldsFilled == rowChecks.fieldsRequiredCount || rowChecks.subTypeIsBlocked) ) {
             fields = FIELD_MANAGEMENT_ENUMS.subType;
         }
     }
