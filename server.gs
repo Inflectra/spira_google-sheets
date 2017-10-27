@@ -567,7 +567,7 @@ function contentValidationSetter (sheet, model, fieldType) {
             // USER fields are dropdowns with the values coming from a project wide set list
             case fieldType.user:
                 for (var j = 0; j < model.projectUsers.length; j++) {
-                    list.push(model.projectUsers[i].name);
+                    list.push(model.projectUsers[j].name);
                 }
                 setDropdownValidation(sheet, columnNumber, nonHeaderRows, list, false);
                 break;
@@ -575,7 +575,7 @@ function contentValidationSetter (sheet, model, fieldType) {
             // COMPONENT fields are dropdowns with the values coming from a project wide set list
             case fieldType.component:
                 for (var k = 0; k < model.projectComponents.length; k++) {
-                    list.push(model.projectComponents[i].name);
+                    list.push(model.projectComponents[k].name);
                 }
                 setDropdownValidation(sheet, columnNumber, nonHeaderRows, list, false);
                 break;
@@ -583,7 +583,7 @@ function contentValidationSetter (sheet, model, fieldType) {
             // RELEASE fields are dropdowns with the values coming from a project wide set list
             case fieldType.release:
                 for (var l = 0; l < model.projectReleases.length; l++) {
-                    list.push(model.projectReleases[i].name);
+                    list.push(model.projectReleases[l].name);
                 }
                 setDropdownValidation(sheet, columnNumber, nonHeaderRows, list, false);
                 break;
@@ -796,7 +796,7 @@ function exporter(model, fieldType) {
         return "nothing to send";
     } else {
 
-        var exportMessageToUser = HtmlService.createHtmlOutput('<p ' + INLINE_STYLING + '>Sending to SpiraTeam...</p>').setWidth(150).setHeight(75);
+        var exportMessageToUser = HtmlService.createHtmlOutput('<p ' + INLINE_STYLING + '>Preparing to send...</p>').setWidth(200).setHeight(75);
         SpreadsheetApp.getUi().showModalDialog(exportMessageToUser, 'Progress');
 
         // create required variables for managing responses for sending data to spirateam
@@ -812,7 +812,7 @@ function exporter(model, fieldType) {
 
 
         // 4. SEND DATA TO SPIRA AND MANAGE RESPONSES
-        //loop through objects to send
+        // loop through objects to send
         for (var i = 0; i < entriesForExport.length; i++) {
           var response = {};
 
@@ -842,7 +842,7 @@ function exporter(model, fieldType) {
                     response.message = sentToSpira.message;
 
                     //Sets error HTML modal
-                    htmlOutput = HtmlService.createHtmlOutput('<p ' + INLINE_STYLING + '>Error sending ' + (i + 1) + ' of ' + (entriesForExport.length) + '</p>').setWidth(250).setHeight(75);
+                    htmlOutput = HtmlService.createHtmlOutput('<p ' + INLINE_STYLING + '>Error sending ' + (i + 1) + ' of ' + (entriesForExport.length) + '</p>').setWidth(200).setHeight(75);
                     SpreadsheetApp.getUi().showModalDialog(htmlOutput, 'Progress');
 
                 } else {
@@ -850,7 +850,7 @@ function exporter(model, fieldType) {
                     response.newId = sentToSpira.newId;
 
                     //modal that displays the status of each artifact sent
-                    htmlOutputSuccess = HtmlService.createHtmlOutput('<p ' + INLINE_STYLING + '>' + (i + 1) + ' of ' + (entriesForExport.length) + ' sent!</p>').setWidth(250).setHeight(75);
+                    htmlOutputSuccess = HtmlService.createHtmlOutput('<p ' + INLINE_STYLING + '>Sending ' + (i + 1) + ' of ' + (entriesForExport.length) + '...</p>').setWidth(200).setHeight(75);
                     SpreadsheetApp.getUi().showModalDialog(htmlOutputSuccess, 'Progress');
                 }
             }
@@ -860,7 +860,7 @@ function exporter(model, fieldType) {
 
         // review all activity and set final status
         log.status = log.errorCount ? (log.errorCount == log.entriesLength ? STATUS_ENUM.allError : STATUS_ENUM.someError) : STATUS_ENUM.allSuccess;
-
+      //return {log: log, rowChecks: rowChecks};
         // 5. SET MESSAGES AND FORMATTING ON SHEET
         var bgColors = [],
             notes = [],
@@ -871,9 +871,10 @@ function exporter(model, fieldType) {
                 rowNotes = [],
                 rowValues = [];
             for (var col = 0; col < fields.length; col++) {
+                var isSubType = (log.entries[row].details &&  log.entries[row].details.entry && log.entries[row].details.entry.isSubType) ? log.entries[row].details.entry.isSubType : false;
                 var bgColor = setFeedbackBgColor(sheetData[row][col], log.entries[row].error, fields[col], fieldType, artifact, model.colors ),
                     note = setFeedbackNote(sheetData[row][col], log.entries[row].error, fields[col], fieldType, log.entries[row].message ),
-                    value = setFeedbackValue(sheetData[row][col], log.entries[row].error, fields[col], fieldType, log.entries[row].newId || "", log.entries[row].details.entry.isSubType );
+                    value = setFeedbackValue(sheetData[row][col], log.entries[row].error, fields[col], fieldType, log.entries[row].newId || "", isSubType );
 
                 rowBgColors.push(bgColor);
                 rowNotes.push(note);
@@ -951,6 +952,13 @@ function setFeedbackNote (cell, error, field, fieldType, message) {
 
 
 
+// function that updates id fields with new values, otherwise returns existing value
+// @param: cell - value contained in specific cell beinq queried
+// @param: error - bool flag as to whether the entire row the cell is in contains an error
+// @param: field - the field specific to the cell
+// @param: fieldType - enum information about field types
+// @param: newId - int that is the newly created Id for this row
+// @param: isSubType - bool if row is subtype or not - false on error as there will be no id to add anyway
 function setFeedbackValue (cell, error, field, fieldType, newId, isSubType) {
     // when there is an error we don't change any of the cell data
     if (error) {
@@ -1061,10 +1069,10 @@ function rowCountRequiredFieldsByType (row, fields, forSubType) {
     var count = 0;
     for (var i = 0; i < row.length; i++) {
         if (forSubType != "undefined" && forSubType) {
-            if (fields[i].requiredForSubType && !row[i]) {
+            if (fields[i].requiredForSubType && row[i]) {
                 count++;
             }
-        } else if (fields[i].required && !row[i]) {
+        } else if (fields[i].required && row[i]) {
             count++;
         }
 
