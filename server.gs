@@ -10,12 +10,12 @@ var API_BASE = '/services/v5_0/RestService.svc/projects/',
         tasks: 6,
         testSteps: 7,
         testSets: 8
-    };
+    },
     FIELD_MANAGEMENT_ENUMS = {
         all: 1,
         standard: 2,
         subType: 3
-    };
+    },
     STATUS_ENUM = {
         allSuccess: 1,
         allError: 2,
@@ -27,9 +27,9 @@ var API_BASE = '/services/v5_0/RestService.svc/projects/',
  * ======================
  * INITIAL LOAD FUNCTIONS
  * ======================
- * 
- * These functions are needed for initialization  
- * All Google App Script (GAS) files are bundled by the engine 
+ *
+ * These functions are needed for initialization
+ * All Google App Script (GAS) files are bundled by the engine
  * at start up so any non-scoped variables declared will be available globally.
  *
  */
@@ -57,7 +57,7 @@ function showSidebar() {
     .evaluate()
     .setSandboxMode(HtmlService.SandboxMode.IFRAME)
     .setTitle('SpiraTeam by Inflectra');
-  
+
   SpreadsheetApp.getUi().showSidebar(ui);
 }
 
@@ -81,7 +81,7 @@ function include(filename) {
  * ========================
  * TEMPLATE PANEL FUNCTIONS
  * ========================
- * 
+ *
  */
 
 // copy the first sheet into a new sheet in the same spreadsheet
@@ -104,11 +104,11 @@ function save() {
 
         // copy sheet to current spreadsheet in new sheet
         sheet.copyTo(destination);
-      
+
         // returns true to queue success popup
         return true;
     } else {
-        // returns false to ignore success popup     
+        // returns false to ignore success popup
         return false;
     }
 }
@@ -127,9 +127,9 @@ function clearAll() {
     sheet.clear(); //.showColumns(1,  lastColumn)
 
     // clears data validations and notes from the entire sheet
-    var range = sheet.getRange(1,1, lastRow, lastColumn);
-    range.clearDataValidations().clearNote()
-    
+    var range = sheet.getRange(1, 1, lastRow, lastColumn);
+    range.clearDataValidations().clearNote();
+
     // remove any protections on the sheet
     var protections = spreadSheet.getProtections(SpreadsheetApp.ProtectionType.RANGE);
     for (var i = 0; i < protections.length; i++) {
@@ -156,15 +156,15 @@ function clearAll() {
  * ====================
  * DATA "GET" FUNCTIONS
  * ====================
- * 
+ *
  * functions used to retrieve data from Spira - things like projects and users, not specific records
- * 
+ *
  */
 
 // General fetch function, using Google's built in fetch api
 // @param: currentUser - user object storing login data from client
 // @param: fetcherUrl - url string passed in to connect with Spira
-function fetcher(currentUser, fetcherURL) { 
+function fetcher(currentUser, fetcherURL) {
     //google base 64 encoded string utils
     var decoded = Utilities.base64Decode(currentUser.api_key);
     var APIKEY = Utilities.newBlob(decoded).getDataAsString();
@@ -173,10 +173,10 @@ function fetcher(currentUser, fetcherURL) {
     var fullUrl = currentUser.url + fetcherURL + "username=" + currentUser.userName + APIKEY;
     //set MIME type
     var params = { 'content-type': 'application/json' };
-    
+
     //call Google fetch function
     var response = UrlFetchApp.fetch(fullUrl, params);
-    
+
     //returns parsed JSON
     //unparsed response contains error codes if needed
     return JSON.parse(response);
@@ -246,9 +246,9 @@ function getUsers(currentUser, projectId) {
  * =======================
  * CREATE "POST" FUNCTIONS
  * =======================
- * 
+ *
  * functions to create new records in Spira - eg add new requirements
- * 
+ *
  */
 
 // General fetch function, using Google's built in fetch api
@@ -273,7 +273,7 @@ function poster(body, currentUser, postUrl) {
 
     //call Google fetch function
     var response = UrlFetchApp.fetch(fullUrl, params);
-    
+
     //returns parsed JSON
     //unparsed response contains error codes if needed
     return response;
@@ -282,7 +282,7 @@ function poster(body, currentUser, postUrl) {
 
 
 
-// effectively a switch to manage which artifact we have and therefore which API call to use with what data 
+// effectively a switch to manage which artifact we have and therefore which API call to use with what data
 // returns the response from the specific post service to Spira
 // @param: entry - object of single specific entry to send to Spira
 // @param: user - user object
@@ -290,51 +290,52 @@ function poster(body, currentUser, postUrl) {
 // @param: artifactId - int of the current artifact
 // @param: parentId - optional int of the relevant parent to attach the artifact too
 function postArtifactToSpira(entry, user, projectId, artifactId, parentId) {
-    
+
     //stringify
     var JSON_body = JSON.stringify(entry),
-        response = "";
-    
+        response = "",
+        postUrl = "";
+
     //send JSON object of new item to artifact specific export function
     switch (artifactId) {
 
         // REQUIREMENTS
         case ART_ENUMS.requirements:
-            var postUrl = API_BASE + projectId + '/requirements/indent/' + entry.indentPosition + '?';
+            postUrl = API_BASE + projectId + '/requirements/indent/' + entry.indentPosition + '?';
             response = poster(JSON_body, user, postUrl);
             break;
 
         // TEST CASES
         case ART_ENUMS.testCases:
-            var postUrl = API_BASE + projectId + '/test-cases?';
+            postUrl = API_BASE + projectId + '/test-cases?';
             response = poster(JSON_body, user, postUrl);
             break;
 
         // INCIDENTS
         case ART_ENUMS.incidents:
-            var postUrl = API_BASE + projectId + '/incidents?';
+            postUrl = API_BASE + projectId + '/incidents?';
             response = poster(JSON_body, user, postUrl);
             break;
 
         // RELEASES
         case ART_ENUMS.releases:
-            var postUrl = API_BASE + projectId + '/releases?';
+            postUrl = API_BASE + projectId + '/releases?';
             response = poster(JSON_body, user, postUrl);
             break;
 
         // TASKS
         case ART_ENUMS.tasks:
-            var postUrl = API_BASE + projectId + '/tasks?';
+            postUrl = API_BASE + projectId + '/tasks?';
             response = poster(JSON_body, user, postUrl);
             break;
 
         // TEST STEPS
         case ART_ENUMS.testSteps:
-            var postUrl = API_BASE + projectId + '/test-cases/' + parentId + '/test-steps?';
+            postUrl = API_BASE + projectId + '/test-cases/' + parentId + '/test-steps?';
             response = poster(JSON_body, user, postUrl);
             break;
     }
-    
+
     return response;
 }
 
@@ -351,7 +352,7 @@ function postArtifactToSpira(entry, user, projectId, artifactId, parentId) {
  * ==============
  * ERROR MESSAGES
  * ==============
- * 
+ *
  */
 
 // Error notification function
@@ -399,11 +400,11 @@ function warn(string) {
 // @param: message - string sent from the export function
 function exportSuccess(message) {
     if (message ==  STATUS_ENUM.allSuccess) {
-        okWarn("All complete and successfully created in SpiraTeam! To send more data over, clear the sheet first.");
+        okWarn("All done! To send more data over, clear the sheet first.");
     } else if (message == STATUS_ENUM.someError) {
-        okWarn("All complete, but unfortunately there were some problems. Check the ID field for explanations.");
+        okWarn("Sorry, but there were some problems. Check the notes on the relevant ID field for explanations.");
     } else if (message == STATUS_ENUM.alLError){
-        okWarn("We're really sorry, but we couldn't send anything to SpiraTeam - please check the ID field on the sheet for more information.");
+        okWarn("We're really sorry, but we couldn't send anything to SpiraTeam - please check notes on the ID fields  for more information.");
     }
 }
 
@@ -434,8 +435,8 @@ function okWarn(dialog) {
  * =================
  * TEMPLATE CREATION
  * =================
- * 
- * This function creates a template based on the model template data 
+ *
+ * This function creates a template based on the model template data
  * TODO: currently only creates requirements/task template in non generic way
  * Takes the entire data model as an argument
  *
@@ -453,10 +454,10 @@ function templateLoader(model, fieldType) {
     var spreadSheet = SpreadsheetApp.getActiveSpreadsheet(),
         sheet = spreadSheet.getSheets()[0],
         fields = model.fields;
-    
+
     // set sheet (tab) name to model name
     sheet.setName(model.currentProject.name + ' - ' + model.currentArtifact.name);
-    
+
     // heading row - sets names and formatting
     headerSetter(sheet, fields, model.colors);
 
@@ -466,12 +467,6 @@ function templateLoader(model, fieldType) {
     // set any extra formatting options
     contentFormattingSetter(sheet, model);
 
-    /*
-    //loop through model size data and set columns to correct width
-    for (var i = 0; i < artifactData.sizes.length; i++) {
-        sheet.setColumnWidth(artifactData.sizes[i][0], artifactData.sizes[i][1]);
-    }
-    */
 }
 
 
@@ -482,7 +477,7 @@ function templateLoader(model, fieldType) {
 // @param: fields - full field data
 // @param: colors - global colors used for formatting
 function headerSetter (sheet, fields, colors) {
-    
+
     var headerNames = [],
         backgrounds = [],
         fontColors = [],
@@ -491,7 +486,7 @@ function headerSetter (sheet, fields, colors) {
 
     for (var i = 0; i < fieldsLength; i++) {
         headerNames.push(fields[i].name);
-        
+
         // set field text depending on whether is required or not
         var fontColor = (fields[i].required || fields[i].requiredForSubType) ? colors.headerRequired : colors.header;
         var fontWeight = fields[i].required ? 'bold' : 'normal';
@@ -523,24 +518,25 @@ function headerSetter (sheet, fields, colors) {
 function contentValidationSetter (sheet, model, fieldType) {
     var nonHeaderRows = sheet.getMaxRows() - 1;
     for (var index = 0; index < model.fields.length; index++) {
-        var columnNumber = index + 1;
-        
+        var columnNumber = index + 1,
+            list = [];
+
         switch (model.fields[index].type) {
-            
+
             // ID fields: restricted to numbers and protected
             case fieldType.id:
             case fieldType.subId:
                 setNumberValidation(sheet, columnNumber, nonHeaderRows, false);
                 protectColumn(
-                    sheet, 
-                    columnNumber, 
-                    nonHeaderRows, 
-                    model.colors.bgReadOnly, 
+                    sheet,
+                    columnNumber,
+                    nonHeaderRows,
+                    model.colors.bgReadOnly,
                     "ID field",
                     false
                     );
                 break;
-            
+
             // INT and NUM fields are both treated by Sheets as numbers
             case fieldType.int:
             case fieldType.num:
@@ -550,7 +546,7 @@ function contentValidationSetter (sheet, model, fieldType) {
             // BOOL as Sheets has no bool validation, a yes/no dropdown is used
             case fieldType.bool:
                 // 'True' and 'False' don't work as dropdown choices
-                var list = ["Yes", "No"];
+                list.push("Yes", "No");
                 setDropdownValidation(sheet, columnNumber, nonHeaderRows, list, false);
                 break;
 
@@ -561,7 +557,6 @@ function contentValidationSetter (sheet, model, fieldType) {
             // DROPDOWNS and MULTIDROPDOWNS are both treated as simple dropdowns (Sheets does not have multi selects)
             case fieldType.drop:
             case fieldType.multi:
-                var list = [];
                 var fieldList = model.fields[index].values;
                 for (var i = 0; i < fieldList.length; i++) {
                     list.push(fieldList[i].name);
@@ -571,8 +566,7 @@ function contentValidationSetter (sheet, model, fieldType) {
 
             // USER fields are dropdowns with the values coming from a project wide set list
             case fieldType.user:
-                var list = [];
-                for (var i = 0; i < model.projectUsers.length; i++) {
+                for (var j = 0; j < model.projectUsers.length; j++) {
                     list.push(model.projectUsers[i].name);
                 }
                 setDropdownValidation(sheet, columnNumber, nonHeaderRows, list, false);
@@ -580,22 +574,20 @@ function contentValidationSetter (sheet, model, fieldType) {
 
             // COMPONENT fields are dropdowns with the values coming from a project wide set list
             case fieldType.component:
-                var list = [];
-                for (var i = 0; i < model.projectComponents.length; i++) {
+                for (var k = 0; k < model.projectComponents.length; k++) {
                     list.push(model.projectComponents[i].name);
                 }
                 setDropdownValidation(sheet, columnNumber, nonHeaderRows, list, false);
                 break;
-              
+
             // RELEASE fields are dropdowns with the values coming from a project wide set list
             case fieldType.release:
-                var list = [];
-                for (var i = 0; i < model.projectReleases.length; i++) {
+                for (var l = 0; l < model.projectReleases.length; l++) {
                     list.push(model.projectReleases[i].name);
                 }
                 setDropdownValidation(sheet, columnNumber, nonHeaderRows, list, false);
                 break;
-            
+
             // All other types
             default:
                 //do nothing
@@ -673,14 +665,14 @@ function setNumberValidation (sheet, columnNumber, rowLength, allowInvalid) {
 function contentFormattingSetter (sheet, model) {
     for (var i = 0; i < model.fields.length; i++) {
         var columnNumber = i + 1;
-        
+
         // hide unsupported fields
         if (model.fields[i].unsupported) {
             protectColumn(
-              sheet, 
-              columnNumber, 
-              (sheet.getMaxRows() - 1), 
-              model.colors.bgReadOnly, 
+              sheet,
+              columnNumber,
+              (sheet.getMaxRows() - 1),
+              model.colors.bgReadOnly,
               model.fields[i].name + "unsupported",
               true
               );
@@ -708,7 +700,7 @@ function protectColumn (sheet, columnNumber, rowLength, bgColor, name, hide) {
   if(hide) {
     sheet.hideColumns(columnNumber);
   }
-    
+
 }
 
 
@@ -723,9 +715,9 @@ function protectColumn (sheet, columnNumber, rowLength, bgColor, name, hide) {
  * ================
  * SENDING TO SPIRA
  * ================
- * 
- * The main function takes the entire data model and the artifact type 
- * and calls the child function to set various object values before 
+ *
+ * The main function takes the entire data model and the artifact type
+ * and calls the child function to set various object values before
  * sending the finished objects to SpiraTeam
  *
  */
@@ -736,7 +728,6 @@ function protectColumn (sheet, columnNumber, rowLength, bgColor, name, hide) {
 function exporter(model, fieldType) {
     // 1. SETUP FUNCTION LEVEL VARS
     // get the active spreadsheet and first sheet
-    // TODO rework this to be the active sheet - not the first one
     var spreadSheet = SpreadsheetApp.getActiveSpreadsheet(),
         sheet = spreadSheet.getSheets()[0],
         fields = model.fields,
@@ -745,43 +736,43 @@ function exporter(model, fieldType) {
         artifactHasFolders = artifact.hasFolders,
         lastRow = sheet.getLastRow() - 1 || 10, // hack to make sure we pass in some rows to the sheetRange, otherwise it causes an error
 
-        sheetRange = sheet.getRange(2,1, lastRow, fields.length), 
+        sheetRange = sheet.getRange(2,1, lastRow, fields.length),
         sheetData = sheetRange.getValues(),
         entriesForExport = [],
         lastIndentPosition = null;
 
-  
-  
+
+
     // 2. CREATE ARRAY OF ENTRIES
     // loop to create artifact objects from each row taken from the spreadsheet
-    for (var row = 0; row < sheetData.length; row++) {
-        
+    for (var rowToPrep = 0; rowToPrep < sheetData.length; rowToPrep++) {
+
         // stop at the first row that is fully blank
-        if (sheetData[row].join("") == "") {
+        if (sheetData[rowToPrep].join("") === "") {
             break;
-        } else {    
+        } else {
             // check for required fields (for normal artifacts and those with sub types - eg test cases and steps)
             var rowChecks = {
                     hasSubType: artifact.hasSubType,
-                    fieldsRequiredCount: countRequiredFieldsByType(fields, false),
-                    subTypeFieldsRequiredCount: artifact.hasSubType ? countRequiredFieldsByType(fields, true) : 0,
-                    countRequiredFieldsFilled: rowCountRequiredFieldsByType(sheetData[row], fields, false),
-                    countSubTypeRequiredFieldsFilled: artifact.hasSubType ? rowCountRequiredFieldsByType(sheetData[row], fields, true) : 0,
-                    subTypeIsBlocked: !artifact.hasSubType ? true : rowBlocksSubType(sheetData[row], fields)
+                    totalFieldsRequired: countRequiredFieldsByType(fields, false),
+                    totalSubTypeFieldsRequired: artifact.hasSubType ? countRequiredFieldsByType(fields, true) : 0,
+                    countRequiredFields: rowCountRequiredFieldsByType(sheetData[rowToPrep], fields, false),
+                    countSubTypeRequiredFields: artifact.hasSubType ? rowCountRequiredFieldsByType(sheetData[rowToPrep], fields, true) : 0,
+                    subTypeIsBlocked: !artifact.hasSubType ? true : rowBlocksSubType(sheetData[rowToPrep], fields)
                 },
 
                 // create entry used to populate all relevant data for this row
                 entry = {};
-            
+
             // first check for errors
             var hasProblems = rowHasProblems(rowChecks);
             if (hasProblems) {
                 entry.validationMessage = hasProblems;
-            
+
             // if error free determine what field filtering is required - needed to choose type/subtype fields if subtype is present
             } else {
                 var fieldsToFilter = relevantFields(rowChecks);
-                entry = createEntryFromRow( sheetData[row], model, fieldType, artifactIsHierarchical, lastIndentPosition, fieldsToFilter );
+                entry = createEntryFromRow( sheetData[rowToPrep], model, fieldType, artifactIsHierarchical, lastIndentPosition, fieldsToFilter );
 
                 // FOR SUBTYPE ENTRIES add flag on entry if it is a subtype
                 if (fieldsToFilter === FIELD_MANAGEMENT_ENUMS.subType) {
@@ -795,8 +786,8 @@ function exporter(model, fieldType) {
             entriesForExport.push(entry);
         }
     }
-  
-  
+
+
     // 3. GET READY TO SEND DATA TO SPIRA
     // Create and show a window to tell the user what is going on
     if (!entriesForExport.length) {
@@ -804,11 +795,11 @@ function exporter(model, fieldType) {
         SpreadsheetApp.getUi().showModalDialog(nothingToExportMessage, 'Check Sheet');
         return "nothing to send";
     } else {
-    
+
         var exportMessageToUser = HtmlService.createHtmlOutput('<p ' + INLINE_STYLING + '>Sending to SpiraTeam...</p>').setWidth(150).setHeight(75);
         SpreadsheetApp.getUi().showModalDialog(exportMessageToUser, 'Progress');
-    
-        // create required variables for managing responses for sending data to spirateam 
+
+        // create required variables for managing responses for sending data to spirateam
         var log = {
                 errorCount: 0,
                 successCount: 0,
@@ -817,8 +808,8 @@ function exporter(model, fieldType) {
             },
             // set var for parent - used to designate eg a test case so it can be sent with the test step post
             parentId = 0;
-       
-      
+
+
 
         // 4. SEND DATA TO SPIRA AND MANAGE RESPONSES
         //loop through objects to send
@@ -840,7 +831,7 @@ function exporter(model, fieldType) {
             // send to Spira and update the response object
             } else {
                 var sentToSpira = manageSendingToSpira ( entriesForExport[i], parentId, artifact, model.user, model.currentProject.id, fields, fieldType );
-              
+
                 parentId = sentToSpira.parentId;
                 response.details = sentToSpira;
 
@@ -849,7 +840,7 @@ function exporter(model, fieldType) {
                     log.errorCount++;
                     response.error = true;
                     response.message = sentToSpira.message;
-                                
+
                     //Sets error HTML modal
                     htmlOutput = HtmlService.createHtmlOutput('<p ' + INLINE_STYLING + '>Error sending ' + (i + 1) + ' of ' + (entriesForExport.length) + '</p>').setWidth(250).setHeight(75);
                     SpreadsheetApp.getUi().showModalDialog(htmlOutput, 'Progress');
@@ -863,13 +854,13 @@ function exporter(model, fieldType) {
                     SpreadsheetApp.getUi().showModalDialog(htmlOutputSuccess, 'Progress');
                 }
             }
-                
+
             log.entries.push(response);
         }
 
         // review all activity and set final status
         log.status = log.errorCount ? (log.errorCount == log.entriesLength ? STATUS_ENUM.allError : STATUS_ENUM.someError) : STATUS_ENUM.allSuccess;
-      
+
         // 5. SET MESSAGES AND FORMATTING ON SHEET
         var bgColors = [],
             notes = [],
@@ -880,76 +871,20 @@ function exporter(model, fieldType) {
                 rowNotes = [],
                 rowValues = [];
             for (var col = 0; col < fields.length; col++) {
-                var bgColor = setFeedbackBgColor(sheetData[row][col], log.entries[row].error, fields[col], fieldType, artifact, model.colors );
-                var note = setFeedbackNote(sheetData[row][col], log.entries[row].error, fields[col], fieldType, log.entries[row].message );
-                var value = setFeedbackValue(sheetData[row][col], log.entries[row].error, fields[col], fieldType, log.entries[row].newId || "", log.entries[row].details.entry.isSubType );
-                
+                var bgColor = setFeedbackBgColor(sheetData[row][col], log.entries[row].error, fields[col], fieldType, artifact, model.colors ),
+                    note = setFeedbackNote(sheetData[row][col], log.entries[row].error, fields[col], fieldType, log.entries[row].message ),
+                    value = setFeedbackValue(sheetData[row][col], log.entries[row].error, fields[col], fieldType, log.entries[row].newId || "", log.entries[row].details.entry.isSubType );
+
                 rowBgColors.push(bgColor);
                 rowNotes.push(note);
                 rowValues.push(value);
-                /*
-                if (log.entries[row].error) {
-                    // if we have a validation error, we can highlight the relevant cells if the art has no sub type
-                    if (!artifact.hasSubType) {
-                        if (fields[col].required && sheetData[row][col] == "") {
-                            rowBgColors.push(model.colors.warning);
-                        } else {
-                            // keep original formatting
-                            if (fields[col].type == fieldType.subId || fields[col].type == fieldType.id || fields[col].unsupported) {
-                                rowBgColors.push(model.colors.bgReadOnly);
-                            } else {
-                                rowBgColors.push(null);
-                            }
-                        }
-               
-                    // otherwise highlight the whole row as we don't know the cause of the problem
-                    } else {
-                        rowBgColors.push(model.colors.warning);
-                    }
-                  
-                // no errors
-                } else {
-                    // keep original formatting
-                    if (fields[col].type == fieldType.subId || fields[col].type == fieldType.id || fields[col].unsupported) {
-                        rowBgColors.push(model.colors.bgReadOnly);
-                    } else {
-                        rowBgColors.push(null);
-                    }
-                }*/
-              
-/*
-                // handle entries with errors
-                if (log.entries[row].error) {
-                    // add error into notes for the id field
-                    if (fields[col].type == fieldType.id) {
-                        rowNotes.push(log.entries[row].message);
-                    } else {
-                        rowNotes.push(null);
-                    }
-                    // when there is an error we don't change any of the cell data
-                    rowText.push(sheetData[row][col]);
-                    
-                } else {
-                    // first no notes on the row if no errors
-                    rowNotes.push(null);
-                  
-                    // handle successful entries - ie add ids into right place
-                    var newIdToEnter =  log.entries[row].newId || "";
-                    if (!log.entries[row].details.entry.isSubType && fields[col].type == fieldType.id) {
-                        rowText.push(newIdToEnter);
-                    } else if (log.entries[row].details.entry.isSubType && fields[col].type == fieldType.subId) {
-                        rowText.push(newIdToEnter);
-                    } else {
-                        rowText.push(sheetData[row][col]);
-                    }
-                }
             }
             bgColors.push(rowBgColors);
             notes.push(rowNotes);
-            values.push(rowText);*/
+            values.push(rowValues);
         }
         sheetRange.setBackgrounds(bgColors).setNotes(notes).setValues(values);
-          
+
         //return {log: log, fields: fields, fieldType: fieldType, cellText: cellText, bgColors: bgColors, sheetData: sheetData, notes: notes};
         return log;
 
@@ -969,8 +904,8 @@ function setFeedbackBgColor (cell, error, field, fieldType, artifact, colors) {
     if (error) {
         // if we have a validation error, we can highlight the relevant cells if the art has no sub type
         if (!artifact.hasSubType) {
-            if (field.required && cell == "") {
-                rowBgColors.push(colors.warning);
+            if (field.required && cell === "") {
+                return colors.warning;
             } else {
                 // keep original formatting
                 if (field.type == fieldType.subId || field.type == fieldType.id || field.unsupported) {
@@ -979,12 +914,12 @@ function setFeedbackBgColor (cell, error, field, fieldType, artifact, colors) {
                     return null;
                 }
             }
-   
+
         // otherwise highlight the whole row as we don't know the cause of the problem
         } else {
             return colors.warning;
         }
-      
+
     // no errors
     } else {
         // keep original formatting
@@ -1019,10 +954,10 @@ function setFeedbackNote (cell, error, field, fieldType, message) {
 function setFeedbackValue (cell, error, field, fieldType, newId, isSubType) {
     // when there is an error we don't change any of the cell data
     if (error) {
-        return cell) 
-    
+        return cell;
+
         // handle successful entries - ie add ids into right place
-    } else {  
+    } else {
         var newIdToEnter =  newId || "";
         if (!isSubType && field.type == fieldType.id) {
             return newIdToEnter;
@@ -1042,20 +977,22 @@ function setFeedbackValue (cell, error, field, fieldType, newId, isSubType) {
 // @param: artifact - object of the artifact being used here to help manage what specific API call to use
 // @param: user - user object for API call authentication
 // @param: projectId - int of project id for API call
-// @param: fields - object of the relevant fields for specific artifact, along with all metadata about each 
+// @param: fields - object of the relevant fields for specific artifact, along with all metadata about each
 // @param: fieldType - object of all field types with enums
 function manageSendingToSpira (entry, parentId, artifact, user, projectId, fields, fieldType) {
-    var data, 
-        output = {};
-        output.parentId = parentId; // set output parent id here so we know this function will always return a value for this
-
-    // make sure correct artifact ID is sent to handler (ie type vs subtype)
-    var artifactIdToSend = entry.isSubType ? artifact.subTypeId : artifact.id,
+    var data,
+        output = {},
+        // make sure correct artifact ID is sent to handler (ie type vs subtype)
+        artifactIdToSend = entry.isSubType ? artifact.subTypeId : artifact.id,
         // only send a parentId value when dealing with subtypes
-        parentIdToSend = entry.isSubType ? parentId : null,
-        // send object to relevant artifact post service
-        data = postArtifactToSpira ( entry, user, projectId, artifactIdToSend, parentIdToSend );
+        parentIdToSend = entry.isSubType ? parentId : null;
+
+    // set output parent id here so we know this function will always return a value for this
+    output.parentId = parentId; 
     
+    // send object to relevant artifact post service
+    data = postArtifactToSpira ( entry, user, projectId, artifactIdToSend, parentIdToSend );
+
     // save data for logging to client
     output.entry = entry;
     output.httpCode = data.getResponseCode();
@@ -1067,7 +1004,7 @@ function manageSendingToSpira (entry, parentId, artifact, user, projectId, field
     // parse the data if we have a success
     if (output.httpCode == 200) {
         output.fromSpira = JSON.parse(data.getContentText());
-        
+
         // get the id/subType id of the newly created artifact
         var artifactIdField = getIdFieldName(fields, fieldType, entry.isSubType);
         output.newId = output.fromSpira[artifactIdField];
@@ -1086,11 +1023,11 @@ function manageSendingToSpira (entry, parentId, artifact, user, projectId, field
         } else {
             output.errorMessage = "send attempt failed";
         }
-        
-        // reset the parentId if we are not on a subType - to make sure subTypes are not added to the wrong parent            
-        if (artifact.hasSubType && !entry.isSubType) {            
-            output.parentId = 0;            
-        }            
+
+        // reset the parentId if we are not on a subType - to make sure subTypes are not added to the wrong parent
+        if (artifact.hasSubType && !entry.isSubType) {
+            output.parentId = 0;
+        }
     }
     return output;
 }
@@ -1100,14 +1037,15 @@ function manageSendingToSpira (entry, parentId, artifact, user, projectId, field
 // returns an int of the total number of required fields for the passed in artifact
 // @param: fields - the relevant fields for specific artifact, along with all metadata about each
 // @param: forSubType - bool to determine whether to check for sub type required fields (true), or not - defaults to false
-function countRequiredFieldsByType(fields, forSubType) {
+function countRequiredFieldsByType (fields, forSubType) {
     var count = 0;
     for (var i = 0; i < fields.length; i++) {
         if (forSubType != "undefined" && forSubType) {
             if (fields[i].requiredForSubType) {
                 count++;
+            }
         } else if (fields[i].required) {
-            count++
+            count++;
         }
     }
     return count;
@@ -1119,13 +1057,14 @@ function countRequiredFieldsByType(fields, forSubType) {
 // returns true if all required fields have (any) values, otherwise returns false
 // @param: row - a 'row' of data that contains a single object representing all fields
 // @param: fields - the relevant fields for specific artifact, along with all metadata about each
-function rowCountRequiredFieldsByType(row, fields, forSubType) {
+function rowCountRequiredFieldsByType (row, fields, forSubType) {
     var count = 0;
-    for (var column = 0; column < row.length; column++) {
+    for (var i = 0; i < row.length; i++) {
         if (forSubType != "undefined" && forSubType) {
-            if (fields[i].requiredForSubType && !row[column]) {
+            if (fields[i].requiredForSubType && !row[i]) {
                 count++;
-        } else if (fields[i].required && !row[column]) {
+            }
+        } else if (fields[i].required && !row[i]) {
             count++;
         }
 
@@ -1140,7 +1079,7 @@ function rowCountRequiredFieldsByType(row, fields, forSubType) {
 // returns true if all required fields have (any) values, otherwise returns false
 // @param: row - a 'row' of data that contains a single object representing all fields
 // @param: fields - object of the relevant fields for specific artifact, along with all metadata about each
-function rowBlocksSubType(row, fields) {
+function rowBlocksSubType (row, fields) {
     var result = false;
     for (var column = 0; column < row.length; column++) {
         if (fields[column].forbidOnSubType && row[column]) {
@@ -1155,16 +1094,16 @@ function rowBlocksSubType(row, fields) {
 // checks to see if the row is valid - ie required fields present and correct as expected
 // returns a string - empty if no errors present (to evaluate to false), or an error message object otherwise
 // @ param: rowChecks - object with different properties for different checks required
-function rowHasProblems(rowChecks) {
+function rowHasProblems (rowChecks) {
     var problems = null;
-    if (!rowChecks.hasSubType && rowChecks.countRequiredFieldsFilled < rowChecks.fieldsRequiredCount) {
+    if (!rowChecks.hasSubType && rowChecks.countRequiredFields < rowChecks.totalFieldsRequired) {
         problems = "Fill in all required fields";
     } else if (rowChecks.hasSubType) {
-        if (rowChecks.countSubTypeRequiredFieldsFilled < rowChecks.subTypeFieldsRequiredCount && !rowChecks.countRequiredFieldsFilled) {
+        if (rowChecks.countSubTypeRequiredFields < rowChecks.totalSubTypeFieldsRequired && !rowChecks.countRequiredFields) {
             problems = "Fill in all required fields";
-        } else if (rowChecks.countRequiredFieldsFilled < rowChecks.fieldsRequiredCount && !rowChecks.countSubTypeRequiredFieldsFilled) {
+        } else if (rowChecks.countRequiredFields < rowChecks.totalFieldsRequired && !rowChecks.countSubTypeRequiredFields) {
             problems = "Fill in all required fields";
-        } else if (rowChecks.countRequiredFieldsFilled && (rowChecks.countRequiredFieldsFilled == rowChecks.fieldsRequiredCount || rowChecks.subTypeIsBlocked) {
+        } else if (rowChecks.countRequiredFields && (rowChecks.countRequiredFields == rowChecks.totalFieldsRequired || rowChecks.subTypeIsBlocked) ){
             problems = "It is unclear what artifact this is intended to be";
         }
     }
@@ -1177,12 +1116,12 @@ function rowHasProblems(rowChecks) {
 // e.g. all fields is default and standard, if a subtype is present (eg test step) - should it send only the main type or the sub type fields
 // returns a int representing the relevant enum value
 // @ param: rowChecks - object with different properties for different checks required
-function relevantFields(rowChecks) {
+function relevantFields (rowChecks) {
     var fields = FIELD_MANAGEMENT_ENUMS.all;
     if (rowChecks.hasSubType) {
-        if (rowChecks.countRequiredFieldsFilled == rowChecks.fieldsRequiredCount && !rowChecks.countSubTypeRequiredFieldsFilled) {
+        if (rowChecks.countRequiredFieldsFilled == rowChecks.totalFieldsRequired && !rowChecks.countSubTypeRequiredFields) {
             fields = FIELD_MANAGEMENT_ENUMS.standard;
-        } else if (rowChecks.countSubTypeRequiredFieldsFilled == rowChecks.subTypeFieldsRequiredCount && !(rowChecks.countRequiredFieldsFilled == rowChecks.fieldsRequiredCount || rowChecks.subTypeIsBlocked) ) {
+        } else if (rowChecks.countSubTypeRequiredFields == rowChecks.totalSubTypeFieldsRequired && !(rowChecks.countRequiredFields == rowChecks.totalFieldsRequired || rowChecks.subTypeIsBlocked) ) {
             fields = FIELD_MANAGEMENT_ENUMS.subType;
         }
     }
@@ -1200,38 +1139,39 @@ function relevantFields(rowChecks) {
 // @param: artifactIsHierarchical - bool to tell function if this artifact has hierarchy (eg RQ and RL)
 // @param: lastIndentPosition - int used for calculating relative indents for hierarchical artifacts
 // @param: fieldsToFilter - enum used for selecting fields to not add to object - defaults to using all if omitted
-function createEntryFromRow(row, model, fieldType, artifactIsHierarchical, lastIndentPosition, fieldsToFilter) {
+function createEntryFromRow (row, model, fieldType, artifactIsHierarchical, lastIndentPosition, fieldsToFilter) {
     //create empty 'entry' object - include custom properties array here to avoid it being undefined later if needed
     var entry = {
-            "CustomProperties": new Array
+            "CustomProperties": []
         },
         fields = model.fields;
 
-    //we need to turn an array of values in the row into a validated object 
+    //we need to turn an array of values in the row into a validated object
     for (var index = 0; index < row.length; index++) {
 
-        // first ignore entry that does not match the requirement specified in the fieldsToFilter 
+        // first ignore entry that does not match the requirement specified in the fieldsToFilter
         if (fieldsToFilter == FIELD_MANAGEMENT_ENUMS.standard && fields[index].isSubTypeField ) {
             // skip the field
         } else if (fieldsToFilter == FIELD_MANAGEMENT_ENUMS.subType && !(fields[index].isSubTypeField || fields[index].isTypeAndSubTypeField) ) {
             // skip the field
-        
+
         // in all other cases add the field
         } else {
             var value = null,
-                customType = "";
-    
+                customType = "",
+                idFromName = 0;
+
             // double check data validation, convert dropdowns to required int values
             // sets both the value, and custom types - so that custom fields are handled correctly
             switch (fields[index].type) {
-                
+
                 // ID fields: restricted to numbers and blank on push, otherwise put
                 case fieldType.id:
                 case fieldType.subId:
-    
+
                     customType = "IntegerValue";
                     break;
-                
+
                 // INT and NUM fields are both treated by Sheets as numbers
                 case fieldType.int:
                 case fieldType.num:
@@ -1239,9 +1179,9 @@ function createEntryFromRow(row, model, fieldType, artifactIsHierarchical, lastI
                     if (!isNaN(row[index])) {
                         value = row[index];
                         customType = "IntegerValue";
-                    };
+                    }
                     break;
-    
+
                 // BOOL as Sheets has no bool validation, a yes/no dropdown is used
                 case fieldType.bool:
                     // 'True' and 'False' don't work as dropdown choices, so have to convert back
@@ -1251,9 +1191,9 @@ function createEntryFromRow(row, model, fieldType, artifactIsHierarchical, lastI
                     } else if (row[index] == "No") {
                         value = false;
                         customType = "BooleanValue";
-                    };
+                    }
                     break;
-    
+
                 // DATES - parse the data and add prefix/suffix for WCF
                 case fieldType.date:
                     if (row[index]) {
@@ -1261,52 +1201,52 @@ function createEntryFromRow(row, model, fieldType, artifactIsHierarchical, lastI
                         customType = "DateTimeValue";
                     }
                     break;
-    
+
                 // DROPDOWNS - get id from relevant name, if one is present
                 case fieldType.drop:
-                    var idFromName = getIdFromName(row[index], fields[index].values);
+                    idFromName = getIdFromName(row[index], fields[index].values);
                     if (idFromName) {
                         value = idFromName;
                         customType = "IntegerValue";
                     }
                     break;
-    
+
                 // MULTIDROPDOWNS - get id from relevant name, if one is present, set customtype to list value
                 case fieldType.multi:
-                    var idFromName = getIdFromName(row[index], fields[index].values);
+                    idFromName = getIdFromName(row[index], fields[index].values);
                     if (idFromName) {
                         value = idFromName;
                         customType = "IntegerListValue";
                     }
                     break;
-    
+
                 // USER fields - get id from relevant name, if one is present
                 case fieldType.user:
-                    var idFromName = getIdFromName(row[index], model.projectUsers);
+                    idFromName = getIdFromName(row[index], model.projectUsers);
                     if (idFromName) {
                         value = idFromName;
                         customType = "IntegerValue";
                     }
                     break;
-    
+
                 // COMPONENT fields - get id from relevant name, if one is present
                 case fieldType.component:
-                    var idFromName = getIdFromName(row[index], model.projectComponents);
+                    idFromName = getIdFromName(row[index], model.projectComponents);
                     if (idFromName) {
                         value = idFromName;
                         customType = "IntegerValue";
                     }
                     break;
-                  
+
                 // RELEASE fields - get id from relevant name, if one is present
                 case fieldType.release:
-                    var idFromName = getIdFromName(row[index], model.projectReleases);
+                    idFromName = getIdFromName(row[index], model.projectReleases);
                     if (idFromName) {
                         value = idFromName;
                         customType = "IntegerValue";
                     }
                     break;
-                
+
                 // All other types
                 default:
                     // just assign the value to the cell - used for text
@@ -1314,36 +1254,36 @@ function createEntryFromRow(row, model, fieldType, artifactIsHierarchical, lastI
                     customType = "StringValue";
                     break;
             }
-    
-    
+
+
             // HIERARCHICAL ARTIFACTS:
             // handle hierarchy fields - if required: checks artifact type is hierarchical and if this field sets hierarchy
             if (artifactIsHierarchical && fields[index].setsHierarchy) {
                 // first get the number of indent characters
                 var indentCount = countIndentCharacaters(value, model.indentCharacter);
                 var indentPosition = setRelativePosition(indentCount, lastIndentPosition);
-                
+
                 // make sure to slice off the indent characters from the front
                 // TODO should also trim white space at start
                 value = value.slice(indentCount, value.length);
-    
+
                 // set the indent position for this row
                 entry.indentPosition = indentPosition;
             }
-    
+
             // CUSTOM FIELDS:
-            // check whether field is marked as a custom field and as the required property number 
+            // check whether field is marked as a custom field and as the required property number
             if (fields[index].isCustom && fields[index].propertyNumber) {
-    
+
                 // if field has data create the object
                 if (value) {
                     var customObject = {};
                     customObject.PropertyNumber = fields[index].propertyNumber;
                     customObject[customType] = value;
-    
+
                     entry.CustomProperties.push(customObject);
                 }
-            
+
             // STANDARD FIELDS:
             // add standard fields in standard way - only add if field contains data
             } else if (value) {
@@ -1362,9 +1302,9 @@ function createEntryFromRow(row, model, fieldType, artifactIsHierarchical, lastI
 // dropdowns can only contain one item per row so we have to now get the IDs for sending to Spira
 // @param: string - the string of the name value specified
 // @param: list - the array of items with keys for id and name values
-function getIdFromName(string, list) {
+function getIdFromName (string, list) {
     for (var i = 0; i < list.length; i++) {
-        if (list[i].name == string) { 
+        if (list[i].name == string) {
             return list[i].id;
         }
     }
@@ -1374,10 +1314,10 @@ function getIdFromName(string, list) {
 
 
 // finds and returns the field name for the specific artifiact's ID field
-// @param: fields - object of the relevant fields for specific artifact, along with all metadata about each 
+// @param: fields - object of the relevant fields for specific artifact, along with all metadata about each
 // @param: fieldType - object of all field types with enums
 // @param: getSubType - optioanl bool to specify to return the subtype Id field, not the normal field (where two exist)
-function getIdFieldName(fields, fieldType, getSubType) {
+function getIdFieldName (fields, fieldType, getSubType) {
     for (var i = 0; i < fields.length; i++) {
         var fieldToLookup = getSubType ? "subId" : "id";
         if (fields[i].type == fieldType[fieldToLookup]) {
@@ -1391,7 +1331,7 @@ function getIdFieldName(fields, fieldType, getSubType) {
 // returns the count of the number of indent characters and returns the value
 // @param: field - a single field string - one already designated as containing hierarchy info
 // @param: indentCharacter - the character used to denote an indent - e.g. ">"
-function countIndentCharacaters(field, indentCharacter) {
+function countIndentCharacaters (field, indentCharacter) {
     var indentCount = 0;
     //check for field value and indent character
     if (field && field[0] === indentCharacter) {
@@ -1410,11 +1350,11 @@ function countIndentCharacaters(field, indentCharacter) {
 
 
 // returns the correct relative indent position - based on the previous relative indent and other logic (int neg, pos, or zero)
-// the first time this is called, last position will be null 
+// the first time this is called, last position will be null
 // setting indent to -10 is a hack to push the first item (hopefully) all the way to the root position - ie ignore any indents placed by user on first item
 // Currently the API does not support a call to place an artifact at a certain location.
 // @param: indentCount - int of the number of indent characters set by user
 // @param: lastIndentPosition - int of the actual indent position used for the preceding entry/row
-function setRelativePosition(indentCount, lastIndentPosition) { 
+function setRelativePosition (indentCount, lastIndentPosition) {
     return (lastIndentPosition === null) ? -10 : indentCount - lastIndentPosition;
 }
