@@ -20,9 +20,14 @@ You must have a SpiraTeam® account with the proper permissions to utilize this 
 
 ---
 
-Hello,
+# Working with the Code
+As an add-in to Google Sheets, this code uses [Google Apps Script](https://developers.google.com/apps-script/overview). To run and test the app you need to install the code inside the Google Apps Script Editor - with code in Google Drive. This environment allows simple testing of the add-in on a Google worksheet. 
 
-My name is Toni. I was previously an intern at Inflectra and I was tasked with adding functionality to spira_googlesheets.  I was able to get Inflectra’s Rest API to work in conjunction with google sheets in order to create a task template.  The next goal for this project would be to use Inflectra’s REST API to post this template onto SpiraTeam.  After this is completed the next goal would to be to add more artifact functionality to spira_googlesheets.  One of the difficulties you may face when trying to accomplish this in the current code setup. The program was originally built with requirement artifact functionality in mind. This has led to a number of hard codings throughout the software.  In order to aid in the lifecycle of this software it would be useful to refactor those hard codings out of the software. 
+The code is commented relatively fully throughout. In overview:
 
-The text editor you will be most likely using is google scripts. This google creation comes with a number of built in functionalities that are called throughout the software. Here is a reference https://developers.google.com/apps-script/overview
-
+- HTML files describe the UI
+- there is a small amount of custom CSS but generally it is based on default Google design standards for the package
+- client side js is in the .js.html files. As with the CSS these are actually just HTML files. They are added as templates inside the base HTML file. 
+- client side js controls user interactions with the HTML ui - ie the add-in UI. For instance, when a button is clicked this js will send a call to the server, and will also handle success/failure messages from the server
+- Because server code cannot store dynamic information, the js also stores data - both static base data and user selected data. This can then be sent to the server as needed
+- there is one server.gs file. This is all the server side code - it is standard javascript, but limited to older functionality (ie no map or reduce functions). It also allows calling of all relevant Google Apps Script classes and methods. This code handles all access to the sheet data, manipulation of the sheet, and getting and sending data to Spira.
