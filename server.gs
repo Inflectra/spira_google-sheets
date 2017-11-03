@@ -860,7 +860,9 @@ function exporter(model, fieldType) {
 
         // review all activity and set final status
         log.status = log.errorCount ? (log.errorCount == log.entriesLength ? STATUS_ENUM.allError : STATUS_ENUM.someError) : STATUS_ENUM.allSuccess;
-      //return {log: log, rowChecks: rowChecks};
+      
+      
+      
         // 5. SET MESSAGES AND FORMATTING ON SHEET
         var bgColors = [],
             notes = [],
@@ -886,9 +888,7 @@ function exporter(model, fieldType) {
         }
         sheetRange.setBackgrounds(bgColors).setNotes(notes).setValues(values);
 
-        //return {log: log, fields: fields, fieldType: fieldType, cellText: cellText, bgColors: bgColors, sheetData: sheetData, notes: notes};
         return log;
-
     }
 }
 
