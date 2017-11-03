@@ -11,6 +11,7 @@ var API_BASE = '/services/v5_0/RestService.svc/projects/',
         testSteps: 7,
         testSets: 8
     },
+    INITIAL_HIERARCHY_OUTDENT = -20,
     FIELD_MANAGEMENT_ENUMS = {
         all: 1,
         standard: 2,
@@ -780,7 +781,7 @@ function exporter(model, fieldType) {
                 }
                 // FOR HIERARCHICAL ARTIFACTS update the last indent position before going to the next entry to make sure relative indent is set correctly
                 if (artifactIsHierarchical) {
-                    cumulativeIndentPosition += ( entry.indentPosition < 0 ) ? 0 : entry.indentPosition;
+                    cumulativeIndentPosition += ( entry.indentPosition == INITIAL_HIERARCHY_OUTDENT ) ? 0 : entry.indentPosition;
                 }
             }
             entriesForExport.push(entry);
@@ -1359,10 +1360,10 @@ function countIndentCharacaters (field, indentCharacter) {
 
 // returns the correct relative indent position - based on the previous relative indent and other logic (int neg, pos, or zero)
 // the first time this is called, last position will be null
-// setting indent to -10 is a hack to push the first item (hopefully) all the way to the root position - ie ignore any indents placed by user on first item
+// setting indent to INITIAL_HIERARCHY_OUTDENT (eg -20) is a hack to push the first item (hopefully) all the way to the root position - ie ignore any indents placed by user on first item
 // Currently the API does not support a call to place an artifact at a certain location.
 // @param: indentCount - int of the number of indent characters set by user
 // @param: cumulativeIndentPosition - int sum of the actual indent positions used for the preceding entries
 function setRelativePosition (indentCount, cumulativeIndentPosition) {
-    return (cumulativeIndentPosition === null) ? -10 : indentCount - cumulativeIndentPosition;
+    return (cumulativeIndentPosition === null) ? INITIAL_HIERARCHY_OUTDENT : indentCount - cumulativeIndentPosition;
 }
