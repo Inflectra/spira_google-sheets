@@ -842,7 +842,7 @@ function exporter(model, fieldType) {
 
                 // stop if the artifact is hierarchical because we don't know what side effects there could be to any further items.
                 if (artifact.hierarchical) {
-                    response.message += " - no further entries were sent to avoid creating an incorrect hierarchy"
+                    response.message += " - no further entries were sent to avoid creating an incorrect hierarchy";
                     break;
                 }
             }
@@ -886,7 +886,6 @@ function exporter(model, fieldType) {
                     if (artifact.hierarchical) {
                         response.details.hierarchyInfo.id = sentToSpira.newId;
                         response.details.hierarchyInfo.indent = entriesForExport[i].indentPosition;
-                        });
                     }
 
                     //modal that displays the status of each artifact sent
@@ -1098,6 +1097,7 @@ function getHierarchicalParentId (indent, previousEntries) {
         if (previousIndent < indent) {
             match = previousId;
             break;
+        }
     }
     return match;
 }
