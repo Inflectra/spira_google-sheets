@@ -739,7 +739,7 @@ function exporter(model, fieldType) {
         sheetRange = sheet.getRange(2,1, lastRow, fields.length),
         sheetData = sheetRange.getValues(),
         entriesForExport = [],
-        lastIndentPosition = null;
+        cumulativeIndentPosition = 0;
 
 
 
@@ -772,7 +772,7 @@ function exporter(model, fieldType) {
             // if error free determine what field filtering is required - needed to choose type/subtype fields if subtype is present
             } else {
                 var fieldsToFilter = relevantFields(rowChecks);
-                entry = createEntryFromRow( sheetData[rowToPrep], model, fieldType, artifactIsHierarchical, lastIndentPosition, fieldsToFilter );
+                entry = createEntryFromRow( sheetData[rowToPrep], model, fieldType, artifactIsHierarchical, cumulativeIndentPosition, fieldsToFilter );
 
                 // FOR SUBTYPE ENTRIES add flag on entry if it is a subtype
                 if (fieldsToFilter === FIELD_MANAGEMENT_ENUMS.subType) {
@@ -780,7 +780,7 @@ function exporter(model, fieldType) {
                 }
                 // FOR HIERARCHICAL ARTIFACTS update the last indent position before going to the next entry to make sure relative indent is set correctly
                 if (artifactIsHierarchical) {
-                    lastIndentPosition = ( entry.indentPosition < 0 ) ? 0 : entry.indentPosition;
+                    cumulativeIndentPosition += ( entry.indentPosition < 0 ) ? 0 : entry.indentPosition;
                 }
             }
             entriesForExport.push(entry);
@@ -1145,9 +1145,9 @@ function relevantFields (rowChecks) {
 // @param: model - full model with info about fields, dropdowns, users, etc
 // @param: fieldType - object of all field types with enums
 // @param: artifactIsHierarchical - bool to tell function if this artifact has hierarchy (eg RQ and RL)
-// @param: lastIndentPosition - int used for calculating relative indents for hierarchical artifacts
+// @param: cumulativeIndentPosition - int used for calculating relative indents for hierarchical artifacts
 // @param: fieldsToFilter - enum used for selecting fields to not add to object - defaults to using all if omitted
-function createEntryFromRow (row, model, fieldType, artifactIsHierarchical, lastIndentPosition, fieldsToFilter) {
+function createEntryFromRow (row, model, fieldType, artifactIsHierarchical, cumulativeIndentPosition, fieldsToFilter) {
     //create empty 'entry' object - include custom properties array here to avoid it being undefined later if needed
     var entry = {
             "CustomProperties": []
@@ -1269,7 +1269,7 @@ function createEntryFromRow (row, model, fieldType, artifactIsHierarchical, last
             if (artifactIsHierarchical && fields[index].setsHierarchy) {
                 // first get the number of indent characters
                 var indentCount = countIndentCharacaters(value, model.indentCharacter);
-                var indentPosition = setRelativePosition(indentCount, lastIndentPosition);
+                var indentPosition = setRelativePosition(indentCount, cumulativeIndentPosition);
 
                 // make sure to slice off the indent characters from the front
                 // TODO should also trim white space at start
@@ -1362,7 +1362,7 @@ function countIndentCharacaters (field, indentCharacter) {
 // setting indent to -10 is a hack to push the first item (hopefully) all the way to the root position - ie ignore any indents placed by user on first item
 // Currently the API does not support a call to place an artifact at a certain location.
 // @param: indentCount - int of the number of indent characters set by user
-// @param: lastIndentPosition - int of the actual indent position used for the preceding entry/row
-function setRelativePosition (indentCount, lastIndentPosition) {
-    return (lastIndentPosition === null) ? -10 : indentCount - lastIndentPosition;
+// @param: cumulativeIndentPosition - int sum of the actual indent positions used for the preceding entries
+function setRelativePosition (indentCount, cumulativeIndentPosition) {
+    return (cumulativeIndentPosition === null) ? -10 : indentCount - cumulativeIndentPosition;
 }
