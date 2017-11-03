@@ -302,7 +302,16 @@ function postArtifactToSpira(entry, user, projectId, artifactId, parentId) {
 
         // REQUIREMENTS
         case ART_ENUMS.requirements:
-            postUrl = API_BASE + projectId + '/requirements/indent/' + entry.indentPosition + '?';
+            // url to post initial RQ to ensure it is fully outdented
+            if (parentId === null ) { 
+                postUrl = API_BASE + projectId + '/requirements/indent/' + entry.indentPosition + '?';
+            // if no parentId then post as a regular RQ 
+            } else if (parentId === -1) {
+                postUrl = API_BASE + projectId + '/requirements?';
+            // we should have a parent Id set so add this RQ as its child
+            } else {
+                postUrl = API_BASE + projectId + '/requirements/parent/' + parentId + '?';
+            }
             response = poster(JSON_body, user, postUrl);
             break;
 
@@ -317,10 +326,16 @@ function postArtifactToSpira(entry, user, projectId, artifactId, parentId) {
             postUrl = API_BASE + projectId + '/incidents?';
             response = poster(JSON_body, user, postUrl);
             break;
-
+        
         // RELEASES
         case ART_ENUMS.releases:
-            postUrl = API_BASE + projectId + '/releases?';
+            // if no parentId then post as a regular release
+            if (parentId === -1) {
+                postUrl = API_BASE + projectId + '/releases?';
+            // we should have a parent Id set so add this RQ as its child
+            } else {
+                postUrl = API_BASE + projectId + '/releases/' + parentId + '?';
+            }
             response = poster(JSON_body, user, postUrl);
             break;
 
@@ -740,7 +755,7 @@ function exporter(model, fieldType) {
         sheetRange = sheet.getRange(2,1, lastRow, fields.length),
         sheetData = sheetRange.getValues(),
         entriesForExport = [],
-        cumulativeIndentPosition = 0;
+        lastIndentPosition = null;
 
 
 
@@ -773,7 +788,7 @@ function exporter(model, fieldType) {
             // if error free determine what field filtering is required - needed to choose type/subtype fields if subtype is present
             } else {
                 var fieldsToFilter = relevantFields(rowChecks);
-                entry = createEntryFromRow( sheetData[rowToPrep], model, fieldType, artifactIsHierarchical, cumulativeIndentPosition, fieldsToFilter );
+                entry = createEntryFromRow( sheetData[rowToPrep], model, fieldType, artifactIsHierarchical, lastIndentPosition, fieldsToFilter );
 
                 // FOR SUBTYPE ENTRIES add flag on entry if it is a subtype
                 if (fieldsToFilter === FIELD_MANAGEMENT_ENUMS.subType) {
@@ -781,7 +796,7 @@ function exporter(model, fieldType) {
                 }
                 // FOR HIERARCHICAL ARTIFACTS update the last indent position before going to the next entry to make sure relative indent is set correctly
                 if (artifactIsHierarchical) {
-                    cumulativeIndentPosition += ( entry.indentPosition == INITIAL_HIERARCHY_OUTDENT ) ? 0 : entry.indentPosition;
+                    lastIndentPosition = ( entry.indentPosition == INITIAL_HIERARCHY_OUTDENT ) ? 0 : entry.indentPosition;
                 }
             }
             entriesForExport.push(entry);
@@ -808,7 +823,9 @@ function exporter(model, fieldType) {
                 entries: []
             },
             // set var for parent - used to designate eg a test case so it can be sent with the test step post
-            parentId = 0;
+            parentId = 0,
+            // array of successfully created ids (with indent positions) - used for hierarchical artifacts
+            hierarchyInfo = [];
 
 
 
@@ -822,18 +839,33 @@ function exporter(model, fieldType) {
                 response.error = true;
                 response.message = entriesForExport[i].validationMessage;
                 log.errorCount++;
+
+                // stop if the artifact is hierarchical because we don't know what side effects there could be to any further items.
+                if (artifact.hierarchical) {
+                    response.message += " - no further entries were sent to avoid creating an incorrect hierarchy"
+                    break;
+                }
             }
+
             // skip if a sub type row does not have a parent to hook to
             else if (entriesForExport[i].isSubType && !parentId) {
                 response.error = true;
                 response.message = "can't add a child type when there is no corresponding parent type";
                 log.errorCount++;
 
+            // set the correct parentId for hierarchical artifacts
+            if (artifact.hierarchical) {
+                parentId = getHierarchicalParentId(entriesForExport[i].indentPosition, log.entries);
+            }
+
             // send to Spira and update the response object
             } else {
-                var sentToSpira = manageSendingToSpira ( entriesForExport[i], parentId, artifact, model.user, model.currentProject.id, fields, fieldType );
+                var sentToSpira = manageSendingToSpira ( entriesForExport[i], model.user, model.currentProject.id, artifact, fields, fieldType, parentId );
 
-                parentId = sentToSpira.parentId;
+                if (artifact.hasSubType) {
+                    parentId = sentToSpira.parentId;
+                }
+
                 response.details = sentToSpira;
 
                 // handle success and error cases
@@ -849,6 +881,13 @@ function exporter(model, fieldType) {
                 } else {
                     log.successCount++;
                     response.newId = sentToSpira.newId;
+
+                    // if artifact is hierarchical save relevant information to work out how to indent
+                    if (artifact.hierarchical) {
+                        response.details.hierarchyInfo.id = sentToSpira.newId;
+                        response.details.hierarchyInfo.indent = entriesForExport[i].indentPosition;
+                        });
+                    }
 
                     //modal that displays the status of each artifact sent
                     htmlOutputSuccess = HtmlService.createHtmlOutput('<p ' + INLINE_STYLING + '>Sending ' + (i + 1) + ' of ' + (entriesForExport.length) + '...</p>').setWidth(200).setHeight(75);
@@ -988,7 +1027,7 @@ function setFeedbackValue (cell, error, field, fieldType, newId, isSubType) {
 // @param: projectId - int of project id for API call
 // @param: fields - object of the relevant fields for specific artifact, along with all metadata about each
 // @param: fieldType - object of all field types with enums
-function manageSendingToSpira (entry, parentId, artifact, user, projectId, fields, fieldType) {
+function manageSendingToSpira (entry, user, projectId, artifact, fields, fieldType, parentId) {
     var data,
         output = {},
         // make sure correct artifact ID is sent to handler (ie type vs subtype)
@@ -1018,7 +1057,6 @@ function manageSendingToSpira (entry, parentId, artifact, user, projectId, field
         var artifactIdField = getIdFieldName(fields, fieldType, entry.isSubType);
         output.newId = output.fromSpira[artifactIdField];
 
-
         // update the output parent ID to the new id only if the artifact has a subtype and this entry is NOT a subtype
         if (artifact.hasSubType && !entry.isSubType) {
             output.parentId = output.newId;
@@ -1041,6 +1079,28 @@ function manageSendingToSpira (entry, parentId, artifact, user, projectId, field
     return output;
 }
 
+
+
+// returns the correct parentId for the relevant indent position by looping back through the list of entries
+// returns -1 if no match found
+// @param: indent - int of the indent position to retrieve the parent for
+// @param: previousEntries - object containing all successfully sent entries - with, if a hierarchical artifact, a hierarchy info object
+function getHierarchicalParentId (indent, previousEntries) {
+    // if there is no indent we return out immediately 
+    if (indent === 0) {
+        return -1;
+    }
+    var match = -1;
+    for (var i = previousEntries.length - 1; i >=0; i--) {
+        var previousIndent = previousEntries[i].hierarchyInfo.indent,
+            previousId = previousEntries[i].hierarchyInfo.id;
+        // when the indent is greater - means we are indenting, so take the last array item and return out
+        if (previousIndent < indent) {
+            match = previousId;
+            break;
+    }
+    return match;
+}
 
 
 // returns an int of the total number of required fields for the passed in artifact
@@ -1146,9 +1206,9 @@ function relevantFields (rowChecks) {
 // @param: model - full model with info about fields, dropdowns, users, etc
 // @param: fieldType - object of all field types with enums
 // @param: artifactIsHierarchical - bool to tell function if this artifact has hierarchy (eg RQ and RL)
-// @param: cumulativeIndentPosition - int used for calculating relative indents for hierarchical artifacts
+// @param: lastIndentPosition - int used for calculating relative indents for hierarchical artifacts
 // @param: fieldsToFilter - enum used for selecting fields to not add to object - defaults to using all if omitted
-function createEntryFromRow (row, model, fieldType, artifactIsHierarchical, cumulativeIndentPosition, fieldsToFilter) {
+function createEntryFromRow (row, model, fieldType, artifactIsHierarchical, lastIndentPosition, fieldsToFilter) {
     //create empty 'entry' object - include custom properties array here to avoid it being undefined later if needed
     var entry = {
             "CustomProperties": []
@@ -1269,8 +1329,8 @@ function createEntryFromRow (row, model, fieldType, artifactIsHierarchical, cumu
             // handle hierarchy fields - if required: checks artifact type is hierarchical and if this field sets hierarchy
             if (artifactIsHierarchical && fields[index].setsHierarchy) {
                 // first get the number of indent characters
-                var indentCount = countIndentCharacaters(value, model.indentCharacter);
-                var indentPosition = setRelativePosition(indentCount, cumulativeIndentPosition);
+                var indentCount = countIndentCharacters(value, model.indentCharacter);
+                var indentPosition = setRelativePosition(indentCount, lastIndentPosition);
 
                 // make sure to slice off the indent characters from the front
                 // TODO should also trim white space at start
@@ -1340,7 +1400,7 @@ function getIdFieldName (fields, fieldType, getSubType) {
 // returns the count of the number of indent characters and returns the value
 // @param: field - a single field string - one already designated as containing hierarchy info
 // @param: indentCharacter - the character used to denote an indent - e.g. ">"
-function countIndentCharacaters (field, indentCharacter) {
+function countIndentCharacters (field, indentCharacter) {
     var indentCount = 0;
     //check for field value and indent character
     if (field && field[0] === indentCharacter) {
@@ -1359,11 +1419,19 @@ function countIndentCharacaters (field, indentCharacter) {
 
 
 // returns the correct relative indent position - based on the previous relative indent and other logic (int neg, pos, or zero)
-// the first time this is called, last position will be null
-// setting indent to INITIAL_HIERARCHY_OUTDENT (eg -20) is a hack to push the first item (hopefully) all the way to the root position - ie ignore any indents placed by user on first item
 // Currently the API does not support a call to place an artifact at a certain location.
 // @param: indentCount - int of the number of indent characters set by user
-// @param: cumulativeIndentPosition - int sum of the actual indent positions used for the preceding entries
-function setRelativePosition (indentCount, cumulativeIndentPosition) {
-    return (cumulativeIndentPosition === null) ? INITIAL_HIERARCHY_OUTDENT : indentCount - cumulativeIndentPosition;
+// @param: lastIndentPosition - int sum of the actual indent positions used for the preceding entries
+function setRelativePosition (indentCount, lastIndentPosition) {
+    // the first time this is called, last position will be null
+    if (lastIndentPosition === null) {
+        // setting first indent position to INITIAL_HIERARCHY_OUTDENT (eg -20) is a hack to push the first requirement to root - ie ignore any indents placed by user on first item
+        return INITIAL_HIERARCHY_OUTDENT;
+    } else if (indentCount > lastIndentPosition) {
+        // only indent one level at a time
+        return lastIndentPosition === INITIAL_HIERARCHY_OUTDENT ? 1 : lastIndentPosition + 1;
+    } else {
+        // this will manage indents of same level or where outdents are required
+        return indentCount;
+    }
 }
