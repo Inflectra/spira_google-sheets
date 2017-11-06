@@ -303,7 +303,7 @@ function postArtifactToSpira(entry, user, projectId, artifactId, parentId) {
         // REQUIREMENTS
         case ART_ENUMS.requirements:
             // url to post initial RQ to ensure it is fully outdented
-            if (parentId === null ) { 
+            if (entry.indentPosition === INITIAL_HIERARCHY_OUTDENT ) { 
                 postUrl = API_BASE + projectId + '/requirements/indent/' + entry.indentPosition + '?';
             // if no parentId then post as a regular RQ 
             } else if (parentId === -1) {
@@ -823,9 +823,7 @@ function exporter(model, fieldType) {
                 entries: []
             },
             // set var for parent - used to designate eg a test case so it can be sent with the test step post
-            parentId = 0,
-            // array of successfully created ids (with indent positions) - used for hierarchical artifacts
-            hierarchyInfo = [];
+            parentId = -1;
 
 
 
@@ -852,16 +850,19 @@ function exporter(model, fieldType) {
                 response.error = true;
                 response.message = "can't add a child type when there is no corresponding parent type";
                 log.errorCount++;
-
-            // set the correct parentId for hierarchical artifacts
-            if (artifact.hierarchical) {
-                parentId = getHierarchicalParentId(entriesForExport[i].indentPosition, log.entries);
-            }
-
+  
             // send to Spira and update the response object
             } else {
+              
+                // set the correct parentId for hierarchical artifacts
+                // set before launching the API call as we need to look back through previous entries
+                if (artifact.hierarchical) {
+                  parentId = getHierarchicalParentId(entriesForExport[i].indentPosition, log.entries);
+                }
+              
                 var sentToSpira = manageSendingToSpira ( entriesForExport[i], model.user, model.currentProject.id, artifact, fields, fieldType, parentId );
-
+                
+                // update the parent ID for a subtypes based on the successful API call
                 if (artifact.hasSubType) {
                     parentId = sentToSpira.parentId;
                 }
@@ -872,11 +873,21 @@ function exporter(model, fieldType) {
                 if (sentToSpira.error) {
                     log.errorCount++;
                     response.error = true;
-                    response.message = sentToSpira.message;
-
-                    //Sets error HTML modal
-                    htmlOutput = HtmlService.createHtmlOutput('<p ' + INLINE_STYLING + '>Error sending ' + (i + 1) + ' of ' + (entriesForExport.length) + '</p>').setWidth(200).setHeight(75);
-                    SpreadsheetApp.getUi().showModalDialog(htmlOutput, 'Progress');
+                    response.message = sentToSpira.errorMessage;
+                  
+                  
+                    //Sets error HTML modals
+                    if (artifact.hierarchical) {
+                        // if there is an error on any hierarchical artifact row, break out of the loop to prevent entries being attached to wrong parent
+                        htmlOutput = HtmlService.createHtmlOutput('<p ' + INLINE_STYLING + '>Error sending ' + (i + 1) + ' of ' + (entriesForExport.length) + ' - sending stopped to avoid indenting entries incorrectly</p>').setWidth(200).setHeight(75);
+                        SpreadsheetApp.getUi().showModalDialog(htmlOutput, 'Progress');
+                        
+                        log.entries.push(response);
+                        break;
+                    } else { 
+                        htmlOutput = HtmlService.createHtmlOutput('<p ' + INLINE_STYLING + '>Error sending ' + (i + 1) + ' of ' + (entriesForExport.length) + '</p>').setWidth(200).setHeight(75);
+                        SpreadsheetApp.getUi().showModalDialog(htmlOutput, 'Progress');
+                    }
 
                 } else {
                     log.successCount++;
@@ -884,8 +895,10 @@ function exporter(model, fieldType) {
 
                     // if artifact is hierarchical save relevant information to work out how to indent
                     if (artifact.hierarchical) {
-                        response.details.hierarchyInfo.id = sentToSpira.newId;
-                        response.details.hierarchyInfo.indent = entriesForExport[i].indentPosition;
+                        response.details.hierarchyInfo = {
+                            id: sentToSpira.newId,
+                            indent: entriesForExport[i].indentPosition
+                        }
                     }
 
                     //modal that displays the status of each artifact sent
@@ -912,14 +925,21 @@ function exporter(model, fieldType) {
                 rowNotes = [],
                 rowValues = [];
             for (var col = 0; col < fields.length; col++) {
-                var isSubType = (log.entries[row].details &&  log.entries[row].details.entry && log.entries[row].details.entry.isSubType) ? log.entries[row].details.entry.isSubType : false;
-                var bgColor = setFeedbackBgColor(sheetData[row][col], log.entries[row].error, fields[col], fieldType, artifact, model.colors ),
-                    note = setFeedbackNote(sheetData[row][col], log.entries[row].error, fields[col], fieldType, log.entries[row].message ),
-                    value = setFeedbackValue(sheetData[row][col], log.entries[row].error, fields[col], fieldType, log.entries[row].newId || "", isSubType );
-
-                rowBgColors.push(bgColor);
-                rowNotes.push(note);
-                rowValues.push(value);
+                if (log.entries.length > row) {
+                    var isSubType = (log.entries[row].details &&  log.entries[row].details.entry && log.entries[row].details.entry.isSubType) ? log.entries[row].details.entry.isSubType : false;
+                    var bgColor = setFeedbackBgColor(sheetData[row][col], log.entries[row].error, fields[col], fieldType, artifact, model.colors ),
+                        note = setFeedbackNote(sheetData[row][col], log.entries[row].error, fields[col], fieldType, log.entries[row].message ),
+                        value = setFeedbackValue(sheetData[row][col], log.entries[row].error, fields[col], fieldType, log.entries[row].newId || "", isSubType );
+    
+                    rowBgColors.push(bgColor);
+                    rowNotes.push(note);
+                    rowValues.push(value);
+                  
+                } else {
+                  rowBgColors.push(setFeedbackBgColor(sheetData[row][col], false, fields[col], fieldType, artifact, model.colors ));
+                  rowNotes.push(null);
+                  rowValues.push(sheetData[row][col]);
+                }
             }
             bgColors.push(rowBgColors);
             notes.push(rowNotes);
@@ -1030,15 +1050,13 @@ function manageSendingToSpira (entry, user, projectId, artifact, fields, fieldTy
     var data,
         output = {},
         // make sure correct artifact ID is sent to handler (ie type vs subtype)
-        artifactIdToSend = entry.isSubType ? artifact.subTypeId : artifact.id,
-        // only send a parentId value when dealing with subtypes
-        parentIdToSend = entry.isSubType ? parentId : null;
+        artifactIdToSend = entry.isSubType ? artifact.subTypeId : artifact.id;
 
     // set output parent id here so we know this function will always return a value for this
     output.parentId = parentId; 
     
     // send object to relevant artifact post service
-    data = postArtifactToSpira ( entry, user, projectId, artifactIdToSend, parentIdToSend );
+    data = postArtifactToSpira ( entry, user, projectId, artifactIdToSend, parentId );
 
     // save data for logging to client
     output.entry = entry;
@@ -1085,21 +1103,19 @@ function manageSendingToSpira (entry, user, projectId, artifact, fields, fieldTy
 // @param: indent - int of the indent position to retrieve the parent for
 // @param: previousEntries - object containing all successfully sent entries - with, if a hierarchical artifact, a hierarchy info object
 function getHierarchicalParentId (indent, previousEntries) {
-    // if there is no indent we return out immediately 
-    if (indent === 0) {
+    // if there is no indent/ set to initial indent we return out immediately 
+    if (indent === 0 || indent === INITIAL_HIERARCHY_OUTDENT || !previousEntries.length) {
         return -1;
     }
-    var match = -1;
     for (var i = previousEntries.length - 1; i >=0; i--) {
-        var previousIndent = previousEntries[i].hierarchyInfo.indent,
-            previousId = previousEntries[i].hierarchyInfo.id;
         // when the indent is greater - means we are indenting, so take the last array item and return out
-        if (previousIndent < indent) {
-            match = previousId;
+        // check for presence of correct objects in item - should exist, as otherwise error should be thrown
+        if (previousEntries[i].details && previousEntries[i].details.hierarchyInfo && previousEntries[i].details.hierarchyInfo.indent < indent) {
+            return previousEntries[i].details.hierarchyInfo.id;
             break;
         }
     }
-    return match;
+    return -1;
 }
 
 
