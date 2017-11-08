@@ -60,7 +60,7 @@
                 type="text" 
                 />
           </li>
-          <li class="form-pair">
+          <li class="form-pair mt-sm">
             <label
                 class="form-label"
                 for="input-password"
@@ -177,7 +177,7 @@
                 Artifact:
             </label>
             <select 
-                class="form-input mt-sm"
+                class="form-input"
                 disabled="true"
                 id="select-artifact" 
                 >
@@ -325,7 +325,7 @@
                 </li>
                 <li>
                     <p>
-                        <b>Disconnect</b>
+                        <b>Logout</b>
                         <small>This button will close your connection with SpiraTeam and clear your data. WARNING: your spreadsheet data will be erased as a security measure on disconnect.</small>
                     </p>
                 </li>
@@ -378,6 +378,60 @@
         
         
         <div id="help-section-fields" class="help-section hidden">
+            <h4>Required Fields</h4>
+            <ul class="list">
+                <li>
+                    <p>
+                        <small>Required fields are marked by their name in the title row shown as bold black text (standard fields are regular light text)</small>
+                    </p>
+                </li>
+                <li>
+                    <p>
+                        <small>For test steps, required fields are shown in black, but not bold text.</small>
+                    </p>
+                </li>
+            </ul>
+            
+            <br/>
+            
+            <h4>Help For Specific Fields</h4>
+            <ul class="list">
+                <li>
+                    <p>
+                        <b>ID Fields</b>
+                        <small>Stores the id of the item. This field MUST be left blank to add new items to SpiraTeam</small>
+                    </p>
+                </li>
+                <li>
+                    <p>
+                        <b>Test Step Fields</b>
+                        <small>have their header row shown in a lighter background color. Note that the description field is used for both test cases (not required) and steps (required). If the system cannot tell whether an entry is a test case or step it is skipped over when sending to Spira.</small>
+                    </p>
+                </li>
+                <li>
+                    <p>
+                        <b>Name</b>
+                        <small>For REQUIREMENTS and RELEASES this field supports indentation, add a “ > “ symbol to indicate how the items in the artifact hierarchy are organized.</small>
+                    </p>
+                    <pre>
+Example:
+Item 1
+>Item 2 child of item 1
+>Item 3 child of item 1
+>>Item 4 child of item 3
+                    </pre>
+                </li>
+                
+                <li>
+                    <p>
+                        <b>Comments</b>
+                        <small><em>Not Currently Supported</em></small>
+                    </p>
+                </li>
+            </ul>
+            
+            <br/>
+            
             <h4>Custom Field Entries</h4>
             <ul class="list">
                 <li>
@@ -424,37 +478,6 @@
                 </li>
             </ul>
             
-            <br>
-            
-            <h4>Help For Specific Fields</h4>
-            <ul class="list">
-                <li>
-                    <p>
-                        <b>ID Fields</b>
-                        <small>Stores the id of the item. This field MUST be left blank to add new items to SpiraTeam</small>
-                    </p>
-                </li>
-                <li>
-                    <p>
-                        <b>Name</b>
-                        <small><b>**Required Field** </b>The name of the item. For REQUIREMENTS and RELEASES this field supports indentation, add a “ > “ symbol to indicate how the items in the artifact hierarchy are organized.</small>
-                    </p>
-                    <pre>
-Example:
-Item 1
->Item 2 child of item 1
->Item 3 child of item 1
->>Item 4 child of item 3
-                    </pre>
-                </li>
-                
-                <li>
-                    <p>
-                        <b>Comments</b>
-                        <small><em>Not Currently Supported</em></small>
-                    </p>
-                </li>
-            </ul>
         </div>
     </div>
 

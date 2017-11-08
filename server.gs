@@ -11,6 +11,7 @@ var API_BASE = '/services/v5_0/RestService.svc/projects/',
         testSteps: 7,
         testSets: 8
     },
+    INITIAL_HIERARCHY_OUTDENT = -20,
     FIELD_MANAGEMENT_ENUMS = {
         all: 1,
         standard: 2,
@@ -301,7 +302,16 @@ function postArtifactToSpira(entry, user, projectId, artifactId, parentId) {
 
         // REQUIREMENTS
         case ART_ENUMS.requirements:
-            postUrl = API_BASE + projectId + '/requirements/indent/' + entry.indentPosition + '?';
+            // url to post initial RQ to ensure it is fully outdented
+            if (entry.indentPosition === 0 ) { 
+                postUrl = API_BASE + projectId + '/requirements/indent/' + INITIAL_HIERARCHY_OUTDENT + '?';
+            // if no parentId then post as a regular RQ 
+            } else if (parentId === -1) {
+                postUrl = API_BASE + projectId + '/requirements?';
+            // we should have a parent Id set so add this RQ as its child
+            } else {
+                postUrl = API_BASE + projectId + '/requirements/parent/' + parentId + '?';
+            }
             response = poster(JSON_body, user, postUrl);
             break;
 
@@ -316,10 +326,16 @@ function postArtifactToSpira(entry, user, projectId, artifactId, parentId) {
             postUrl = API_BASE + projectId + '/incidents?';
             response = poster(JSON_body, user, postUrl);
             break;
-
+        
         // RELEASES
         case ART_ENUMS.releases:
-            postUrl = API_BASE + projectId + '/releases?';
+            // if no parentId then post as a regular release
+            if (parentId === -1) {
+                postUrl = API_BASE + projectId + '/releases?';
+            // we should have a parent Id set so add this RQ as its child
+            } else {
+                postUrl = API_BASE + projectId + '/releases/' + parentId + '?';
+            }
             response = poster(JSON_body, user, postUrl);
             break;
 
@@ -332,7 +348,8 @@ function postArtifactToSpira(entry, user, projectId, artifactId, parentId) {
         // TEST STEPS
         case ART_ENUMS.testSteps:
             postUrl = API_BASE + projectId + '/test-cases/' + parentId + '/test-steps?';
-            response = poster(JSON_body, user, postUrl);
+            // only post the test step if we have a parent id
+            response = parentId !== -1 ? poster(JSON_body, user, postUrl) : null;
             break;
     }
 
@@ -549,11 +566,12 @@ function contentValidationSetter (sheet, model, fieldType) {
                 list.push("Yes", "No");
                 setDropdownValidation(sheet, columnNumber, nonHeaderRows, list, false);
                 break;
-
+            
+            // DATE fields get date validation
             case fieldType.date:
                 setDateValidation(sheet, columnNumber, nonHeaderRows, false);
                 break;
-
+            
             // DROPDOWNS and MULTIDROPDOWNS are both treated as simple dropdowns (Sheets does not have multi selects)
             case fieldType.drop:
             case fieldType.multi:
@@ -780,7 +798,7 @@ function exporter(model, fieldType) {
                 }
                 // FOR HIERARCHICAL ARTIFACTS update the last indent position before going to the next entry to make sure relative indent is set correctly
                 if (artifactIsHierarchical) {
-                    lastIndentPosition = ( entry.indentPosition < 0 ) ? 0 : entry.indentPosition;
+                    lastIndentPosition = entry.indentPosition;
                 }
             }
             entriesForExport.push(entry);
@@ -807,7 +825,7 @@ function exporter(model, fieldType) {
                 entries: []
             },
             // set var for parent - used to designate eg a test case so it can be sent with the test step post
-            parentId = 0;
+            parentId = -1;
 
 
 
@@ -821,33 +839,71 @@ function exporter(model, fieldType) {
                 response.error = true;
                 response.message = entriesForExport[i].validationMessage;
                 log.errorCount++;
+
+                // stop if the artifact is hierarchical because we don't know what side effects there could be to any further items.
+                if (artifact.hierarchical) {
+                    response.message += " - no further entries were sent to avoid creating an incorrect hierarchy";
+                    // make sure to push the response so that the client can process error message
+                    log.entries.push(response);
+                    break;
+                }
             }
+
             // skip if a sub type row does not have a parent to hook to
             else if (entriesForExport[i].isSubType && !parentId) {
                 response.error = true;
                 response.message = "can't add a child type when there is no corresponding parent type";
                 log.errorCount++;
-
+  
             // send to Spira and update the response object
             } else {
-                var sentToSpira = manageSendingToSpira ( entriesForExport[i], parentId, artifact, model.user, model.currentProject.id, fields, fieldType );
+              
+                // set the correct parentId for hierarchical artifacts
+                // set before launching the API call as we need to look back through previous entries
+                if (artifact.hierarchical) {
+                  parentId = getHierarchicalParentId(entriesForExport[i].indentPosition, log.entries);
+                }
+              
+                var sentToSpira = manageSendingToSpira ( entriesForExport[i], model.user, model.currentProject.id, artifact, fields, fieldType, parentId );
+                
+                // update the parent ID for a subtypes based on the successful API call
+                if (artifact.hasSubType) {
+                    parentId = sentToSpira.parentId;
+                }
 
-                parentId = sentToSpira.parentId;
                 response.details = sentToSpira;
 
                 // handle success and error cases
                 if (sentToSpira.error) {
                     log.errorCount++;
                     response.error = true;
-                    response.message = sentToSpira.message;
-
-                    //Sets error HTML modal
-                    htmlOutput = HtmlService.createHtmlOutput('<p ' + INLINE_STYLING + '>Error sending ' + (i + 1) + ' of ' + (entriesForExport.length) + '</p>').setWidth(200).setHeight(75);
-                    SpreadsheetApp.getUi().showModalDialog(htmlOutput, 'Progress');
+                    response.message = sentToSpira.errorMessage;
+                  
+                  
+                    //Sets error HTML modals
+                    if (artifact.hierarchical) {
+                        // if there is an error on any hierarchical artifact row, break out of the loop to prevent entries being attached to wrong parent
+                        htmlOutput = HtmlService.createHtmlOutput('<p ' + INLINE_STYLING + '>Error sending ' + (i + 1) + ' of ' + (entriesForExport.length) + ' - sending stopped to avoid indenting entries incorrectly</p>').setWidth(200).setHeight(75);
+                        SpreadsheetApp.getUi().showModalDialog(htmlOutput, 'Progress');
+                        
+                        log.entries.push(response);
+                        break;
+                    } else { 
+                        htmlOutput = HtmlService.createHtmlOutput('<p ' + INLINE_STYLING + '>Error sending ' + (i + 1) + ' of ' + (entriesForExport.length) + '</p>').setWidth(200).setHeight(75);
+                        SpreadsheetApp.getUi().showModalDialog(htmlOutput, 'Progress');
+                    }
 
                 } else {
                     log.successCount++;
                     response.newId = sentToSpira.newId;
+
+                    // if artifact is hierarchical save relevant information to work out how to indent
+                    if (artifact.hierarchical) {
+                        response.details.hierarchyInfo = {
+                            id: sentToSpira.newId,
+                            indent: entriesForExport[i].indentPosition
+                        }
+                    }
 
                     //modal that displays the status of each artifact sent
                     htmlOutputSuccess = HtmlService.createHtmlOutput('<p ' + INLINE_STYLING + '>Sending ' + (i + 1) + ' of ' + (entriesForExport.length) + '...</p>').setWidth(200).setHeight(75);
@@ -860,7 +916,9 @@ function exporter(model, fieldType) {
 
         // review all activity and set final status
         log.status = log.errorCount ? (log.errorCount == log.entriesLength ? STATUS_ENUM.allError : STATUS_ENUM.someError) : STATUS_ENUM.allSuccess;
-      //return {log: log, rowChecks: rowChecks};
+      
+      
+      
         // 5. SET MESSAGES AND FORMATTING ON SHEET
         var bgColors = [],
             notes = [],
@@ -871,14 +929,21 @@ function exporter(model, fieldType) {
                 rowNotes = [],
                 rowValues = [];
             for (var col = 0; col < fields.length; col++) {
-                var isSubType = (log.entries[row].details &&  log.entries[row].details.entry && log.entries[row].details.entry.isSubType) ? log.entries[row].details.entry.isSubType : false;
-                var bgColor = setFeedbackBgColor(sheetData[row][col], log.entries[row].error, fields[col], fieldType, artifact, model.colors ),
-                    note = setFeedbackNote(sheetData[row][col], log.entries[row].error, fields[col], fieldType, log.entries[row].message ),
-                    value = setFeedbackValue(sheetData[row][col], log.entries[row].error, fields[col], fieldType, log.entries[row].newId || "", isSubType );
-
-                rowBgColors.push(bgColor);
-                rowNotes.push(note);
-                rowValues.push(value);
+                if (log.entries.length > row) {
+                    var isSubType = (log.entries[row].details &&  log.entries[row].details.entry && log.entries[row].details.entry.isSubType) ? log.entries[row].details.entry.isSubType : false;
+                    var bgColor = setFeedbackBgColor(sheetData[row][col], log.entries[row].error, fields[col], fieldType, artifact, model.colors ),
+                        note = setFeedbackNote(sheetData[row][col], log.entries[row].error, fields[col], fieldType, log.entries[row].message ),
+                        value = setFeedbackValue(sheetData[row][col], log.entries[row].error, fields[col], fieldType, log.entries[row].newId || "", isSubType );
+    
+                    rowBgColors.push(bgColor);
+                    rowNotes.push(note);
+                    rowValues.push(value);
+                  
+                } else {
+                  rowBgColors.push(setFeedbackBgColor(sheetData[row][col], false, fields[col], fieldType, artifact, model.colors ));
+                  rowNotes.push(null);
+                  rowValues.push(sheetData[row][col]);
+                }
             }
             bgColors.push(rowBgColors);
             notes.push(rowNotes);
@@ -886,9 +951,7 @@ function exporter(model, fieldType) {
         }
         sheetRange.setBackgrounds(bgColors).setNotes(notes).setValues(values);
 
-        //return {log: log, fields: fields, fieldType: fieldType, cellText: cellText, bgColors: bgColors, sheetData: sheetData, notes: notes};
         return log;
-
     }
 }
 
@@ -987,23 +1050,21 @@ function setFeedbackValue (cell, error, field, fieldType, newId, isSubType) {
 // @param: projectId - int of project id for API call
 // @param: fields - object of the relevant fields for specific artifact, along with all metadata about each
 // @param: fieldType - object of all field types with enums
-function manageSendingToSpira (entry, parentId, artifact, user, projectId, fields, fieldType) {
+function manageSendingToSpira (entry, user, projectId, artifact, fields, fieldType, parentId) {
     var data,
         output = {},
         // make sure correct artifact ID is sent to handler (ie type vs subtype)
-        artifactIdToSend = entry.isSubType ? artifact.subTypeId : artifact.id,
-        // only send a parentId value when dealing with subtypes
-        parentIdToSend = entry.isSubType ? parentId : null;
+        artifactIdToSend = entry.isSubType ? artifact.subTypeId : artifact.id;
 
     // set output parent id here so we know this function will always return a value for this
     output.parentId = parentId; 
     
     // send object to relevant artifact post service
-    data = postArtifactToSpira ( entry, user, projectId, artifactIdToSend, parentIdToSend );
+    data = postArtifactToSpira ( entry, user, projectId, artifactIdToSend, parentId );
 
     // save data for logging to client
     output.entry = entry;
-    output.httpCode = data.getResponseCode();
+    output.httpCode = (data && data.getResponseCode() ) ? data.getResponseCode() : "notSent";
     output.artifact = {
         artifactId: artifactIdToSend,
         artifactObject: artifact
@@ -1016,7 +1077,6 @@ function manageSendingToSpira (entry, parentId, artifact, user, projectId, field
         // get the id/subType id of the newly created artifact
         var artifactIdField = getIdFieldName(fields, fieldType, entry.isSubType);
         output.newId = output.fromSpira[artifactIdField];
-
 
         // update the output parent ID to the new id only if the artifact has a subtype and this entry is NOT a subtype
         if (artifact.hasSubType && !entry.isSubType) {
@@ -1040,6 +1100,27 @@ function manageSendingToSpira (entry, parentId, artifact, user, projectId, field
     return output;
 }
 
+
+
+// returns the correct parentId for the relevant indent position by looping back through the list of entries
+// returns -1 if no match found
+// @param: indent - int of the indent position to retrieve the parent for
+// @param: previousEntries - object containing all successfully sent entries - with, if a hierarchical artifact, a hierarchy info object
+function getHierarchicalParentId (indent, previousEntries) {
+    // if there is no indent/ set to initial indent we return out immediately 
+    if (indent === 0 || !previousEntries.length) {
+        return -1;
+    }
+    for (var i = previousEntries.length - 1; i >=0; i--) {
+        // when the indent is greater - means we are indenting, so take the last array item and return out
+        // check for presence of correct objects in item - should exist, as otherwise error should be thrown
+        if (previousEntries[i].details && previousEntries[i].details.hierarchyInfo && previousEntries[i].details.hierarchyInfo.indent < indent) {
+            return previousEntries[i].details.hierarchyInfo.id;
+            break;
+        }
+    }
+    return -1;
+}
 
 
 // returns an int of the total number of required fields for the passed in artifact
@@ -1111,7 +1192,7 @@ function rowHasProblems (rowChecks) {
             problems = "Fill in all required fields";
         } else if (rowChecks.countRequiredFields < rowChecks.totalFieldsRequired && !rowChecks.countSubTypeRequiredFields) {
             problems = "Fill in all required fields";
-        } else if (rowChecks.countRequiredFields && (rowChecks.countRequiredFields == rowChecks.totalFieldsRequired || rowChecks.subTypeIsBlocked) ){
+        } else if (rowChecks.countSubTypeRequiredFields == rowChecks.totalSubTypeFieldsRequired && (rowChecks.countRequiredFields == rowChecks.totalFieldsRequired || rowChecks.subTypeIsBlocked) ){
             problems = "It is unclear what artifact this is intended to be";
         }
     }
@@ -1209,7 +1290,15 @@ function createEntryFromRow (row, model, fieldType, artifactIsHierarchical, last
                         customType = "DateTimeValue";
                     }
                     break;
-
+                            
+                // ARRAY fields are for multiselect lists - currently not supported so just push value into an array to make sure server handles it correctly
+                case fieldType.arr:
+                    if (row[index]) {
+                        value = [row[index]];
+                        customType = ""; // array fields not used for custom properties here
+                    }
+                    break;
+                
                 // DROPDOWNS - get id from relevant name, if one is present
                 case fieldType.drop:
                     idFromName = getIdFromName(row[index], fields[index].values);
@@ -1268,7 +1357,7 @@ function createEntryFromRow (row, model, fieldType, artifactIsHierarchical, last
             // handle hierarchy fields - if required: checks artifact type is hierarchical and if this field sets hierarchy
             if (artifactIsHierarchical && fields[index].setsHierarchy) {
                 // first get the number of indent characters
-                var indentCount = countIndentCharacaters(value, model.indentCharacter);
+                var indentCount = countIndentCharacters(value, model.indentCharacter);
                 var indentPosition = setRelativePosition(indentCount, lastIndentPosition);
 
                 // make sure to slice off the indent characters from the front
@@ -1339,7 +1428,7 @@ function getIdFieldName (fields, fieldType, getSubType) {
 // returns the count of the number of indent characters and returns the value
 // @param: field - a single field string - one already designated as containing hierarchy info
 // @param: indentCharacter - the character used to denote an indent - e.g. ">"
-function countIndentCharacaters (field, indentCharacter) {
+function countIndentCharacters (field, indentCharacter) {
     var indentCount = 0;
     //check for field value and indent character
     if (field && field[0] === indentCharacter) {
@@ -1358,11 +1447,18 @@ function countIndentCharacaters (field, indentCharacter) {
 
 
 // returns the correct relative indent position - based on the previous relative indent and other logic (int neg, pos, or zero)
-// the first time this is called, last position will be null
-// setting indent to -10 is a hack to push the first item (hopefully) all the way to the root position - ie ignore any indents placed by user on first item
 // Currently the API does not support a call to place an artifact at a certain location.
 // @param: indentCount - int of the number of indent characters set by user
-// @param: lastIndentPosition - int of the actual indent position used for the preceding entry/row
+// @param: lastIndentPosition - int sum of the actual indent positions used for the preceding entries
 function setRelativePosition (indentCount, lastIndentPosition) {
-    return (lastIndentPosition === null) ? -10 : indentCount - lastIndentPosition;
+    // the first time this is called, last position will be null
+    if (lastIndentPosition === null) {
+        return 0;
+    } else if (indentCount > lastIndentPosition) {
+        // only indent one level at a time
+        return lastIndentPosition + 1;
+    } else {
+        // this will manage indents of same level or where outdents are required
+        return indentCount;
+    }
 }

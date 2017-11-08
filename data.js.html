@@ -74,7 +74,7 @@ var templateFields = {
                 {id: 6, name: "Design Element"}
             ]
         },
-        {field: "ImportanceName", name: "Importance", type: params.fieldType.drop, 
+        {field: "ImportanceId", name: "Importance", type: params.fieldType.drop, 
             values: [
                 {id: 1, name: "1 -Critical"},
                 {id: 2, name: "2 -High"},
@@ -97,9 +97,9 @@ var templateFields = {
             ]
         },
         {field: "EstimatePoints", name: "Estimate", type: params.fieldType.num},
-        {field: "AuthorName", name: "Author", type: params.fieldType.user},
-        {field: "OwnerName", name: "Owner", type: params.fieldType.user},
-        {field: "ComponentName", name: "Component", type: params.fieldType.component},
+        {field: "AuthorId", name: "Author", type: params.fieldType.user},
+        {field: "OwnerId", name: "Owner", type: params.fieldType.user},
+        {field: "ComponentId", name: "Component", type: params.fieldType.component},
         // unsupported {field: "LinkedRequirementIds", name: "Linked Requirements", type: params.fieldType.arr, unsupported: true},
         // unsupported {field: "Comment", name: "Comment", type: params.fieldType.text, unsupported: true}        
     ],
@@ -143,10 +143,10 @@ var templateFields = {
         {field: "TaskTypeId", name: "Type", type: params.fieldType.drop, required: true, 
             values: [
                 {id: 1, name: "Development"},
-                {id: 2, name: "Infrastructure"},
+                {id: 2, name: "Testing"},
                 {id: 3, name: "Management"},
-                {id: 4, name: "Other"},
-                {id: 5, name: "Testing"}
+                {id: 4, name: "Infrastructure"},
+                {id: 5, name: "Other"}
             ]
         },
         {field: "TaskPriorityId", name: "Priority", type: params.fieldType.drop,
@@ -161,9 +161,12 @@ var templateFields = {
             values: [
                 {id: 1, name: "Not Started"},
                 {id: 2, name: "In Progress"},
-                {id: 4, name: "Completed"},
-                {id: 5, name: "Blocked"},
-                {id: 6, name: "Deferred"}
+                {id: 3, name: "Completed"},
+                {id: 4, name: "Blocked"},
+                {id: 5, name: "Deferred"},
+                {id: 6, name: "Rejected"},
+                {id: 7, name: "Duplicate"},
+                {id: 8, name: "Under Review"}
             ]
         },
         {field: "AuthorId", name: "Author", type: params.fieldType.user},
@@ -182,10 +185,10 @@ var templateFields = {
         {field: "SampleData", name: "Test Step Sample Data", type: params.fieldType.text, isSubTypeField: true},
         {field: "TestCasePriorityId", name: "Test Case Priority", type: params.fieldType.drop, 
             values: [
-                {id: 1, name: "1 -Critical"},
-                {id: 2, name: "2 -High"},
-                {id: 3, name: "3 -Medium"},
-                {id: 4, name: "4 -Low"}
+                {id: 1, name: "1 - Critical"},
+                {id: 2, name: "2 - High"},
+                {id: 3, name: "3 - Medium"},
+                {id: 4, name: "4 - Low"}
             ]
         },
         {field: "TestCaseTypeId", name: "Test Case Type", type: params.fieldType.drop, required: true, 
@@ -200,7 +203,8 @@ var templateFields = {
                 {id: 8, name: "Scenario"},
                 {id: 9, name: "Security"},
                 {id: 10, name: "Unit"},
-                {id: 11, name: "Usability"}
+                {id: 11, name: "Usability"},
+                {id: 12, name: "Exploratory"}
             ]
         },
         {field: "TestCaseStatusId", name: "Test Case Status", type: params.fieldType.drop, required: true,
@@ -210,7 +214,9 @@ var templateFields = {
                 {id: 3, name: "Rejected"},
                 {id: 4, name: "Approved"},
                 {id: 5, name: "Ready for Test"},
-                {id: 6, name: "Obsolete"}
+                {id: 6, name: "Obsolete"},
+                {id: 7, name: "Tested"},
+                {id: 8, name: "Verified"}
             ]
         },
         {field: "OwnerId", name: "Test Case Owner", type: params.fieldType.user},
