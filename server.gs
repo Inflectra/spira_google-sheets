@@ -303,8 +303,8 @@ function postArtifactToSpira(entry, user, projectId, artifactId, parentId) {
         // REQUIREMENTS
         case ART_ENUMS.requirements:
             // url to post initial RQ to ensure it is fully outdented
-            if (entry.indentPosition === INITIAL_HIERARCHY_OUTDENT ) { 
-                postUrl = API_BASE + projectId + '/requirements/indent/' + entry.indentPosition + '?';
+            if (entry.indentPosition === 0 ) { 
+                postUrl = API_BASE + projectId + '/requirements/indent/' + INITIAL_HIERARCHY_OUTDENT + '?';
             // if no parentId then post as a regular RQ 
             } else if (parentId === -1) {
                 postUrl = API_BASE + projectId + '/requirements?';
@@ -348,7 +348,8 @@ function postArtifactToSpira(entry, user, projectId, artifactId, parentId) {
         // TEST STEPS
         case ART_ENUMS.testSteps:
             postUrl = API_BASE + projectId + '/test-cases/' + parentId + '/test-steps?';
-            response = poster(JSON_body, user, postUrl);
+            // only post the test step if we have a parent id
+            response = parentId !== -1 ? poster(JSON_body, user, postUrl) : null;
             break;
     }
 
@@ -565,11 +566,12 @@ function contentValidationSetter (sheet, model, fieldType) {
                 list.push("Yes", "No");
                 setDropdownValidation(sheet, columnNumber, nonHeaderRows, list, false);
                 break;
-
+            
+            // DATE fields get date validation
             case fieldType.date:
                 setDateValidation(sheet, columnNumber, nonHeaderRows, false);
                 break;
-
+            
             // DROPDOWNS and MULTIDROPDOWNS are both treated as simple dropdowns (Sheets does not have multi selects)
             case fieldType.drop:
             case fieldType.multi:
@@ -796,7 +798,7 @@ function exporter(model, fieldType) {
                 }
                 // FOR HIERARCHICAL ARTIFACTS update the last indent position before going to the next entry to make sure relative indent is set correctly
                 if (artifactIsHierarchical) {
-                    lastIndentPosition = ( entry.indentPosition == INITIAL_HIERARCHY_OUTDENT ) ? 0 : entry.indentPosition;
+                    lastIndentPosition = entry.indentPosition;
                 }
             }
             entriesForExport.push(entry);
@@ -841,6 +843,8 @@ function exporter(model, fieldType) {
                 // stop if the artifact is hierarchical because we don't know what side effects there could be to any further items.
                 if (artifact.hierarchical) {
                     response.message += " - no further entries were sent to avoid creating an incorrect hierarchy";
+                    // make sure to push the response so that the client can process error message
+                    log.entries.push(response);
                     break;
                 }
             }
@@ -1060,7 +1064,7 @@ function manageSendingToSpira (entry, user, projectId, artifact, fields, fieldTy
 
     // save data for logging to client
     output.entry = entry;
-    output.httpCode = data.getResponseCode();
+    output.httpCode = (data && data.getResponseCode() ) ? data.getResponseCode() : "notSent";
     output.artifact = {
         artifactId: artifactIdToSend,
         artifactObject: artifact
@@ -1104,7 +1108,7 @@ function manageSendingToSpira (entry, user, projectId, artifact, fields, fieldTy
 // @param: previousEntries - object containing all successfully sent entries - with, if a hierarchical artifact, a hierarchy info object
 function getHierarchicalParentId (indent, previousEntries) {
     // if there is no indent/ set to initial indent we return out immediately 
-    if (indent === 0 || indent === INITIAL_HIERARCHY_OUTDENT || !previousEntries.length) {
+    if (indent === 0 || !previousEntries.length) {
         return -1;
     }
     for (var i = previousEntries.length - 1; i >=0; i--) {
@@ -1188,7 +1192,7 @@ function rowHasProblems (rowChecks) {
             problems = "Fill in all required fields";
         } else if (rowChecks.countRequiredFields < rowChecks.totalFieldsRequired && !rowChecks.countSubTypeRequiredFields) {
             problems = "Fill in all required fields";
-        } else if (rowChecks.countRequiredFields && (rowChecks.countRequiredFields == rowChecks.totalFieldsRequired || rowChecks.subTypeIsBlocked) ){
+        } else if (rowChecks.countSubTypeRequiredFields == rowChecks.totalSubTypeFieldsRequired && (rowChecks.countRequiredFields == rowChecks.totalFieldsRequired || rowChecks.subTypeIsBlocked) ){
             problems = "It is unclear what artifact this is intended to be";
         }
     }
@@ -1286,7 +1290,15 @@ function createEntryFromRow (row, model, fieldType, artifactIsHierarchical, last
                         customType = "DateTimeValue";
                     }
                     break;
-
+                            
+                // ARRAY fields are for multiselect lists - currently not supported so just push value into an array to make sure server handles it correctly
+                case fieldType.arr:
+                    if (row[index]) {
+                        value = [row[index]];
+                        customType = ""; // array fields not used for custom properties here
+                    }
+                    break;
+                
                 // DROPDOWNS - get id from relevant name, if one is present
                 case fieldType.drop:
                     idFromName = getIdFromName(row[index], fields[index].values);
@@ -1441,11 +1453,10 @@ function countIndentCharacters (field, indentCharacter) {
 function setRelativePosition (indentCount, lastIndentPosition) {
     // the first time this is called, last position will be null
     if (lastIndentPosition === null) {
-        // setting first indent position to INITIAL_HIERARCHY_OUTDENT (eg -20) is a hack to push the first requirement to root - ie ignore any indents placed by user on first item
-        return INITIAL_HIERARCHY_OUTDENT;
+        return 0;
     } else if (indentCount > lastIndentPosition) {
         // only indent one level at a time
-        return lastIndentPosition === INITIAL_HIERARCHY_OUTDENT ? 1 : lastIndentPosition + 1;
+        return lastIndentPosition + 1;
     } else {
         // this will manage indents of same level or where outdents are required
         return indentCount;
