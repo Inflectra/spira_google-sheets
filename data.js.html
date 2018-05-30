@@ -173,7 +173,7 @@ var templateFields = {
         {field: "OwnerId", name: "Owner", type: params.fieldType.user},
         {field: "ComponentId", name: "Component", type: params.fieldType.component},
         {field: "EstimatedEffort", name: "Effort (in mins)", type: params.fieldType.int}, 
-        {field: "Folder", name: "Folder", type: params.fieldType.folder},              
+        {field: "Folder", name: "Folder", type: params.fieldType.drop},              
     ],
 
     testCases: [
@@ -220,6 +220,7 @@ var templateFields = {
             ]
         },
         {field: "OwnerId", name: "Test Case Owner", type: params.fieldType.user},
+        {field: "TestCaseFolderId", name: "Test Case Folder", type: params.fieldType.drop, restCall: "test-folders"}
         {field: "ComponentIds", name: "Test Case Component", type: params.fieldType.arr}
      ]
 };

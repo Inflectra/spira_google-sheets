@@ -10,7 +10,7 @@
  *
  */
 
-let devMode = false;
+let devMode = true;
 // on init make sure to run any required startup functions
 (function () {
     // for dev mode only - comment out or set to false to disable any UI dev features
@@ -24,9 +24,9 @@ function setDevStuff (devMode) {
     if (devMode) {
         $("#btn-dev").removeClass("hidden");
         
-        model.user.url = "https://demo.spiraservice.net/gettingstarted";
+        model.user.url = "https://training.spiraservice.net";
         model.user.userName = "administrator";
-        model.user.api_key = "{8604C226-E746-4629-9E47-AC0C8A52B631}";
+        model.user.api_key = "{FF7212BA-8EDB-4B98-9C47-631B46308786}";
     }
 }
 
@@ -540,22 +540,38 @@ function getProjectSpecificInformation(user, projectId) {
 // kicks off all relevant API calls to get artifact specific information
 // @param: user - the user object of the logged in user
 // @param: projectId - int of the reqested project
-// @param: artifact- object of the reqested artifact - needed to query on different parts of object
+// @param: artifact - object of the reqested artifact - needed to query on different parts of object
 function getArtifactSpecificInformation(user, projectId, artifact) {
     // first reset get counts
     model.artifactGetRequestsMade = 0;
     model.artifactGetRequestsToMake = model.baselineArtifactGetRequests;
 
     // increase the count if any bespoke fields are present (eg folders or incident types)
-    if (artifact.bespokeFields && artifact.bespokeFields.length > 0) {
-        model.artifactGetRequestsToMake += artifact.besokeFields.length;
+	var bespokeData = fieldsWithBespokeData(artifact);
+    if (bespokeData) {
+        model.artifactGetRequestsToMake += bespokeData.length;
     }
 
     // get standard artifact information - eg custom fields
     getCustoms(user, projectId, artifact.id);
 
     // get any bespoke field information
+	getBespokes(user,projectId, artifact,id, bespokeData);
 
+}
+
+// goes through artifact object and returns an array of field objects that have specific rest calls to get their data
+// @param: artifact - object of the requested artifact
+function fieldsWithBespokeData(artifact) {
+	if (!artifact.length) {
+		break
+	}
+
+	var bespokeFields = artifact.filter(function(field) {
+		field.restUrl != "undefined";
+	});
+
+	return bespokeFields.length ? bespokeFields : null;
 }
 
 
