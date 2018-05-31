@@ -285,7 +285,7 @@ $('#select-artifact').change(function(e) {
     }
     
     // get the artifact object and update artifact information if artifact has changed
-    let chosenArtifact = getSelectedArtifact();
+    var chosenArtifact = getSelectedArtifact();
 
     if (chosenArtifact !== uiSelection.currentArtifact) {
         //set the temp date store artifact to the one selected;
@@ -511,10 +511,10 @@ function getSelectedProject () {
 // returns an artifact object
 function getSelectedArtifact() {
     // store dropdown values
-    let artifactDropdownVal = $('#select-artifact option:selected').val();
+    var artifactDropdownVal = $('#select-artifact option:selected').val();
 
     // filter the artifact lists to those chosen 
-    let artifactSelected = params.artifacts.filter(function(artifact) {
+    var artifactSelected = params.artifacts.filter(function(artifact) {
         return artifact.id == artifactDropdownVal;
     })[0];
 
@@ -550,13 +550,16 @@ function getArtifactSpecificInformation(user, projectId, artifact) {
 	var bespokeData = fieldsWithBespokeData(artifact);
     if (bespokeData) {
         model.artifactGetRequestsToMake += bespokeData.length;
+
+        // get any bespoke field information
+        bespokeData.forEach(function(field) {
+            getBespoke(user, projectId, artifact.field, field);
+        })
     }
 
     // get standard artifact information - eg custom fields
     getCustoms(user, projectId, artifact.id);
 
-    // get any bespoke field information
-	getBespokes(user,projectId, artifact,id, bespokeData);
 
 }
 
@@ -568,7 +571,7 @@ function fieldsWithBespokeData(artifact) {
 	}
 
 	var bespokeFields = artifact.filter(function(field) {
-		field.restUrl != "undefined";
+		field.bespoke != "undefined";
 	});
 
 	return bespokeFields.length ? bespokeFields : null;
@@ -652,6 +655,34 @@ function getCustomsSuccess(data) {
 
 
 
+// starts GET request to Spira for project users properties
+// @param: user - the user object of the logged in user
+// @param: projectId - int of the reqested project
+function getBespoke(user, projectId, artifactId, field) {
+    // call server side fetch
+    google.script.run
+        .withSuccessHandler(getBespokeSuccess)
+        .withFailureHandler(errorNetwork)
+        .getBespoke(user, projectId, artifactId, field)
+}
+// formats and sets user data on the model
+function getBespokeSuccess(data) {
+    // clear old values
+    uiSelection[data.artifactName] = {};
+    uiSelection[data.artifactName][data.field.field] = [];
+
+    // map through user obj and assign names
+    uiSelection[data.artifactName][data.field.field] = data.values.map(function(item) {
+        return {
+            id: item[data.field.bespoke.idField],
+            name: item[data.field.bespoke.nameField],
+        }
+    }) 
+    model.projectGetRequestsMade++;
+}
+
+
+
 // starts GET request to Spira for project releases properties
 // @param: user - the user object of the logged in user
 // @param: projectId - int of the reqested project
@@ -702,7 +733,7 @@ function getUsersSuccess(data) {
             name: item.FullName,
         }
     }) 
-    model.projectGetRequestsMade++;;
+    model.projectGetRequestsMade++;
 }
 
 

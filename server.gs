@@ -216,6 +216,22 @@ function getCustoms(currentUser, projectId, artifactName) {
 
 
 
+// Gets data for a bespoke specified field (for selected project and artifact)
+// @param: currentUser - object with details about the current user
+// @param: projectId - int id for current project
+// @param: artifactName - string name of the current artifact
+function getBespoke(currentUser, projectId, artifactName, field) {
+    var fetcherURL = API_BASE + projectId + field.bespoke.url + '?';
+    var results = fetcher(currentUser, fetcherURL);
+    return {
+        artifactName: artifactName,
+        field: field,
+        values: results
+    }
+}
+
+
+
 // Gets releases for selected project
 // @param: currentUser - object with details about the current user
 // @param: projectId - int id for current project
