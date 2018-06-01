@@ -678,7 +678,7 @@ function getBespokeSuccess(data) {
             name: item[data.field.bespoke.nameField],
         }
     }) 
-    model.projectGetRequestsMade++;
+    model.artifactGetRequestsMade++;
 }
 
 
@@ -762,11 +762,24 @@ function templateLoader () {
     model.projectReleases = uiSelection.projectReleases;
     model.projectUsers = uiSelection.projectUsers;
 
-    // collate standard fields and custom fields
+    // get variables ready
     var customs = uiSelection.artifactCustomFields,
-        fields = templateFields[model.currentArtifact.field];
-        
+        fields = templateFields[model.currentArtifact.field],
+        hasBespoke = fieldsWithBespokeData(fields);
+    
+    // TODO add bespoke data to relevant fields 
+    if (hasBespoke) {
+        fields.map(field => {
+            if (field.bespoke != "undefined") {
+                field.values = uiSelection[model.currentArtifact.field][field.field];
+            }
+            return field;
+        })
+    }
+    
+    // collate standard fields and custom fields
     model.fields = fields.concat(customs);
+
     
     // call server side template function
     google.script.run
