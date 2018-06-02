@@ -124,7 +124,7 @@ function setDropdown (selectId, array, firstMessage) {
         return !item.hidden ? option : null;
     }).join("");
     
-    // add all optoins to the dropdown
+    // add all options to the dropdown
     $element.append(options);
 }
 
@@ -672,6 +672,7 @@ function getBespokeSuccess(data) {
     uiSelection[data.artifactName][data.field.field] = [];
 
     // map through user obj and assign names
+    // TODO handle hierarchy fields like folders
     uiSelection[data.artifactName][data.field.field] = data.values.map(function(item) {
         return {
             id: item[data.field.bespoke.idField],
@@ -767,7 +768,7 @@ function templateLoader () {
         fields = templateFields[model.currentArtifact.field],
         hasBespoke = fieldsWithBespokeData(fields);
     
-    // TODO add bespoke data to relevant fields 
+    // add bespoke data to relevant fields 
     if (hasBespoke) {
         fields.map(field => {
             if (field.bespoke != "undefined") {
