@@ -22,11 +22,13 @@ var devMode = true;
 // if devmode enabled, set the required fields and show the dev button
 function setDevStuff (devMode) {
     if (devMode) {
-        $("#btn-dev").removeClass("hidden");
+        document.getElementById("btn-dev").classList.remove("hidden");
         
         model.user.url = "https://training.spiraservice.net";
         model.user.userName = "administrator";
         model.user.api_key = "{FF7212BA-8EDB-4B98-9C47-631B46308786}";
+
+        loginAttempt();
     }
 }
 
@@ -35,26 +37,26 @@ function setDevStuff (devMode) {
 // used to show or hide / hide / show a specific panel
 // @param: panel - string. suffix for items to act on (eg if id = panel-help, choice = "help")
 function panelToggle (panel) {
-    panelId = "#panel-" + panel;
-    $(panelId).toggleClass("offscreen");
+    var panelId = "panel-" + panel;
+    document.getElementById("panelId").classList.toggle("offscreen");
 }
 function hidePanel (panel) {
-    panelId = "#panel-" + panel;
-    $(panelId).addClass("offscreen");
+    var panelId = "panel-" + panel;
+    document.getElementById("panelId").classList.add("offscreen");
 }
 function showPanel (panel) {
-    panelId = "#panel-" + panel;
-    $(panelId).removeClass("offscreen");
+    var panelId = "panel-" + panel;
+    document.getElementById("panelId").classList.remove("offscreen");
 }
 
 
 
 // manage the loading spinner
 function showLoadingSpinner () {
-    $('#loader').removeClass('hidden');
+    document.getElementById("loader").classList.remove("hidden");
 }
 function hideLoadingSpinner () {
-    $('#loader').addClass('hidden');
+    document.getElementById("loader").classList.add("hidden");
 }
 
 
@@ -79,21 +81,28 @@ function clearSheet (shouldClear) {
 // resets the sidebar following logout
 function resetSidebar () {
     // clear input field values
-    $('#input-url, #input-userName, #input-password').val('');
+    document.getElementById("input-url").value("");
+    document.getElementById("input-username").value("");
+    document.getElementById("input-password").value("");
     
     // hide other panels, so login page is visible
-    $(".panel:not(#panel-auth)").addClass("offscreen");
-    
-    // disable buttons and dropdowns
-    $("#btn-template, #select-artifact, #btn-toSpira").prop("disabled", true);
+    var otherPanels = document.querySelectorAll(".panel:not(#panel-auth)");
+    otherPanels.forEach(function(panel) {
+        panel.classList.add("offscreen");
+    };
 
+    // disable buttons and dropdowns
+    document.getElementById("btn-template").disabled = true;
+    document.getElementById("select-artifact").disabled = true;
+    document.getElementById("btn-toSpira").disabled = true;
+    
     // reset artifact dropdown to 'Select an Artifact'
-    $("#select-artifact option[value='Select an Artifact']").attr("selected", "selected");
+    document.queryselector("#select-artifact option[value='Select an Artifact']").setAttribute("selected", "selected");
 
     // hide and clear the template info box
-    $("#template-data-box").hide();
-    $("#template-project").text("");
-    $("#template-artifact").text("");
+    document.getElementById("template-data-box")..style.display = "none";
+    document.getElementById("template-project").textContent = "";
+    document.getElementById("template-artifact").textContent = "";
 
     // reset anything required if in devmode
     setDevStuff();
@@ -107,7 +116,7 @@ function resetSidebar () {
 function setDropdown (selectId, array, firstMessage) {
     // first make a deep copy of the array to stop any funny business
     var arrayCopy = JSON.parse(JSON.stringify(array)),
-        $element = $("#" + selectId);
+        select = document.getElementById(selectId);
 
     // if passed in, add default "select" option to top of project array
     if(firstMessage) arrayCopy.unshift({
@@ -116,7 +125,7 @@ function setDropdown (selectId, array, firstMessage) {
     });
 
     // clear the dropdown
-    $element.html('');
+    select.innerHTML = "";
 
     var options = arrayCopy.map(function(item) {
         var disabledText = item.disabled ? " disabled='true'" : "",
@@ -125,7 +134,7 @@ function setDropdown (selectId, array, firstMessage) {
     }).join("");
     
     // add all options to the dropdown
-    $element.append(options);
+    select.appendChild(options);
 }
 
 
@@ -147,18 +156,20 @@ function setDropdown (selectId, array, firstMessage) {
 // get user data from input fields and store in user data object
 // adds the 'api-key' text before the key to make creating the urls simpler
 function getAuthDetails () {
-    model.user.url = $("#input-url").val();
-    model.user.userName = $("#input-userName").val();
-    model.user.api_key = btoa("&api-key=" + encodeURIComponent($("#input-password").val()));
+    model.user.url = document.getElementById("input-url").value;
+    model.user.userName = document.getElementById("input-userName").value;
+
+    var password = document.getElementById("input=password").value;
+    model.user.api_key = btoa("&api-key=" + encodeURIComponent(password));
 }
 
 
 
 // fill in mock values for easy log in development, enable dev button
 function setAuthDetails () {
-    $('#input-url').val(model.user.url);
-    $('#input-userName').val(model.user.userName);
-    $('#input-password').val(model.user.api_key);
+    document.getElementById("input-url").value = model.user.url;
+    document.getElementById("input-userName").value = model.user.userName;
+    document.getElementById("input-password").value = model.user.password;
 }
 
 
@@ -221,7 +232,7 @@ function populateProjects (projects) {
 // manage the switching of the UI off the login screen on succesful login and retrieval of projects
 function showMainPanel () {
     // displays the current logged in user name
-    $('#js--loggedInAs').html('Logged in as: ' + model.user.userName);
+    document.getElementById("js--loggedInAs").innerHTML = "Logged in as: " + model.user.userName;
     
     setDropdown("select-project", model.projects, "Select a project");
     setDropdown("select-artifact", params.artifacts, "Select an artifact");
@@ -253,11 +264,11 @@ function logout (shouldLogout) {
 $('#select-project').change(function(e) {
     // if the project field has not been selected all other selected buttons are disabled
     if (e.target.value === 0) {
-        $("#select-artifact, #btn-template").prop('disabled', true);
+        document.querySelector("select-artifact, #btn-template").disabled = true;
         uiSelection.currentProject = null;
     } else {
         // enable artifacts dropdown
-        $('#select-artifact').prop('disabled', false);
+        document.getElementById("select-artifact").disabled = false;
         
         // get the project object and update project information if project has changed
         var chosenProject = getSelectedProject();
@@ -280,7 +291,7 @@ $('#select-project').change(function(e) {
 // handles enabling the template button if the artifact drop down is properly selected.
 $('#select-artifact').change(function(e) {
     if (e.target.value === 0) {
-        $('#btn-template').prop('disabled', true);
+        document.getElementById("btn-template").disabled = true;
         uiSelection.currentArtifact = null;
     }
     
@@ -306,7 +317,7 @@ $('#select-artifact').change(function(e) {
 // disables and enables the template creation button based on status of required API calls
 function manageTemplateBtnState() {
     // initially disable the button, because required API calls not completed
-    $('#btn-template').prop('disabled', true);
+    document.getElementById("btn-template").disabled = true;
     
     // only try to enable the button when both a project and artifact have been chosen
     if (uiSelection.currentProject && uiSelection.currentArtifact) {
@@ -316,7 +327,7 @@ function manageTemplateBtnState() {
         
         function updateButtonStatus() {
             if ( allGetsSucceeded() ) {
-                $('#btn-template').prop('disabled', false);
+                document.getElementById("btn-template").disabled = false;
                 clearInterval(checkGetsSuccess);
             }
         }
@@ -466,12 +477,15 @@ function sendToSpira (log) {
 // @param: choice - string. suffix for items to select (eg if id = help-section-fields, choice = "fields")
 function showChosenHelpSection (choice) {
     // hide all sections and then only show the one the user wants
-    $(".help-section").addClass("hidden");
-    $("#help-section-" + choice).removeClass("hidden");
+    var helpSections = document.querySelectorAll(".help-section");
+    helpSections.forEach(function(section) {
+        section.classList.add("hidden");
+    })
+    document.querySelector("#help-section-" + choice).classList.remove("hidden");
     
     // set all buttons back to normal, then highlight one just clicked
-    $(".btn-help").removeClass("create");
-    $("#btn-help-" + choice).addClass("create");
+    document.getElementById("btn-help").classList.remove("create");
+    document.querySelector("#btn-help-" + choice).classList.add("create");
 }
 
 
@@ -494,7 +508,7 @@ function showChosenHelpSection (choice) {
 // returns a project object
 function getSelectedProject () {
     // store dropdown value
-    var projectDropdownVal = $('#select-project option:selected').val();
+    var projectDropdownVal = document.querySelector("#select-project option:selected").value;
 
     // filter the project lists to those chosen 
     var projectSelected = model.projects.filter(function(project) {
@@ -511,7 +525,7 @@ function getSelectedProject () {
 // returns an artifact object
 function getSelectedArtifact() {
     // store dropdown values
-    var artifactDropdownVal = $('#select-artifact option:selected').val();
+    var artifactDropdownVal = document.querySelector("#select-artifact option:selected").value;
 
     // filter the artifact lists to those chosen 
     var artifactSelected = params.artifacts.filter(function(artifact) {
@@ -837,12 +851,12 @@ function templateLoaderSuccess(data) {
     hideLoadingSpinner();
             
     //enable the send to spira button
-    $("#btn-toSpira").prop('disabled', false);
+    document.getElementById("btn-toSpira").disalbed = true;
 
     //show text in the sidebar that tells the user what the template is set to:
-    $("#template-project").text(model.currentProject.name);
-    $("#template-artifact").text(model.currentArtifact.name);
-    $("#template-data-box").show();
+    document.getElementById("template-project").textContent = model.currentProject.name;
+    document.getElementById("template-artifact").textContent = model.currentArtifact.name;
+    document.getElementById("template-data-box").style.display = "";
 }
 
 
