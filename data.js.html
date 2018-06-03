@@ -173,7 +173,7 @@ var templateFields = {
         {field: "OwnerId", name: "Owner", type: params.fieldType.user},
         {field: "ComponentId", name: "Component", type: params.fieldType.component},
         {field: "EstimatedEffort", name: "Effort (in mins)", type: params.fieldType.int}, 
-        {field: "Folder", name: "Folder", type: params.fieldType.drop, 
+        {field: "Folder", name: "Folder", type: params.fieldType.drop, values: [],
             bespoke: {
                 url: "/task-folders", 
                 idField: "TaskFolderId", 
@@ -187,28 +187,28 @@ var templateFields = {
         {field: "IncidentId", name: "Incident ID", type: params.fieldType.id},
         {field: "Name", name: "Name", type: params.fieldType.text, required: true},
         {field: "Description", name: "Description", type: params.fieldType.text, required: true},
-        {field: "IncidentTypeId", name: "Type", type: params.fieldType.drop, required: true, 
+        {field: "IncidentTypeId", name: "Type", type: params.fieldType.drop, values: [], required: true, 
             bespoke: {
                 url: "/incidents/types", 
                 idField: "IncidentTypeId", 
                 nameField: "Name", 
             }
         },
-        {field: "IncidentStatusId", name: "Status", type: params.fieldType.drop, required: true, 
+        {field: "IncidentStatusId", name: "Status", type: params.fieldType.drop, values: [], required: true, 
             bespoke: {
                 url: "/incidents/statuses", 
                 idField: "IncidentStatusId", 
                 nameField: "Name", 
             }
         },
-        {field: "SeverityId", name: "Severity", type: params.fieldType.drop, 
+        {field: "SeverityId", name: "Severity", type: params.fieldType.drop, values: [], 
             bespoke: {
                 url: "/incidents/severities", 
                 idField: "SeverityId", 
                 nameField: "Name", 
             }
         },
-        {field: "PriorityId", name: "Priority", type: params.fieldType.drop, 
+        {field: "PriorityId", name: "Priority", type: params.fieldType.drop, values: [], 
             bespoke: {
                 url: "/incidents/priorities", 
                 idField: "PriorityId", 

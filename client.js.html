@@ -666,12 +666,16 @@ function getBespoke(user, projectId, artifactId, field) {
 }
 // formats and sets user data on the model
 function getBespokeSuccess(data) {
-    // clear old values
-    uiSelection[data.artifactName] = {};
+    // create and clear old values
+    if (typeof uiSelection[data.artifactName] == "undefined") {
+        uiSelection[data.artifactName] = {};
+    }
     uiSelection[data.artifactName][data.field.field] = [];
+    
+    // if there is no data, return out now
+    if (!(data.values.length > 0)) return;
 
     // map through user obj and assign names
-    // TODO handle hierarchy fields like folders
     var values = data.values.map(function(item) {
         var obj = {};
         obj.id = item[data.field.bespoke.idField];
@@ -704,6 +708,7 @@ function getBespokeSuccess(data) {
     } else {
         uiSelection[data.artifactName][data.field.field].values = values;
     }
+    
     model.artifactGetRequestsMade++;
 }
 
@@ -795,7 +800,11 @@ function templateLoader () {
     
     // add bespoke data to relevant fields 
     if (hasBespoke) {
-        fields.map(function(field) {
+        fields.filter(function(a) { 
+            var bespokeFieldHasValues = typeof uiSelection[model.currentArtifact.field][a.field] != "undefined" &&
+                uiSelection[model.currentArtifact.field][a.field].values;
+            return bespokeFieldHasValues;
+        }).map(function(field) {
             if (field.bespoke) {
                 field.values = uiSelection[model.currentArtifact.field][field.field].values;
             }
@@ -805,6 +814,12 @@ function templateLoader () {
     
     // collate standard fields and custom fields
     model.fields = fields.concat(customs);
+    
+    // get rid of any dropdowns that don't have any values attached
+    model.fields = model.fields.filter(function(field) {
+        var isNotDrop = field.type !== params.fieldType.drop;
+        return isNotDrop || field.values.length > 0;
+    })
 
     
     // call server side template function
