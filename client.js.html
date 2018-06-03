@@ -10,7 +10,7 @@
  *
  */
 
-let devMode = true;
+var devMode = true;
 // on init make sure to run any required startup functions
 (function () {
     // for dev mode only - comment out or set to false to disable any UI dev features
@@ -62,7 +62,7 @@ function hideLoadingSpinner () {
 // clear spreadsheet, model
 function clearAddonData () {
     clearSheet();
-    model = new Data;
+    model = new Data();
     setDevStuff(devMode);
 }
 
@@ -120,7 +120,7 @@ function setDropdown (selectId, array, firstMessage) {
 
     var options = arrayCopy.map(function(item) {
         var disabledText = item.disabled ? " disabled='true'" : "",
-            option = "<option value=" + item.id + disabledText + ">" + item.name + "</option>"
+            option = "<option value=" + item.id + disabledText + ">" + item.name + "</option>";
         return !item.hidden ? option : null;
     }).join("");
     
@@ -187,8 +187,8 @@ function login() {
 function populateProjects (projects) {
 
     // take projects data from Spira API call, strip out unwanted fields, add to data model
-    let pairedDownProjectsData = projects.map(function(project) {
-        let result = {
+    var pairedDownProjectsData = projects.map(function(project) {
+        var result = {
             id: project.ProjectId,
             name: project.Name
         };
@@ -252,7 +252,7 @@ function logout (shouldLogout) {
 // handles changing project dropdown - what should be enabled or disabled
 $('#select-project').change(function(e) {
     // if the project field has not been selected all other selected buttons are disabled
-    if (e.target.value == 0) {
+    if (e.target.value === 0) {
         $("#select-artifact, #btn-template").prop('disabled', true);
         uiSelection.currentProject = null;
     } else {
@@ -260,7 +260,7 @@ $('#select-project').change(function(e) {
         $('#select-artifact').prop('disabled', false);
         
         // get the project object and update project information if project has changed
-        let chosenProject = getSelectedProject();
+        var chosenProject = getSelectedProject();
 
         if (chosenProject !== uiSelection.currentProject) {
             //set the temp data store project to the one selected;
@@ -279,7 +279,7 @@ $('#select-project').change(function(e) {
 
 // handles enabling the template button if the artifact drop down is properly selected.
 $('#select-artifact').change(function(e) {
-    if (e.target.value == 0) {
+    if (e.target.value === 0) {
         $('#btn-template').prop('disabled', true);
         uiSelection.currentArtifact = null;
     }
@@ -365,7 +365,7 @@ function clearSheetAttempt () {
     //warn that data will be erased
     google.script.run
         .withSuccessHandler(clearSheet)
-        .warn('All data on the first sheet will be deleted. Continue?');
+        .warn('All data on the first sheet will be deleted. Continue?')
 };
 
 
@@ -388,7 +388,7 @@ function saveSheetAttempt () {
 
 }
 function saveSheet (isSaved) {
-    hideLoadingSpinner()
+    hideLoadingSpinner();
     
     if(isSaved){
         //notify on success
@@ -494,10 +494,10 @@ function showChosenHelpSection (choice) {
 // returns a project object
 function getSelectedProject () {
     // store dropdown value
-    let projectDropdownVal = $('#select-project option:selected').val();
+    var projectDropdownVal = $('#select-project option:selected').val();
 
     // filter the project lists to those chosen 
-    let projectSelected = model.projects.filter(function(project) {
+    var projectSelected = model.projects.filter(function(project) {
         return project.id == projectDropdownVal;
     })[0];
 
@@ -547,14 +547,14 @@ function getArtifactSpecificInformation(user, projectId, artifact) {
     model.artifactGetRequestsToMake = model.baselineArtifactGetRequests;
 
     // increase the count if any bespoke fields are present (eg folders or incident types)
-	var bespokeData = fieldsWithBespokeData(artifact);
+	var bespokeData = fieldsWithBespokeData(templateFields[artifact.field]);
     if (bespokeData) {
         model.artifactGetRequestsToMake += bespokeData.length;
 
         // get any bespoke field information
         bespokeData.forEach(function(field) {
             getBespoke(user, projectId, artifact.field, field);
-        })
+        });
     }
 
     // get standard artifact information - eg custom fields
@@ -565,16 +565,15 @@ function getArtifactSpecificInformation(user, projectId, artifact) {
 
 // goes through artifact object and returns an array of field objects that have specific rest calls to get their data
 // @param: artifact - object of the requested artifact
-function fieldsWithBespokeData(artifact) {
-	if (!artifact.length) {
-		break
+function fieldsWithBespokeData(artifactFields) {
+	if (!artifactFields.length) {
+		return;
 	}
-
-	var bespokeFields = artifact.filter(function(field) {
-		field.bespoke != "undefined";
+	var bespokeFields = artifactFields.filter(function(field) {
+		return field.bespoke;
 	});
 
-	return bespokeFields.length ? bespokeFields : null;
+	return bespokeFields.length ? bespokeFields : false;
 }
 
 
@@ -673,12 +672,38 @@ function getBespokeSuccess(data) {
 
     // map through user obj and assign names
     // TODO handle hierarchy fields like folders
-    uiSelection[data.artifactName][data.field.field] = data.values.map(function(item) {
-        return {
-            id: item[data.field.bespoke.idField],
-            name: item[data.field.bespoke.nameField],
+    var values = data.values.map(function(item) {
+        var obj = {};
+        obj.id = item[data.field.bespoke.idField];
+        obj.name = item[data.field.bespoke.nameField];
+        if (data.field.bespoke.indent) {
+            obj.indent = item[data.field.bespoke.indent];
         }
+        return obj;
     }) 
+    
+    // indendted fields need to specify a field name that contains indent data, so we use this as a check to see if a field is hierarchicel
+    if (data.field.bespoke.indent) {
+        var hierarchicalValues = values.sort(function(a, b) {
+            if (a.indent < b.indent) {
+                return -1;
+            }
+            if (a.indent > b.indent) {
+                return 1;
+            }
+            // names must be equal
+            return 0;
+        }).map(function(x) {
+            var indentAmount = (x.indent.length / 3) - 1; 
+            var indentString = "...";
+            x.name = (indentString.repeat(indentAmount)) + x.name;
+            return x;            
+        });
+        uiSelection[data.artifactName][data.field.field].values = hierarchicalValues;
+    
+    } else {
+        uiSelection[data.artifactName][data.field.field].values = values;
+    }
     model.artifactGetRequestsMade++;
 }
 
@@ -733,7 +758,7 @@ function getUsersSuccess(data) {
             username: item.UserName,
             name: item.FullName,
         }
-    }) 
+    });
     model.projectGetRequestsMade++;
 }
 
@@ -751,7 +776,7 @@ function allGetsSucceeded () {
 
 
 // send data to server to manage the creation of the template on the relevant sheet
-function templateLoader () {    
+function templateLoader () {   
     // set the model based on data stored based on current dropdown selections
     model.currentProject = uiSelection.currentProject;
     model.currentArtifact = uiSelection.currentArtifact;
@@ -770,12 +795,12 @@ function templateLoader () {
     
     // add bespoke data to relevant fields 
     if (hasBespoke) {
-        fields.map(field => {
-            if (field.bespoke != "undefined") {
-                field.values = uiSelection[model.currentArtifact.field][field.field];
+        fields.map(function(field) {
+            if (field.bespoke) {
+                field.values = uiSelection[model.currentArtifact.field][field.field].values;
             }
             return field;
-        })
+        });
     }
     
     // collate standard fields and custom fields
@@ -838,6 +863,3 @@ function errorUnknown(err) {
 }
 
 </script>
-
-
-

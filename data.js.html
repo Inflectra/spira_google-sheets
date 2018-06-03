@@ -2,7 +2,7 @@
 /*
  *
  * ==========
- * DATE MODEL
+ * DATA MODEL
  * ==========
  *
  * This holds all the information about the user and all template configuration information. 
@@ -11,7 +11,7 @@
  */
 
 // main store for hard coded enums and metadata that define fields and artifacts
-let params = {
+var params = {
     // enums for different artifacts
     artifactEnums: {
         requirements: 1,
@@ -220,9 +220,14 @@ var templateFields = {
             ]
         },
         {field: "OwnerId", name: "Test Case Owner", type: params.fieldType.user},
-        {field: "TestCaseFolderId", name: "Test Case Folder", type: params.fieldType.drop, bespoke: {
-            url: "/test-folders", idField: "TestCaseFolderId", nameField: "Name", indent: "IndentLevel", parentId: "ParentTestCaseFolderId"
-        }
+        {field: "TestCaseFolderId", name: "Test Case Folder", type: params.fieldType.drop, values: [], 
+            bespoke: {
+              url: "/test-folders", 
+              idField: "TestCaseFolderId", 
+              nameField: "Name", 
+              indent: "IndentLevel"
+            }
+        },
         {field: "ComponentIds", name: "Test Case Component", type: params.fieldType.arr}
      ]
 };
@@ -252,7 +257,7 @@ function Data() {
     this.projectGetRequestsToMake = 3; // users, components, releases
     this.projectGetRequestsMade = 0;
 
-    // TODO - for incidents, more calls are required to get lists of statuses etc, and checks for their completion will be required
+    // counts of artifact specific calls to make
     this.baselineArtifactGetRequests = 1;
     this.artifactGetRequestsToMake = this.baselineArtifactGetRequests; 
     this.artifactGetRequestsMade = 0;
@@ -267,14 +272,14 @@ function Data() {
         header: '#ffffff',
         headerRequired: '#000000',
         warning: '#ffcccc'
-    }
+    };
 
     this.isTemplateLoaded = false;
-    this.fields = new Array;
-};
+    this.fields = [];
+}
 
 // model becomes a new instance of the data store preserving the immutability of the primary data object.
-let model = new Data;
+var model = new Data();
 
 function tempDataStore() {
     this.currentProject = '';
@@ -284,7 +289,8 @@ function tempDataStore() {
     
     this.currentArtifact = '';
     this.artifactCustomFields = [];
-};
-let uiSelection = new tempDataStore;
+}
+
+var uiSelection = new tempDataStore();
 
 </script>
