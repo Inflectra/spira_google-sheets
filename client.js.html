@@ -265,10 +265,15 @@ function logout (shouldLogout) {
 
 
 // handles changing project dropdown - what should be enabled or disabled
-$('#select-project').change(function(e) {
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById("select-project").onchange = changeProjectSelect;
+},false);
+
+function changeProjectSelect (e) {
     // if the project field has not been selected all other selected buttons are disabled
-    if (e.target.value === 0) {
-        document.querySelector("select-artifact, #btn-template").disabled = true;
+    if (e.target.value == 0) {
+        document.getElementById("select-artifact").disabled = true;
+        document.getElementById("btn-template").disabled = true;
         uiSelection.currentProject = null;
     } else {
         // enable artifacts dropdown
@@ -288,33 +293,38 @@ $('#select-project').change(function(e) {
             getProjectSpecificInformation(model.user, uiSelection.currentProject.id);
         }
     }
-});
+}
 
 
 
 // handles enabling the template button if the artifact drop down is properly selected.
-$('#select-artifact').change(function(e) {
-    if (e.target.value === 0) {
+document.addEventListener('DOMContentLoaded', function() {
+    document.getElementById("select-artifact").onchange = changeArtifactSelect;
+},false);
+
+function changeArtifactSelect (e) {
+    if (e.target.value == 0) {
         document.getElementById("btn-template").disabled = true;
         uiSelection.currentArtifact = null;
-    }
+    } else {
     
-    // get the artifact object and update artifact information if artifact has changed
-    var chosenArtifact = getSelectedArtifact();
-
-    if (chosenArtifact !== uiSelection.currentArtifact) {
-        //set the temp date store artifact to the one selected;
-        uiSelection.currentArtifact = chosenArtifact;
-        
-        // enable template button only when all info is received - otherwise keep it disabled
-        manageTemplateBtnState();
-        
-        // kick off API calls
-        getArtifactSpecificInformation(model.user, uiSelection.currentProject.id, uiSelection.currentArtifact);
-        
-
+        // get the artifact object and update artifact information if artifact has changed
+        var chosenArtifact = getSelectedArtifact();
+    
+        if (chosenArtifact !== uiSelection.currentArtifact) {
+            //set the temp date store artifact to the one selected;
+            uiSelection.currentArtifact = chosenArtifact;
+            
+            // enable template button only when all info is received - otherwise keep it disabled
+            manageTemplateBtnState();
+            
+            // kick off API calls
+            getArtifactSpecificInformation(model.user, uiSelection.currentProject.id, uiSelection.currentArtifact);
+            
+    
+        }
     }
-});
+}
 
 
 
@@ -329,9 +339,13 @@ function manageTemplateBtnState() {
         // then enable the button, and stop the timer loop
         var checkGetsSuccess = setInterval (updateButtonStatus, 500);
         
+        // and show a message while api calls are underway
+        document.getElementById("message-fetching-data").style.visibility = "visible";
+        
         function updateButtonStatus() {
             if ( allGetsSucceeded() ) {
                 document.getElementById("btn-template").disabled = false;
+                document.getElementById("message-fetching-data").style.visibility = "hidden";
                 clearInterval(checkGetsSuccess);
             }
         }
