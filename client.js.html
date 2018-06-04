@@ -26,7 +26,7 @@ function setDevStuff (devMode) {
         
         model.user.url = "https://training.spiraservice.net";
         model.user.userName = "administrator";
-        model.user.api_key = "{FF7212BA-8EDB-4B98-9C47-631B46308786}";
+        model.user.api_key = btoa("&api-key=" + encodeURIComponent("{FF7212BA-8EDB-4B98-9C47-631B46308786}"));
 
         loginAttempt();
     }
@@ -38,15 +38,15 @@ function setDevStuff (devMode) {
 // @param: panel - string. suffix for items to act on (eg if id = panel-help, choice = "help")
 function panelToggle (panel) {
     var panelId = "panel-" + panel;
-    document.getElementById("panelId").classList.toggle("offscreen");
+    document.getElementById(panelId).classList.toggle("offscreen");
 }
 function hidePanel (panel) {
     var panelId = "panel-" + panel;
-    document.getElementById("panelId").classList.add("offscreen");
+    document.getElementById(panelId).classList.add("offscreen");
 }
 function showPanel (panel) {
     var panelId = "panel-" + panel;
-    document.getElementById("panelId").classList.remove("offscreen");
+    document.getElementById(panelId).classList.remove("offscreen");
 }
 
 
@@ -81,15 +81,15 @@ function clearSheet (shouldClear) {
 // resets the sidebar following logout
 function resetSidebar () {
     // clear input field values
-    document.getElementById("input-url").value("");
-    document.getElementById("input-username").value("");
-    document.getElementById("input-password").value("");
+    document.getElementById("input-url").value = "";
+    document.getElementById("input-userName").value = "";
+    document.getElementById("input-password").value = "";
     
     // hide other panels, so login page is visible
     var otherPanels = document.querySelectorAll(".panel:not(#panel-auth)");
     otherPanels.forEach(function(panel) {
         panel.classList.add("offscreen");
-    };
+    });
 
     // disable buttons and dropdowns
     document.getElementById("btn-template").disabled = true;
@@ -97,10 +97,10 @@ function resetSidebar () {
     document.getElementById("btn-toSpira").disabled = true;
     
     // reset artifact dropdown to 'Select an Artifact'
-    document.queryselector("#select-artifact option[value='Select an Artifact']").setAttribute("selected", "selected");
+    document.getElementById("select-artifact").selectedIndex = "0";
 
     // hide and clear the template info box
-    document.getElementById("template-data-box")..style.display = "none";
+    document.getElementById("template-data-box").style.display = "none";
     document.getElementById("template-project").textContent = "";
     document.getElementById("template-artifact").textContent = "";
 
@@ -127,14 +127,18 @@ function setDropdown (selectId, array, firstMessage) {
     // clear the dropdown
     select.innerHTML = "";
 
-    var options = arrayCopy.map(function(item) {
-        var disabledText = item.disabled ? " disabled='true'" : "",
-            option = "<option value=" + item.id + disabledText + ">" + item.name + "</option>";
-        return !item.hidden ? option : null;
-    }).join("");
-    
-    // add all options to the dropdown
-    select.appendChild(options);
+    var options = arrayCopy.forEach(function(item) {
+        //var disabledText = item.disabled ? " disabled='true'" : "",
+            //option = "<option value=" + item.id + disabledText + ">" + item.name + "</option>";
+        var option = document.createElement("option");
+        option.disabled = item.disabled;
+        option.value = item.id;
+        option.innerHTML = item.name;
+        
+        if (!item.hidden) {
+            select.appendChild(option);
+        } 
+    });
 }
 
 
@@ -159,7 +163,7 @@ function getAuthDetails () {
     model.user.url = document.getElementById("input-url").value;
     model.user.userName = document.getElementById("input-userName").value;
 
-    var password = document.getElementById("input=password").value;
+    var password = document.getElementById("input-password").value;
     model.user.api_key = btoa("&api-key=" + encodeURIComponent(password));
 }
 
@@ -176,7 +180,7 @@ function setAuthDetails () {
 
 // handle the click of the login button
 function loginAttempt () {
-    getAuthDetails();
+    if (!devMode) getAuthDetails();
     login();
 }
 // login function that starts the intial data creation
@@ -376,8 +380,8 @@ function clearSheetAttempt () {
     //warn that data will be erased
     google.script.run
         .withSuccessHandler(clearSheet)
-        .warn('All data on the first sheet will be deleted. Continue?')
-};
+        .warn('All data on the first sheet will be deleted. Continue?');
+}
 
 
 
@@ -447,8 +451,8 @@ function sendToSpira (log) {
     //if array (which holds error responses) is present, and errors present
     if (log.errorCount) {
         errorMessages = log.entries
-            .filter(function(entry) { return entry.error})
-            .map(function(entry){ return entry.message });
+            .filter(function(entry) { return entry.error; })
+            .map(function(entry){ return entry.message; });
     }   
     hideLoadingSpinner();
     
@@ -475,17 +479,20 @@ function sendToSpira (log) {
 
 // manage showing the correct help section to the user
 // @param: choice - string. suffix for items to select (eg if id = help-section-fields, choice = "fields")
-function showChosenHelpSection (choice) {
+function showChosenHelpSection (choice) {   
     // hide all sections and then only show the one the user wants
     var helpSections = document.querySelectorAll(".help-section");
     helpSections.forEach(function(section) {
         section.classList.add("hidden");
-    })
-    document.querySelector("#help-section-" + choice).classList.remove("hidden");
+    });
+    document.getElementById("help-section-" + choice).classList.remove("hidden");
     
     // set all buttons back to normal, then highlight one just clicked
-    document.getElementById("btn-help").classList.remove("create");
-    document.querySelector("#btn-help-" + choice).classList.add("create");
+    var helpButtons = document.querySelectorAll(".btn-help");
+    helpButtons.forEach(function(btn) {
+        btn.classList.remove("create");
+    });
+    document.getElementById("btn-help-" + choice).classList.add("create");
 }
 
 
@@ -508,7 +515,8 @@ function showChosenHelpSection (choice) {
 // returns a project object
 function getSelectedProject () {
     // store dropdown value
-    var projectDropdownVal = document.querySelector("#select-project option:selected").value;
+    var select = document.getElementById("select-project");
+    var projectDropdownVal = select.options[select.selectedIndex].value;
 
     // filter the project lists to those chosen 
     var projectSelected = model.projects.filter(function(project) {
@@ -525,7 +533,8 @@ function getSelectedProject () {
 // returns an artifact object
 function getSelectedArtifact() {
     // store dropdown values
-    var artifactDropdownVal = document.querySelector("#select-artifact option:selected").value;
+    var select = document.getElementById("select-artifact");
+    var artifactDropdownVal = select.options[select.selectedIndex].value;
 
     // filter the artifact lists to those chosen 
     var artifactSelected = params.artifacts.filter(function(artifact) {
@@ -614,7 +623,7 @@ function getComponentsSuccess(data) {
         return {
             id: item.ComponentId, 
             name: item.Name
-        }
+        };
     });
     model.projectGetRequestsMade++;
 }
@@ -656,8 +665,8 @@ function getCustomsSuccess(data) {
                     return {
                         id: listItem.CustomPropertyValueId,
                         name: listItem.Name
-                    }
-                })
+                    };
+                });
             }
 
             return customField;
@@ -676,7 +685,7 @@ function getBespoke(user, projectId, artifactId, field) {
     google.script.run
         .withSuccessHandler(getBespokeSuccess)
         .withFailureHandler(errorNetwork)
-        .getBespoke(user, projectId, artifactId, field)
+        .getBespoke(user, projectId, artifactId, field);
 }
 // formats and sets user data on the model
 function getBespokeSuccess(data) {
@@ -698,7 +707,7 @@ function getBespokeSuccess(data) {
             obj.indent = item[data.field.bespoke.indent];
         }
         return obj;
-    }) 
+    }) ;
     
     // indendted fields need to specify a field name that contains indent data, so we use this as a check to see if a field is hierarchicel
     if (data.field.bespoke.indent) {
@@ -748,8 +757,8 @@ function getReleasesSuccess(data) {
         return {
             id: item.ReleaseId,
             name: item.Name
-        }
-    })
+        };
+    });
     model.projectGetRequestsMade++;
 }
 
@@ -763,7 +772,7 @@ function getUsers(user, projectId) {
     google.script.run
         .withSuccessHandler(getUsersSuccess)
         .withFailureHandler(errorNetwork)
-        .getUsers(user, projectId)
+        .getUsers(user, projectId);
 }
 // formats and sets user data on the model
 function getUsersSuccess(data) {
@@ -776,7 +785,7 @@ function getUsersSuccess(data) {
             id: item.UserId,
             username: item.UserName,
             name: item.FullName,
-        }
+        };
     });
     model.projectGetRequestsMade++;
 }
@@ -833,7 +842,7 @@ function templateLoader () {
     model.fields = model.fields.filter(function(field) {
         var isNotDrop = field.type !== params.fieldType.drop;
         return isNotDrop || field.values.length > 0;
-    })
+    });
 
     
     // call server side template function
