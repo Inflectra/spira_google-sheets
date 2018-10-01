@@ -599,6 +599,7 @@ function getArtifactSpecificInformation(user, projectId, artifact) {
             getBespoke(user, projectId, artifact.field, field);
         });
     }
+    
 
     // get standard artifact information - eg custom fields
     getCustoms(user, projectId, artifact.id);
@@ -676,8 +677,16 @@ function getCustomsSuccess(data) {
                 field: item.CustomPropertyFieldName, 
                 name: item.Name,
                 propertyNumber: item.PropertyNumber,
-                type: item.CustomPropertyTypeId
+                type: item.CustomPropertyTypeId,
             };
+            
+            // mark as required or not - default is that it can be empty
+            var allowEmptyOption = item.Options && item.Options.filter(function(option) {
+                return option.CustomPropertyOptionId && option.CustomPropertyOptionId === 1;
+            });
+            if (allowEmptyOption && allowEmptyOption.length && allowEmptyOption[0].Value == "N") {
+                customField.required = true;
+            }
 
             // add array of values for dropdowns
             if (item.CustomPropertyTypeId == params.fieldType.drop || item.CustomPropertyTypeId == params.fieldType.multi) {
@@ -715,43 +724,44 @@ function getBespokeSuccess(data) {
     }
     uiSelection[data.artifactName][data.field.field] = [];
     
-    // if there is no data, return out now
-    if (!(data.values.length > 0)) return;
+    // if there is data take steps to add it to the artifact object
+    if (data.values.length) {
 
-    // map through user obj and assign names
-    var values = data.values.map(function(item) {
-        var obj = {};
-        obj.id = item[data.field.bespoke.idField];
-        obj.name = item[data.field.bespoke.nameField];
+        // map through user obj and assign names
+        var values = data.values.map(function(item) {
+            var obj = {};
+            obj.id = item[data.field.bespoke.idField];
+            obj.name = item[data.field.bespoke.nameField];
+            if (data.field.bespoke.indent) {
+                obj.indent = item[data.field.bespoke.indent];
+            }
+            return obj;
+        }) ;
+        
+        // indented fields need to specify a field name that contains indent data, so we use this as a check to see if a field is hierarchicel
         if (data.field.bespoke.indent) {
-            obj.indent = item[data.field.bespoke.indent];
+            var hierarchicalValues = values.sort(function(a, b) {
+                if (a.indent < b.indent) {
+                    return -1;
+                }
+                if (a.indent > b.indent) {
+                    return 1;
+                }
+                // names must be equal
+                return 0;
+            }).map(function(x) {
+                var indentAmount = (x.indent.length / 3) - 1; 
+                var indentString = "...";
+                x.name = (indentString.repeat(indentAmount)) + x.name;
+                return x;            
+            });
+            uiSelection[data.artifactName][data.field.field].values = hierarchicalValues;
+        
+        } else {
+            uiSelection[data.artifactName][data.field.field].values = values;
         }
-        return obj;
-    }) ;
-    
-    // indendted fields need to specify a field name that contains indent data, so we use this as a check to see if a field is hierarchicel
-    if (data.field.bespoke.indent) {
-        var hierarchicalValues = values.sort(function(a, b) {
-            if (a.indent < b.indent) {
-                return -1;
-            }
-            if (a.indent > b.indent) {
-                return 1;
-            }
-            // names must be equal
-            return 0;
-        }).map(function(x) {
-            var indentAmount = (x.indent.length / 3) - 1; 
-            var indentString = "...";
-            x.name = (indentString.repeat(indentAmount)) + x.name;
-            return x;            
-        });
-        uiSelection[data.artifactName][data.field.field].values = hierarchicalValues;
-    
-    } else {
-        uiSelection[data.artifactName][data.field.field].values = values;
     }
-    
+    // in all cases make sure the successful request is recorded
     model.artifactGetRequestsMade++;
 }
 
