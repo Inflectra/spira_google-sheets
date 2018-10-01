@@ -280,9 +280,9 @@ function changeProjectSelect (e) {
         document.getElementById("select-artifact").disabled = false;
         
         // get the project object and update project information if project has changed
-        var chosenProject = getSelectedProject();
+        var chosenProject = getSelectedProject(); 
 
-        if (chosenProject !== uiSelection.currentProject) {
+        if (chosenProject.id && chosenProject.id !== uiSelection.currentProject.id) {
             //set the temp data store project to the one selected;
             uiSelection.currentProject = chosenProject;
             
@@ -291,6 +291,11 @@ function changeProjectSelect (e) {
         
             // kick off API calls
             getProjectSpecificInformation(model.user, uiSelection.currentProject.id);
+            
+            // get new data for artifact and this project, if artifact has been selected
+            if (uiSelection.currentArtifact) {
+                getArtifactSpecificInformation(model.user, uiSelection.currentProject.id, uiSelection.currentArtifact)
+            }
         }
     }
 }
@@ -579,6 +584,7 @@ function getProjectSpecificInformation(user, projectId) {
 // @param: projectId - int of the reqested project
 // @param: artifact - object of the reqested artifact - needed to query on different parts of object
 function getArtifactSpecificInformation(user, projectId, artifact) {
+
     // first reset get counts
     model.artifactGetRequestsMade = 0;
     model.artifactGetRequestsToMake = model.baselineArtifactGetRequests;
@@ -874,7 +880,7 @@ function templateLoaderSuccess(data) {
     hideLoadingSpinner();
             
     //enable the send to spira button
-    document.getElementById("btn-toSpira").disalbed = true;
+    document.getElementById("btn-toSpira").disabled = false;
 
     //show text in the sidebar that tells the user what the template is set to:
     document.getElementById("template-project").textContent = model.currentProject.name;
