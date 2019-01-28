@@ -46,7 +46,7 @@ var params = {
     // enums and various metadata for all artifacts potentially used by the system
     artifacts: [
         {field: 'requirements', name: 'Requirements', id: 1, hierarchical: true},
-        {field: 'testCases',    name: 'Test Cases',   id: 2, hasFolders: true, hasSubType: true, subTypeId: 7},
+        {field: 'testCases',    name: 'Test Cases',   id: 2, hasFolders: true, hasSubType: true, subTypeId: 7, subTypeName: "TestSteps"},
         {field: 'incidents',    name: 'Incidents',    id: 3},
         {field: 'releases',     name: 'Releases',     id: 4, hierarchical: true},
         {field: 'testRuns',     name: 'Test Runs',    id: 5, disabled: true, hidden: true},
@@ -230,7 +230,8 @@ var templateFields = {
         {field: "TestCaseId", name: "Case ID", type: params.fieldType.id},
         {field: "TestStepId", name: "Step ID", type: params.fieldType.subId, isSubTypeField: true},
         {field: "Name", name: "Test Case Name", type: params.fieldType.text, required: true, blocksSubType: true},
-        {field: "Description", name: "Test Case/Step Description", type: params.fieldType.text, isTypeAndSubTypeField: true, requiredForSubType: true},
+        {field: "Description", name: "Test Case Description", type: params.fieldType.text, blocksSubType: true},
+        {field: "Description", name: "Test Step Description", type: params.fieldType.text, isSubTypeField: true, requiredForSubType: true},
         {field: "ExpectedResult", name: "Test Step Expected Result", type: params.fieldType.text, isSubTypeField: true, requiredForSubType: true},
         {field: "SampleData", name: "Test Step Sample Data", type: params.fieldType.text, isSubTypeField: true},
         {field: "TestCasePriorityId", name: "Test Case Priority", type: params.fieldType.drop, 
@@ -325,6 +326,7 @@ function Data() {
     };
 
     this.isTemplateLoaded = false;
+    this.isGettingDataAttempt = false;
     this.fields = [];
 }
 
