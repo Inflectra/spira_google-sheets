@@ -1,4 +1,31 @@
 /*
+ *
+ * ==============================
+ * MICROSOFT EXCEL SPECIFIC SETUP
+ * ==============================
+ *
+ */
+/*
+export { 
+    clearAll, 
+    getProjects, 
+    getFromSpiraExcel, 
+    warn, 
+    sendToSpira, 
+    operationComplete,
+    getComponents,
+    getCustoms,
+    getBespoke,
+    getReleases,
+    getUsers,
+    templateLoader,
+    error
+};
+
+import { showPanel, hidePanel } from './taskpane.js';
+*/
+
+/*
  * =======
  * TODO
  * =======
@@ -6,6 +33,9 @@
  - make sure when you change project / art the get / send buttons are disabled
  - check what happens when add more rows from get than are on sheet. Does the validation get copied down?
  - do we need PUT? Existing customers want it but it causes so much hassle and misuse
+ - TODO: disable "send to spira" after have done a get
+ - better handling of trying to do a put
+ - try using it for several times in a row and fix any bugs
  */
 
 
@@ -25,7 +55,8 @@ var API_BASE = '/services/v5_0/RestService.svc/projects/',
 		testSets: 8
 	},
 	INITIAL_HIERARCHY_OUTDENT = -20,
-    GET_PAGINATION_SIZE = 100,
+	GET_PAGINATION_SIZE = 100,
+	EXCEL_MAX_ROWS = 1000,
 	FIELD_MANAGEMENT_ENUMS = {
 		all: 1,
 		standard: 2,
@@ -34,7 +65,20 @@ var API_BASE = '/services/v5_0/RestService.svc/projects/',
 	STATUS_ENUM = {
 		allSuccess: 1,
 		allError: 2,
-		someError: 3
+		someError: 3,
+		wrongSheet: 4
+	},
+	STATUS_MESSAGE_GOOGLE = {
+		1: "All done! To send more data over, clear the sheet first.",
+		2: "Sorry, but there were some problems (these cells are marked in red). Check the notes on the relevant ID field for explanations.",
+		3: "We're really sorry, but we couldn't send anything to SpiraTeam - please check notes on the ID fields for more information.",
+		4: "You are not on the correct worksheet. Please go to the sheet that matches the one listed on the Spira taskpane."
+	},
+	STATUS_MESSAGE_EXCEL = {
+		1: "All done! To send more data over, clear the sheet first.",
+		2: "Sorry, but there were some problems (these cells are marked in red). Check the cells at the end of relevant rows for explanations.",
+		3: "We're really sorry, but we couldn't send anything to SpiraTeam - please check cells at the end of the row for more information.",
+		4: "You are not on the correct worksheet. Please go to the sheet that matches the one listed on the Spira taskpane."
 	},
     CUSTOM_PROP_TYPE_ENUM = {
       1: "StringValue",
@@ -46,8 +90,9 @@ var API_BASE = '/services/v5_0/RestService.svc/projects/',
       7: "IntegerListValue",
       8: "IntegerValue"
       
-    }
-	INLINE_STYLING = "style='font-family: sans-serif'";
+    },
+  INLINE_STYLING = "style='font-family: sans-serif'",
+  IS_GOOGLE = typeof UrlFetchApp != "undefined";
 
 /*
  * ======================
@@ -60,7 +105,7 @@ var API_BASE = '/services/v5_0/RestService.svc/projects/',
  *
  */
 
-// App script boilerplate install function
+// Google App script boilerplate install function
 // opens app on install
 function onInstall(e) {
   onOpen(e);
@@ -141,35 +186,68 @@ function save() {
 
 
 
-//clears first sheet in spreadsheet
+//clears active sheet in spreadsheet
 function clearAll() {
-	// get first active spreadsheet
-	var spreadSheet = SpreadsheetApp.getActiveSpreadsheet();
-	var sheet = spreadSheet.getActiveSheet();
 
-	// clear all formatting and content
-	var lastColumn = sheet.getMaxColumns(),
+  if (IS_GOOGLE) {
+    // get active spreadsheet
+    var spreadSheet = SpreadsheetApp.getActiveSpreadsheet(),
+		sheet = spreadSheet.getActiveSheet(),
+		lastColumn = sheet.getMaxColumns(),
 		lastRow = sheet.getMaxRows();
-	sheet.clear(); //.showColumns(1,  lastColumn)
 
-	// clears data validations and notes from the entire sheet
-	var range = sheet.getRange(1, 1, lastRow, lastColumn);
-	range.clearDataValidations().clearNote();
-
-	// remove any protections on the sheet
-	var protections = spreadSheet.getProtections(SpreadsheetApp.ProtectionType.RANGE);
-	for (var i = 0; i < protections.length; i++) {
-	   var protection = protections[i];
-	   if (protection.canEdit()) {
-		   protection.remove();
-	   }
-   }
-
-	// Reset sheet name
-	sheet.setName(new Date().getTime());
+    sheet.clear()
+  
+    // clears data validations and notes from the entire sheet
+    var range = sheet.getRange(1, 1, lastRow, lastColumn);
+    range.clearDataValidations().clearNote();
+  
+    // remove any protections on the sheet
+    var protections = spreadSheet.getProtections(SpreadsheetApp.ProtectionType.RANGE);
+    for (var i = 0; i < protections.length; i++) {
+       var protection = protections[i];
+       if (protection.canEdit()) {
+         protection.remove();
+       }
+	 }
+	 
+    // Reset sheet name
+    sheet.setName(new Date().getTime());
+    
+  } else {
+    return Excel.run({ delayForCellEdit: true }, function (context) {
+	  var sheet = context.workbook.worksheets.getActiveWorksheet();
+	  var now = new Date().getTime();
+	  sheet.name = now.toString();
+	  sheet.getRange().clear();
+      return context.sync();
+    })
+  }
 }
 
 
+// handles showing popup messages to user
+// @param: message - strng of the raw message to show user
+// @param: messageTitle - strng of the message title to use
+function popupShow(message, messageTitle) {
+	if (!message) return;
+
+	if (IS_GOOGLE) {
+		var htmlMessage = HtmlService.createHtmlOutput('<p ' + INLINE_STYLING + '>' + message + '</p>').setWidth(200).setHeight(75);
+		SpreadsheetApp.getUi().showModalDialog(htmlMessage, messageTitle || "");		 
+	} else {
+		showPanel("confirm");
+		document.getElementById("message-confirm").innerHTML = (messageTitle ? "<b>" + messageTitle + ":</b> " : "") + message;
+		document.getElementById("btn-confirm-cancel").style.visibility = "hidden";
+        document.getElementById("btn-confirm-ok").onclick = function() { popupHide()};
+	}
+}
+
+function popupHide() {
+	hidePanel("confirm");
+	document.getElementById("message-confirm").innerHTML = "";
+	document.getElementById("btn-confirm-cancel").style.visibility = "visible";
+}
 
 
 
@@ -191,21 +269,27 @@ function clearAll() {
 // @param: currentUser - user object storing login data from client
 // @param: fetcherUrl - url string passed in to connect with Spira
 function fetcher(currentUser, fetcherURL) {
-	//google base 64 encoded string utils
-	var decoded = Utilities.base64Decode(currentUser.api_key);
-	var APIKEY = Utilities.newBlob(decoded).getDataAsString();
+	//use google's Utilities to base64 decode if present, otherwise use standard JS (ie for MS Excel)
+	var decoded = typeof Utilities != "undefined" ? Utilities.base64Decode(currentUser.api_key) : atob(currentUser.api_key);
+	var APIKEY = typeof Utilities != "undefined" ? Utilities.newBlob(decoded).getDataAsString() : decoded;
 
 	//build URL from args
 	var fullUrl = currentUser.url + fetcherURL + "username=" + currentUser.userName + APIKEY;
 	//set MIME type
 	var params = { 'content-type': 'application/json' };
 
-	//call Google fetch function
-	var response = UrlFetchApp.fetch(fullUrl, params);
+	//call Google fetch function (UrlFetchApp) if using google
+	if (IS_GOOGLE) {
+		var response = UrlFetchApp.fetch(fullUrl, params);
+		//returns parsed JSON
+		//unparsed response contains error codes if needed
+		return JSON.parse(response);
 
-	//returns parsed JSON
-	//unparsed response contains error codes if needed
-	return JSON.parse(response);
+	//for MS Excel, use axios to return a promise to the taskpane
+	} else {
+		return axios.get(fullUrl);
+	}
+
 }
 
 
@@ -214,7 +298,7 @@ function fetcher(currentUser, fetcherURL) {
 // This function is called on initial log in and therefore also acts as user validation
 // @param: currentUser - object with details about the current user
 function getProjects(currentUser) {
-	var fetcherURL = API_BASE_NO_SLASH + '?';
+  var fetcherURL = API_BASE_NO_SLASH + '?';
 	return fetcher(currentUser, fetcherURL);
 }
 
@@ -248,10 +332,15 @@ function getCustoms(currentUser, projectId, artifactName) {
 function getBespoke(currentUser, projectId, artifactName, field) {
 	var fetcherURL = API_BASE + projectId + field.bespoke.url + '?';
 	var results = fetcher(currentUser, fetcherURL);
-	return {
-		artifactName: artifactName,
-		field: field,
-		values: results
+	
+	if (IS_GOOGLE) {
+		return {
+			artifactName: artifactName,
+			field: field,
+			values: results
+		}
+	} else {
+		return results;
 	}
 }
 
@@ -302,12 +391,12 @@ function getArtifacts(user, projectId, artifactTypeId, startRow, numberOfRows, a
     case ART_ENUMS.releases:
       fullURL += "/releases/search?start_row=" + startRow + "&number_rows=" + numberOfRows + "&";
       var rawResponse = poster("", user, fullURL);
-      response = JSON.parse(rawResponse); // this particular return needs to be parsed here
+      response = IS_GOOGLE ? JSON.parse(rawResponse) : rawResponse; // this particular return needs to be parsed here
       break;
     case ART_ENUMS.tasks:
       fullURL += "/tasks?starting_row=" + startRow + "&number_of_rows=" + numberOfRows + "&sort_field=TaskId&sort_direction=ASC&";
       var rawResponse = poster("", user, fullURL);
-      response = JSON.parse(rawResponse); // this particular return needs to be parsed here
+      response = IS_GOOGLE ? JSON.parse(rawResponse) : rawResponse; // this particular return needs to be parsed here
       break;
   }
   return response;
@@ -332,9 +421,9 @@ function getArtifacts(user, projectId, artifactTypeId, startRow, numberOfRows, a
 // @param: currentUser - user object storing login data from client
 // @param: postUrl - url string passed in to connect with Spira
 function poster(body, currentUser, postUrl) {
-	//encryption
-	var decoded = Utilities.base64Decode(currentUser.api_key);
-	var APIKEY = Utilities.newBlob(decoded).getDataAsString();
+	//use google's Utilities to base64 decode if present, otherwise use standard JS (ie for MS Excel)
+	var decoded = typeof Utilities != "undefined" ? Utilities.base64Decode(currentUser.api_key) : atob(currentUser.api_key);
+	var APIKEY = typeof Utilities != "undefined" ? Utilities.newBlob(decoded).getDataAsString() : decoded;
 
 	//build URL from args
 	var fullUrl = currentUser.url + postUrl + "username=" + currentUser.userName + APIKEY;
@@ -346,13 +435,17 @@ function poster(body, currentUser, postUrl) {
     params.muteHttpExceptions = true;
     if (body) params.payload = body;
   
-    //call Google fetch function
-	var response = UrlFetchApp.fetch(fullUrl, params);
-  //return fullUrl;
-	//returns parsed JSON
-	//unparsed response contains error codes if needed
-	return response;
-	//return JSON.parse(response);
+	//call Google fetch function
+	if (IS_GOOGLE) {
+		var response = UrlFetchApp.fetch(fullUrl, params);
+		  return response;
+	} else {
+		//for MS Excel, use axios to return a promise to the taskpane
+		// by default axios has a content-type of json, but you get an error when you don't specifically include it in the header
+		return axios.post(fullUrl, body, {
+			headers: { 'Content-Type': 'application/json' }
+		});
+	}
 }
 
 
@@ -364,7 +457,7 @@ function poster(body, currentUser, postUrl) {
 // @param: projectId - int of the current project
 // @param: artifactId - int of the current artifact
 // @param: parentId - optional int of the relevant parent to attach the artifact too
-function postArtifactToSpira(entry, user, projectId, artifactId, parentId) {
+function postArtifactToSpira(entry, user, projectId, artifactTypeId, parentId) {
 
 	//stringify
 	var JSON_body = JSON.stringify(entry),
@@ -372,7 +465,7 @@ function postArtifactToSpira(entry, user, projectId, artifactId, parentId) {
 		postUrl = "";
 
 	//send JSON object of new item to artifact specific export function
-	switch (artifactId) {
+	switch (artifactTypeId) {
 
 		// REQUIREMENTS
 		case ART_ENUMS.requirements:
@@ -386,19 +479,16 @@ function postArtifactToSpira(entry, user, projectId, artifactId, parentId) {
 			} else {
 				postUrl = API_BASE + projectId + '/requirements/parent/' + parentId + '?';
 			}
-			response = poster(JSON_body, user, postUrl);
 			break;
 
 		// TEST CASES
 		case ART_ENUMS.testCases:
 			postUrl = API_BASE + projectId + '/test-cases?';
-			response = poster(JSON_body, user, postUrl);
 			break;
 
 		// INCIDENTS
 		case ART_ENUMS.incidents:
 			postUrl = API_BASE + projectId + '/incidents?';
-			response = poster(JSON_body, user, postUrl);
 			break;
 		
 		// RELEASES
@@ -410,24 +500,21 @@ function postArtifactToSpira(entry, user, projectId, artifactId, parentId) {
 			} else {
 				postUrl = API_BASE + projectId + '/releases/' + parentId + '?';
 			}
-			response = poster(JSON_body, user, postUrl);
 			break;
 
 		// TASKS
 		case ART_ENUMS.tasks:
 			postUrl = API_BASE + projectId + '/tasks?';
-			response = poster(JSON_body, user, postUrl);
 			break;
 
 		// TEST STEPS
 		case ART_ENUMS.testSteps:
-			postUrl = API_BASE + projectId + '/test-cases/' + parentId + '/test-steps?';
+			postUrl = parentId !== -1 ? API_BASE + projectId + '/test-cases/' + parentId + '/test-steps?' : null;
 			// only post the test step if we have a parent id
-			response = parentId !== -1 ? poster(JSON_body, user, postUrl) : null;
 			break;
 	}
 
-	return response;
+	return postUrl ? poster(JSON_body, user, postUrl) : null;
 }
 
 
@@ -489,13 +576,13 @@ function warn(string) {
 
 // Alert pop up for export success
 // @param: message - string sent from the export function
-function exportSuccess(message) {
-	if (message ==	STATUS_ENUM.allSuccess) {
-		okWarn("All done! To send more data over, clear the sheet first.");
-	} else if (message == STATUS_ENUM.someError) {
-		okWarn("Sorry, but there were some problems. Check the notes on the relevant ID field for explanations.");
-	} else if (message == STATUS_ENUM.allError){
-		okWarn("We're really sorry, but we couldn't send anything to SpiraTeam - please check notes on the ID fields  for more information.");
+function operationComplete(messageEnum) {
+	if (IS_GOOGLE) {
+		var message = STATUS_MESSAGE_GOOGLE[messageEnum] || STATUS_MESSAGE_GOOGLE['1'];
+		okWarn(message);
+	} else {
+		var message = STATUS_MESSAGE_EXCEL[messageEnum] || STATUS_MESSAGE_EXCEL['1'];
+		popupShow(message, "");
 	}
 }
 
@@ -538,24 +625,39 @@ function okWarn(dialog) {
 function templateLoader(model, fieldType) {
 	// clear spreadsheet depending on user input, and unhide everything
 	clearAll();
+  
+  var fields = model.fields;
+  var sheet;
+  var newSheetName = model.currentArtifact.name + ", PR-" + model.currentProject.id;
 
-	// select open file and select first sheet
-	var spreadSheet = SpreadsheetApp.getActiveSpreadsheet(),
-		sheet = spreadSheet.getActiveSheet(),
-		fields = model.fields;
+  // select active sheet
+  if (IS_GOOGLE) {
+    sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+    // set sheet (tab) name to model name
+    sheet.setName(newSheetName);
+    sheetSetForTemplate(sheet, model, fieldType, null);
 
-	// set sheet (tab) name to model name
-	sheet.setName(model.currentProject.name + ' - ' + model.currentArtifact.name);
+  } else {
+    return Excel.run(function (context) {
+	  sheet = context.workbook.worksheets.getActiveWorksheet();
+	  sheet.name = newSheetName;
+      return context.sync()
+        .then(function() {
+          sheetSetForTemplate(sheet, model, fieldType, context); 
+        })
+        //.catch(/*fail quietly*/);
+    })
+  } 
+}
 
-	// heading row - sets names and formatting
-	headerSetter(sheet, fields, model.colors);
-
-	// set validation rules on the columns
-	contentValidationSetter(sheet, model, fieldType);
-
-	// set any extra formatting options
-	contentFormattingSetter(sheet, model);
-
+// wrapper function to set the header row, validation rules, and any extra formatting
+function sheetSetForTemplate(sheet, model, fieldType, context) {
+  // heading row - sets names and formatting
+  headerSetter(sheet, model.fields, model.colors, context);
+  // set validation rules on the columns
+  contentValidationSetter(sheet, model, fieldType, context);
+  // set any extra formatting options
+  contentFormattingSetter(sheet, model, context);   
 }
 
 
@@ -565,7 +667,7 @@ function templateLoader(model, fieldType) {
 // @param: sheet - the sheet object
 // @param: fields - full field data
 // @param: colors - global colors used for formatting
-function headerSetter (sheet, fields, colors) {
+function headerSetter (sheet, fields, colors, context) {
 
 	var headerNames = [],
 		backgrounds = [],
@@ -587,14 +689,30 @@ function headerSetter (sheet, fields, colors) {
 		backgrounds.push(background);
 	}
 
-	sheet.getRange(1, 1, 1, fieldsLength)
-		.setWrap(true)
-		// the arrays need to be in an array as methods expect a 2D array for managing 2D ranges
-		.setBackgrounds([backgrounds])
-		.setFontColors([fontColors])
-		.setFontWeights([fontWeights])
-		.setValues([headerNames])
-		.protect().setDescription("header row").setWarningOnly(true);
+  if (IS_GOOGLE) {
+    sheet.getRange(1, 1, 1, fieldsLength)
+      .setWrap(true)
+      // the arrays need to be in an array as methods expect a 2D array for managing 2D ranges
+      .setBackgrounds([backgrounds])
+      .setFontColors([fontColors])
+      .setFontWeights([fontWeights])
+      .setValues([headerNames])
+      .protect().setDescription("header row").setWarningOnly(true);
+
+  } else {
+    var range = sheet.getRangeByIndexes(0, 0, 1, fieldsLength);
+    range.values = [headerNames];
+    for (var i = 0; i < fieldsLength; i++) {
+      var cellRange = sheet.getCell(0, i);
+      cellRange.set({
+        format: {
+            fill: { color: backgrounds[i] },
+            font: { color: fontColors[i], bold: fontWeights[i] == "bold" }
+        }
+      });
+    }
+    return context.sync();
+  }
 }
 
 
@@ -604,8 +722,10 @@ function headerSetter (sheet, fields, colors) {
 // @param: sheet - the sheet object
 // @param: model - full data to acccess global params as well as all fields
 // @param: fieldType - enums for field types
-function contentValidationSetter (sheet, model, fieldType) {
-	var nonHeaderRows = sheet.getMaxRows() - 1;
+function contentValidationSetter (sheet, model, fieldType, context) {
+  // we can't easily get the max rows for excel so use the number of rows it always seems to have
+  var nonHeaderRows =  IS_GOOGLE ? sheet.getMaxRows() - 1 : 1048576 - 1;
+
 	for (var index = 0; index < model.fields.length; index++) {
 		var columnNumber = index + 1,
 			list = [];
@@ -683,7 +803,7 @@ function contentValidationSetter (sheet, model, fieldType) {
 				//do nothing
 				break;
 		}
-	}
+  }
 }
 
 
@@ -695,16 +815,29 @@ function contentValidationSetter (sheet, model, fieldType) {
 // @param: list - array of values to show in a dropdown and use for validation
 // @param: allowInvalid - bool to state whether to restrict any values to those in validation or not
 function setDropdownValidation (sheet, columnNumber, rowLength, list, allowInvalid) {
-	// create range
-	var range = sheet.getRange(2, columnNumber, rowLength);
-
-	// create the validation rule
-	// requireValueInList - params are the array to use, and whether to create a dropdown list
-	var rule = SpreadsheetApp.newDataValidation()
-		.requireValueInList(list, true)
-		.setAllowInvalid(allowInvalid)
-		.build();
-	range.setDataValidation(rule);
+  if (IS_GOOGLE) {
+    // create range
+    var range = sheet.getRange(2, columnNumber, rowLength);
+  
+    // create the validation rule
+    // requireValueInList - params are the array to use, and whether to create a dropdown list
+    var rule = SpreadsheetApp.newDataValidation()
+      .requireValueInList(list, true)
+      .setAllowInvalid(allowInvalid)
+      .build();
+    range.setDataValidation(rule);
+  
+  } else {
+    var range = sheet.getRangeByIndexes(1, columnNumber - 1, rowLength, 1);
+    range.dataValidation.clear();
+    var approvedListRule = {
+        list: {
+            inCellDropDown: true,
+            source: list.join()
+        }
+    };
+    range.dataValidation.rule = approvedListRule;
+  }
 }
 
 
@@ -715,16 +848,42 @@ function setDropdownValidation (sheet, columnNumber, rowLength, list, allowInval
 // @param: rowLength - int of the number of rows for range (global param)
 // @param: allowInvalid - bool to state whether to restrict any values to those in validation or not
 function setDateValidation (sheet, columnNumber, rowLength, allowInvalid) {
-	// create range
-	var range = sheet.getRange(2, columnNumber, rowLength);
+  if (IS_GOOGLE) {
+    // create range
+    var range = sheet.getRange(2, columnNumber, rowLength);
+  
+    // create the validation rule
+    var rule = SpreadsheetApp.newDataValidation()
+      .requireDate()
+      .setAllowInvalid(false)
+      .setHelpText('Must be a valid date')
+      .build();
+    range.setDataValidation(rule);
 
-	// create the validation rule
-	var rule = SpreadsheetApp.newDataValidation()
-		.requireDate()
-		.setAllowInvalid(false)
-		.setHelpText('Must be a valid date')
-		.build();
-	range.setDataValidation(rule);
+  } else {
+    var range = sheet.getRangeByIndexes(1, columnNumber - 1, rowLength, 1);
+    range.dataValidation.clear();
+
+    var greaterThan1970Rule = {
+      date: {
+          formula1: "2000-01-01",
+          operator: Excel.DataValidationOperator.greaterThan
+      }
+    };
+    range.dataValidation.rule = greaterThan1970Rule;
+
+    range.dataValidation.prompt = {
+        message: "Please enter a date.",
+        showPrompt: true,
+        title: "Valid dates only."
+    };
+    range.dataValidation.errorAlert = {
+        message: "Sorry, only dates are allowed",
+        showAlert: true,
+        style: "Stop",
+        title: "Invalid date entered"
+    };
+  }
 }
 
 
@@ -735,17 +894,43 @@ function setDateValidation (sheet, columnNumber, rowLength, allowInvalid) {
 // @param: rowLength - int of the number of rows for range (global param)
 // @param: allowInvalid - bool to state whether to restrict any values to those in validation or not
 function setNumberValidation (sheet, columnNumber, rowLength, allowInvalid) {
-	// create range
-	var range = sheet.getRange(2, columnNumber, rowLength);
+  // create range
+  if (IS_GOOGLE) {
+    var range = sheet.getRange(2, columnNumber, rowLength);
+  
+    // create the validation rule
+    //must be a valid number greater than -1 (also excludes 1.1.0 style numbers)
+    var rule = SpreadsheetApp.newDataValidation()
+      .requireNumberGreaterThan(-1)
+      .setAllowInvalid(allowInvalid)
+      .setHelpText('Must be a positive number')
+      .build();
+    range.setDataValidation(rule);
+  
+  } else {
+    var range = sheet.getRangeByIndexes(1, columnNumber - 1, rowLength, 1);
+    range.dataValidation.clear();
 
-	// create the validation rule
-	//must be a valid number greater than -1 (also excludes 1.1.0 style numbers)
-	var rule = SpreadsheetApp.newDataValidation()
-		.requireNumberGreaterThan(-1)
-		.setAllowInvalid(allowInvalid)
-		.setHelpText('Must be a positive number')
-		.build();
-	range.setDataValidation(rule);
+    var greaterThanZeroRule = {
+      wholeNumber: {
+          formula1: 0,
+          operator: Excel.DataValidationOperator.greaterThan
+      }
+    };
+    range.dataValidation.rule = greaterThanZeroRule;
+
+    range.dataValidation.prompt = {
+        message: "Please enter a positive number.",
+        showPrompt: true,
+        title: "Positive numbers only."
+    };
+    range.dataValidation.errorAlert = {
+        message: "Sorry, only positive numbers are allowed",
+        showAlert: true,
+        style: "Stop",
+        title: "Negative Number Entered"
+    };
+  }
 }
 
 
@@ -756,7 +941,7 @@ function contentFormattingSetter (sheet, model) {
 	for (var i = 0; i < model.fields.length; i++) {
 		var columnNumber = i + 1;
 
-		// hide unsupported fields
+		// change bg color of unsupported fields
 		if (model.fields[i].unsupported) {
 			protectColumn(
 			  sheet,
@@ -780,17 +965,48 @@ function contentFormattingSetter (sheet, model) {
 // @param: name - string description for the protected range
 // @param: hide - optional bool to hide column completely
 function protectColumn (sheet, columnNumber, rowLength, bgColor, name, hide) {
-	// create range
-	var range = sheet.getRange(2, columnNumber, rowLength);
-	range.setBackground(bgColor)
-		.protect()
-		.setDescription(name)
-		.setWarningOnly(true);
+  // only for google as cannot protect individual cells easily in Excel
+  if (IS_GOOGLE) {
+    // create range
+    var range = sheet.getRange(2, columnNumber, rowLength);
+    range.setBackground(bgColor)
+      .protect()
+      .setDescription(name)
+      .setWarningOnly(true);
+  
+    if(hide) {
+    sheet.hideColumns(columnNumber);
+    }
+  } else {
+	var range = sheet.getRangeByIndexes(1, columnNumber - 1, rowLength, 1);
+	
+	// set the background color
+	range.set({ format: { fill: { color: bgColor } } });
+	
+	// now we can add data validation
+	// the easiest hack way to not allow any entry into the cell is to make sure its text length can only be zero
+	range.dataValidation.clear();
+    var textLengthZero = {
+      textLength: {
+          formula1: 0,
+          operator: Excel.DataValidationOperator.equalTo
+      }
+    };
+    range.dataValidation.rule = textLengthZero;
 
-  if(hide) {
-	sheet.hideColumns(columnNumber);
+    range.dataValidation.prompt = {
+        message: "This is a protected field and not user editable.",
+        showPrompt: true,
+        title: "No entry allowed."
+    };
+    range.dataValidation.errorAlert = {
+        message: "Sorry, this is a protected field",
+        showAlert: true,
+        style: "Stop",
+        title: "No entry allowed"
+    };
   }
-
+  
 }
 
 
@@ -816,28 +1032,64 @@ function protectColumn (sheet, columnNumber, rowLength, bgColor, name, hide) {
 // @param: model - full model object from client containing field data for specific artifact, list of project users, components, etc
 // @param: fieldType - list of fieldType enums from client params object
 function sendToSpira(model, fieldType) {
-	// 1. SETUP FUNCTION LEVEL VARS
-	// get the active spreadsheet and first sheet
-	var spreadSheet = SpreadsheetApp.getActiveSpreadsheet(),
-		sheet = spreadSheet.getActiveSheet(),
-		fields = model.fields,
+	// 0. SETUP FUNCTION LEVEL VARS
+	var fields = model.fields,
 		artifact = model.currentArtifact,
 		artifactIsHierarchical = artifact.hierarchical,
-		artifactHasFolders = artifact.hasFolders,
-		lastRow = sheet.getLastRow() - 1 || 10, // hack to make sure we pass in some rows to the sheetRange, otherwise it causes an error
+		requiredSheetName = model.currentArtifact.name + ", PR-" + model.currentProject.id
+	
+	// 1. get the active spreadsheet and first sheet
+	if (IS_GOOGLE) {
+		var spreadSheet = SpreadsheetApp.getActiveSpreadsheet(),
+			sheet = spreadSheet.getActiveSheet(),
+			lastRow = sheet.getLastRow() - 1 || 10, // hack to make sure we pass in some rows to the sheetRange, otherwise it causes an error
+			sheetRange = sheet.getRange(2,1, lastRow, fields.length),
+			sheetData = sheetRange.getValues(),
+			entriesForExport = createExportEntries(sheetData, model, fieldType, fields, artifact, artifactIsHierarchical);
+		if (sheet.getName() == requiredSheetName) {
+			return sendExportEntriesGoogle(entriesForExport, sheetData, sheet, sheetRange, model, fieldType, fields, artifact, null);
+		} else {
+			var log = {
+				status: STATUS_ENUM.wrongSheet 
+			};
+			return log;
+		}
+	} else {
+		return Excel.run({ delayForCellEdit: true }, function (context) {
+			var sheet = context.workbook.worksheets.getActiveWorksheet(),
+				sheetRange = sheet.getRangeByIndexes(1, 0, EXCEL_MAX_ROWS, fields.length);
+			sheet.load("name");
+			sheetRange.load("values");
+			return context.sync()
+            .then(function() {
+              if (sheet.name == requiredSheetName) {
+                var sheetData = sheetRange.values,
+                    entriesForExport = createExportEntries(sheetData, model, fieldType, fields, artifact, artifactIsHierarchical);
+                return sendExportEntriesExcel(entriesForExport, sheetData, sheet, sheetRange, model, fieldType, fields, artifact, context);
+              } else {
+                var log = {
+                  status: STATUS_ENUM.wrongSheet 
+                };
+                return log;
+              }
+            })
+            //.catch();
+        })
+        //.catch();
+	}
+}
 
-		sheetRange = sheet.getRange(2,1, lastRow, fields.length),
-		sheetData = sheetRange.getValues(),
-		entriesForExport = [],
-		lastIndentPosition = null;
 
 
+// 2. CREATE ARRAY OF ENTRIES
+// loop to create artifact objects from each row taken from the spreadsheet
+// vars needed: sheetData, artifact, fields, model, fieldType, artifactIsHierarchical,
+function createExportEntries(sheetData, model, fieldType, fields, artifact, artifactIsHierarchical) {
+	var lastIndentPosition = null,
+		entriesForExport = [];
 
-	// 2. CREATE ARRAY OF ENTRIES
-	// loop to create artifact objects from each row taken from the spreadsheet
-	// vars needed: sheetData, artifact, fields, model, fieldType, artifactIsHierarchical, lastIndentPosition
 	for (var rowToPrep = 0; rowToPrep < sheetData.length; rowToPrep++) {
-
+	
 		// stop at the first row that is fully blank
 		if (sheetData[rowToPrep].join("") === "") {
 			break;
@@ -851,20 +1103,20 @@ function sendToSpira(model, fieldType) {
 					countSubTypeRequiredFields: artifact.hasSubType ? rowCountRequiredFieldsByType(sheetData[rowToPrep], fields, true) : 0,
 					subTypeIsBlocked: !artifact.hasSubType ? true : rowBlocksSubType(sheetData[rowToPrep], fields)
 				},
-
+	
 				// create entry used to populate all relevant data for this row
 				entry = {};
-
+	
 			// first check for errors
 			var hasProblems = rowHasProblems(rowChecks);
 			if (hasProblems) {
 				entry.validationMessage = hasProblems;
-
+	
 			// if error free determine what field filtering is required - needed to choose type/subtype fields if subtype is present
 			} else {
 				var fieldsToFilter = relevantFields(rowChecks);
 				entry = createEntryFromRow( sheetData[rowToPrep], model, fieldType, artifactIsHierarchical, lastIndentPosition, fieldsToFilter );
-
+	
 				// FOR SUBTYPE ENTRIES add flag on entry if it is a subtype
 				if (fieldsToFilter === FIELD_MANAGEMENT_ENUMS.subType) {
 					entry.isSubType = true;
@@ -877,155 +1129,252 @@ function sendToSpira(model, fieldType) {
 			entriesForExport.push(entry);
 		}
 	}
+	return entriesForExport;
+}
 
 
-	// 3. GET READY TO SEND DATA TO SPIRA
-    // check we have some entries and with no errors
-	// Create and show a window to tell the user what is going on
+// 3. FOR GOOGLE ONLY: GET READY TO SEND DATA TO SPIRA + 4. ACTUALLY SEND THE DATA
+// check we have some entries and with no errors
+// Create and show a message to tell the user what is going on
+function sendExportEntriesGoogle(entriesForExport, sheetData, sheet, sheetRange, model, fieldType, fields, artifact, context) {
 	if (!entriesForExport.length) {
-		var nothingToExportMessage = HtmlService.createHtmlOutput('<p ' + INLINE_STYLING + '>There are no entries to send to SpiraTeam</p>').setWidth(250).setHeight(75);
-		SpreadsheetApp.getUi().showModalDialog(nothingToExportMessage, 'Check Sheet');
+		popupShow('There are no entries to send to Spira', 'Check Sheet')
 		return "nothing to send";
 	} else {
-
-		var exportMessageToUser = HtmlService.createHtmlOutput('<p ' + INLINE_STYLING + '>Preparing to send...</p>').setWidth(200).setHeight(75);
-		SpreadsheetApp.getUi().showModalDialog(exportMessageToUser, 'Progress');
+		popupShow('Preparing to send...', 'Progress');
 
 		// create required variables for managing responses for sending data to spirateam
 		var log = {
 				errorCount: 0,
 				successCount: 0,
+				doNotContinue: false,
+				// set var for parent - used to designate eg a test case so it can be sent with the test step post
+				parentId: -1,
 				entriesLength: entriesForExport.length,
 				entries: []
-			},
-			// set var for parent - used to designate eg a test case so it can be sent with the test step post
-			parentId = -1;
+			};
 
 
+		// loop through objects to send and update the log
+		function sendSingleEntry(i) {
+			// set the correct parentId for hierarchical artifacts
+			// set before launching the API call as we need to look back through previous entries
+			if (artifact.hierarchical) {
+				log.parentId = getHierarchicalParentId(entriesForExport[i].indentPosition, log.entries);
+			}
+			var sentToSpira = manageSendingToSpira(entriesForExport[i], model.user, model.currentProject.id, artifact, fields, fieldType, log.parentId );
 
-		// 4. SEND DATA TO SPIRA AND MANAGE RESPONSES
-		// loop through objects to send
-		for (var i = 0; i < entriesForExport.length; i++) {
-		  var response = {};
-
-			// skip if there was an error validating the sheet row
-			if (entriesForExport[i].validationMessage) {
-				response.error = true;
-				response.message = entriesForExport[i].validationMessage;
-				log.errorCount++;
-
-				// stop if the artifact is hierarchical because we don't know what side effects there could be to any further items.
-				if (artifact.hierarchical) {
-					response.message += " - no further entries were sent to avoid creating an incorrect hierarchy";
-					// make sure to push the response so that the client can process error message
-					log.entries.push(response);
-					break;
-				}
-			// skip if a sub type row does not have a parent to hook to
-            } else if (entriesForExport[i].isSubType && !parentId) {
-				response.error = true;
-				response.message = "can't add a child type when there is no corresponding parent type";
-				log.errorCount++;
-  
-			// send to Spira and update the response object
-			} else {
-			  
-				// set the correct parentId for hierarchical artifacts
-				// set before launching the API call as we need to look back through previous entries
-				if (artifact.hierarchical) {
-				  parentId = getHierarchicalParentId(entriesForExport[i].indentPosition, log.entries);
-				}
-			  
-				var sentToSpira = manageSendingToSpira ( entriesForExport[i], model.user, model.currentProject.id, artifact, fields, fieldType, parentId );
-				
-				// update the parent ID for a subtypes based on the successful API call
-				if (artifact.hasSubType) {
-					parentId = sentToSpira.parentId;
-				}
-
-				response.details = sentToSpira;
-
-				// handle success and error cases
-				if (sentToSpira.error) {
-					log.errorCount++;
-					response.error = true;
-					response.message = sentToSpira.errorMessage;
-				  
-				  
-					//Sets error HTML modals
-					if (artifact.hierarchical) {
-						// if there is an error on any hierarchical artifact row, break out of the loop to prevent entries being attached to wrong parent
-						htmlOutput = HtmlService.createHtmlOutput('<p ' + INLINE_STYLING + '>Error sending ' + (i + 1) + ' of ' + (entriesForExport.length) + ' - sending stopped to avoid indenting entries incorrectly</p>').setWidth(200).setHeight(75);
-						SpreadsheetApp.getUi().showModalDialog(htmlOutput, 'Progress');
-						
-						log.entries.push(response);
-						break;
-					} else { 
-						htmlOutput = HtmlService.createHtmlOutput('<p ' + INLINE_STYLING + '>Error sending ' + (i + 1) + ' of ' + (entriesForExport.length) + '</p>').setWidth(200).setHeight(75);
-						SpreadsheetApp.getUi().showModalDialog(htmlOutput, 'Progress');
-					}
-
-				} else {
-					log.successCount++;
-					response.newId = sentToSpira.newId;
-
-					// if artifact is hierarchical save relevant information to work out how to indent
-					if (artifact.hierarchical) {
-						response.details.hierarchyInfo = {
-							id: sentToSpira.newId,
-							indent: entriesForExport[i].indentPosition
-						}
-					}
-
-					//modal that displays the status of each artifact sent
-					htmlOutputSuccess = HtmlService.createHtmlOutput('<p ' + INLINE_STYLING + '>Sending ' + (i + 1) + ' of ' + (entriesForExport.length) + '...</p>').setWidth(200).setHeight(75);
-					SpreadsheetApp.getUi().showModalDialog(htmlOutputSuccess, 'Progress');
-				}
+			// update the parent ID for a subtypes based on the successful API call
+			if (artifact.hasSubType) {
+				log.parentId = sentToSpira.parentId;
 			}
 
-			log.entries.push(response);
+			log = processSendToSpiraResponse(i, sentToSpira, entriesForExport, artifact, response, log);
+			if (sentToSpira.error && artifact.hierarchical) {
+				// break out of the recursive loop
+				log.doNotContinue = true;
+			}
+		}
+
+		// 4. SEND DATA TO SPIRA AND MANAGE RESPONSES
+		// KICK OFF THE FOR LOOP (IE THE FUNCTION ABOVE) HERE
+		// We use a function rather than a loop so that we can more readily use promises to chain things together and make the calls happen synchronously
+		// we need the calls to be synchronous because we need to do the status and ID of the preceding entry for hierarchical artifacts
+		for (var i = 0; i < entriesForExport.length; i++) {
+			if (!log.doNotContinue) {
+				log = checkSingleEntryForErrors(i, log, entriesForExport, artifact);
+				if (log.entries.length && log.entries[i] && log.entries[i].error) {
+				} else {
+					sendSingleEntry(i);	
+				}
+			}
 		}
 
 		// review all activity and set final status
 		log.status = log.errorCount ? (log.errorCount == log.entriesLength ? STATUS_ENUM.allError : STATUS_ENUM.someError) : STATUS_ENUM.allSuccess;
-	  
-	  
-	  
-		// 5. SET MESSAGES AND FORMATTING ON SHEET
-		var bgColors = [],
-			notes = [],
-			values = [];
-		// first handle cell formatting
-		for (var row = 0; row < sheetData.length; row++) {
-			var rowBgColors = [],
-				rowNotes = [],
-				rowValues = [];
-			for (var col = 0; col < fields.length; col++) {
-				if (log.entries.length > row) {
-					var isSubType = (log.entries[row].details &&  log.entries[row].details.entry && log.entries[row].details.entry.isSubType) ? log.entries[row].details.entry.isSubType : false;
-					var bgColor = setFeedbackBgColor(sheetData[row][col], log.entries[row].error, fields[col], fieldType, artifact, model.colors ),
-						note = setFeedbackNote(sheetData[row][col], log.entries[row].error, fields[col], fieldType, log.entries[row].message ),
-						value = setFeedbackValue(sheetData[row][col], log.entries[row].error, fields[col], fieldType, log.entries[row].newId || "", isSubType );
-	
-					rowBgColors.push(bgColor);
-					rowNotes.push(note);
-					rowValues.push(value);
-				  
+
+		// call the final function here - so we know that it is only called after the recursive function above (ie all posting) has ended
+		return updateSheetWithExportResults(log, sheetData, sheet, sheetRange, model, fieldType, fields, artifact, context);
+ 	}
+}
+
+
+// 3. FOR EXCEL ONLY: GET READY TO SEND DATA TO SPIRA + 4. ACTUALLY SEND THE DATA
+// DIFFERENT TO GOOGLE: this uses async await for its function and subfunction
+// check we have some entries and with no errors
+// Create and show a message to tell the user what is going on
+/*async function sendExportEntriesExcel(entriesForExport, sheetData, sheet, sheetRange, model, fieldType, fields, artifact, context) {
+	if (!entriesForExport.length) {
+		popupShow('There are no entries to send to Spira', 'Check Sheet')
+		return "nothing to send";
+	} else {
+		popupShow('Starting to send...', 'Progress');
+
+		// create required variables for managing responses for sending data to spirateam
+		var log = {
+				errorCount: 0,
+				successCount: 0,
+				doNotContinue: false,
+				// set var for parent - used to designate eg a test case so it can be sent with the test step post
+				parentId: -1,
+				entriesLength: entriesForExport.length,
+				entries: []
+			};
+
+
+		// loop through objects to send and update the log
+		async function sendSingleEntry(i) {
+			// set the correct parentId for hierarchical artifacts
+			// set before launching the API call as we need to look back through previous entries
+			if (artifact.hierarchical) {
+				log.parentId = getHierarchicalParentId(entriesForExport[i].indentPosition, log.entries);
+			}
+			
+			await manageSendingToSpira(entriesForExport[i], model.user, model.currentProject.id, artifact, fields, fieldType, log.parentId )
+				.then(function(response) {
+					// update the parent ID for a subtypes based on the successful API call
+					if (artifact.hasSubType) {
+						log.parentId = sentToSpira.parentId;
+					}
+					console.log('manageSendingToSpira > then for ', i, response);
+					log = processSendToSpiraResponse(i, response, entriesForExport, artifact, response, log);
+
+					if (response.error && artifact.hierarchical) {
+						// break out of the recursive loop
+						log.doNotContinue = true;
+					}
+				})
+		}
+
+
+
+		// 4. SEND DATA TO SPIRA AND MANAGE RESPONSES
+		// KICK OFF THE FOR LOOP (IE THE FUNCTION ABOVE) HERE
+		// We use a function rather than a loop so that we can more readily use promises to chain things together and make the calls happen synchronously
+		// we need the calls to be synchronous because we need to do the status and ID of the preceding entry for hierarchical artifacts
+		for (var i = 0; i < entriesForExport.length; i++) {
+			if (!log.doNotContinue) {
+				log = checkSingleEntryForErrors(i, log, entriesForExport, artifact);
+				if (log.entries.length && log.entries[i] && log.entries[i].error) {
 				} else {
-				  rowBgColors.push(setFeedbackBgColor(sheetData[row][col], false, fields[col], fieldType, artifact, model.colors ));
-				  rowNotes.push(null);
-				  rowValues.push(sheetData[row][col]);
+					await sendSingleEntry(i);	
 				}
 			}
+		}
+
+		// review all activity and set final status
+		log.status = log.errorCount ? (log.errorCount == log.entriesLength ? STATUS_ENUM.allError : STATUS_ENUM.someError) : STATUS_ENUM.allSuccess;
+
+		// call the final function here - so we know that it is only called after the recursive function above (ie all posting) has ended
+		return updateSheetWithExportResults(log, sheetData, sheet, sheetRange, model, fieldType, fields, artifact, context);
+ 	}
+}*/
+
+
+// 5. SET MESSAGES AND FORMATTING ON SHEET
+function updateSheetWithExportResults(log, sheetData, sheet, sheetRange, model, fieldType, fields, artifact, context) {
+	var bgColors = [],
+		notes = [],
+		values = [];
+	// first handle cell formatting
+	for (var row = 0; row < log.entries.length; row++) {
+		var rowBgColors = [],
+			rowNotes = [],
+			rowValues = [];
+		for (var col = 0; col < fields.length; col++) {
+			var bgColor,
+				note = null,
+				value = sheetData[row][col];
+			
+				// first handle when we are dealing with data that has been sent to Spira
+			var isSubType = (log.entries[row].details &&  log.entries[row].details.entry && log.entries[row].details.entry.isSubType) ? log.entries[row].details.entry.isSubType : false;
+			
+			bgColor = setFeedbackBgColor(sheetData[row][col], log.entries[row].error, fields[col], fieldType, artifact, model.colors);
+			note = setFeedbackNote(sheetData[row][col], log.entries[row].error, fields[col], fieldType, log.entries[row].message);
+			value = setFeedbackValue(sheetData[row][col], log.entries[row].error, fields[col], fieldType, log.entries[row].newId || "", isSubType);
+
+			if (IS_GOOGLE) {
+				rowBgColors.push(bgColor);
+				rowNotes.push(note);
+				rowValues.push(value);
+			} else {
+				var cellRange = sheet.getCell(row + 1, col);
+				if (note) rowNotes.push(note);
+				if (bgColor) {
+					cellRange.set({ format: {fill: { color: bgColor }} });
+				} else {
+					cellRange.clear();
+				}
+				cellRange.values = [[value]];
+
+			}
+		}
+		if (IS_GOOGLE) {
 			bgColors.push(rowBgColors);
 			notes.push(rowNotes);
 			values.push(rowValues);
-		}
-		sheetRange.setBackgrounds(bgColors).setNotes(notes).setValues(values);
+		
+		// for Excel we can't pass in arrays of data for values, but we still take action here for notes - because Excel API does not allow the addition of comments
+		} else {
+			var endRowCell = sheet.getCell(row + 1, fields.length);
+			if (rowNotes.length) {
+				endRowCell.set({ format: {fill: { color: model.colors.warning }} });
+				endRowCell.values = [[rowNotes.join()]];
 
+				var endRowHeader = sheet.getCell(0, fields.length);
+				endRowHeader.set({ format: {
+					fill: { color: model.colors.bgHeader },
+					font: { color: model.colors.header }
+				}});
+				endRowHeader.values = [["Error Messages"]];
+			} else {
+				endRowCell.clear();
+			}
+		}
+	}	
+
+	if (IS_GOOGLE) {
+		sheetRange.setBackgrounds(bgColors).setNotes(notes).setValues(values);
 		return log;
+	} else {
+		console.log('excel thinks the whole thing is finished')
+        return context.sync().then(function() { return log; });
 	}
 }
+
+
+
+function checkSingleEntryForErrors(i, log, entriesForExport, artifact, parentId) {
+	var response = {};
+
+	// skip if there was an error validating the sheet row
+	if (entriesForExport[i].validationMessage) {
+		response.error = true;
+		response.message = entriesForExport[i].validationMessage;
+		log.errorCount++;
+
+		// stop if the artifact is hierarchical because we don't know what side effects there could be to any further items.
+		if (artifact.hierarchical) {
+			log.doNotContinue = true;
+			response.message += " - no further entries were sent to avoid creating an incorrect hierarchy";
+			// make sure to push the response so that the client can process error message
+			log.entries.push(response);
+			// we do not call this function again with i++ so that we effectively break out of the loop
+			// review all activity and set final status
+			log.status = log.errorCount ? (log.errorCount == log.entriesLength ? STATUS.allError : STATUS_ENUM.someError) : STATUS_ENUM.allSuccess;
+		} else {
+			log.entries.push(response);
+		}
+	// skip if a sub type row does not have a parent to hook to
+	} else if (entriesForExport[i].isSubType && !log.parentId) {
+		response.error = true;
+		response.message = "can't add a child type when there is no corresponding parent type";
+		log.errorCount++;
+		log.entries.push(response);
+	}
+	return log;
+}
+
 
 
 // function that reviews a specific cell against it's field and errors for providing UI feedback on errors
@@ -1123,52 +1472,86 @@ function setFeedbackValue (cell, error, field, fieldType, newId, isSubType) {
 // @param: fieldType - object of all field types with enums
 function manageSendingToSpira (entry, user, projectId, artifact, fields, fieldType, parentId) {
 	var data,
-		output = {},
+		// set output parent id here so we know this function will always return a value for this
+		output = {
+			parentId: parentId,
+			entry: entry,
+			artifact: {
+				artifactId: artifactTypeIdToSend,
+				artifactObject: artifact
+			}
+		},
 		// make sure correct artifact ID is sent to handler (ie type vs subtype)
-		artifactIdToSend = entry.isSubType ? artifact.subTypeId : artifact.id;
+		artifactTypeIdToSend = entry.isSubType ? artifact.subTypeId : artifact.id;
 
-	// set output parent id here so we know this function will always return a value for this
-	output.parentId = parentId; 
 	
 	// send object to relevant artifact post service
-	data = postArtifactToSpira ( entry, user, projectId, artifactIdToSend, parentId );
+	if (IS_GOOGLE) {
+		data = postArtifactToSpira(entry, user, projectId, artifactTypeIdToSend, parentId);
 
-	// save data for logging to client
-	output.entry = entry;
-	output.httpCode = (data && data.getResponseCode() ) ? data.getResponseCode() : "notSent";
-	output.artifact = {
-		artifactId: artifactIdToSend,
-		artifactObject: artifact
-	};
+		// save data for logging to client
+		output.httpCode = (data && data.getResponseCode() ) ? data.getResponseCode() : "notSent";
 
-	// parse the data if we have a success
-	if (output.httpCode == 200) {
-		output.fromSpira = JSON.parse(data.getContentText());
+		// parse the data if we have a success
+		if (output.httpCode == 200) {
+			output.fromSpira = JSON.parse(data.getContentText());
 
-		// get the id/subType id of the newly created artifact
-		var artifactIdField = getIdFieldName(fields, fieldType, entry.isSubType);
-		output.newId = output.fromSpira[artifactIdField];
+			// get the id/subType id of the newly created artifact
+			var artifactIdField = getIdFieldName(fields, fieldType, entry.isSubType);
+			output.newId = output.fromSpira[artifactIdField];
 
-		// update the output parent ID to the new id only if the artifact has a subtype and this entry is NOT a subtype
-		if (artifact.hasSubType && !entry.isSubType) {
-			output.parentId = output.newId;
+			// update the output parent ID to the new id only if the artifact has a subtype and this entry is NOT a subtype
+			if (artifact.hasSubType && !entry.isSubType) {
+				output.parentId = output.newId;
+			}
+
+		} else {
+			//we have an error - so set the flag and the message
+			output.error = true;
+			if (data && data.getContentText()) {
+				output.errorMessage = data.getContentText();
+			} else {
+				output.errorMessage = "send attempt failed";
+			}
+
+			// reset the parentId if we are not on a subType - to make sure subTypes are not added to the wrong parent
+			if (artifact.hasSubType && !entry.isSubType) {
+				output.parentId = 0;
+			}
 		}
+		return output;
 
 	} else {
-		//we have an error - so set the flag and the message
-		output.error = true;
-		if (data && data.getContentText()) {
-			output.errorMessage = data.getContentText();
-		} else {
-			output.errorMessage = "send attempt failed";
-		}
+		return postArtifactToSpira(entry, user, projectId, artifactTypeIdToSend, parentId)
+			.then(function(response) { 
+				output.fromSpira = response.data;
 
-		// reset the parentId if we are not on a subType - to make sure subTypes are not added to the wrong parent
-		if (artifact.hasSubType && !entry.isSubType) {
-			output.parentId = 0;
-		}
+				// get the id/subType id of the newly created artifact
+				var artifactIdField = getIdFieldName(fields, fieldType, entry.isSubType);
+				output.newId = output.fromSpira[artifactIdField];
+
+				// update the output parent ID to the new id only if the artifact has a subtype and this entry is NOT a subtype
+				if (artifact.hasSubType && !entry.isSubType) {
+					output.parentId = output.newId;
+				} 
+				return output;
+			})
+			/*.catch(function(error) { 
+				//we have an error - so set the flag and the message
+				output.error = true;
+				if (error) {
+					output.errorMessage = error;
+				} else {
+					output.errorMessage = "send attempt failed";
+				}
+
+				// reset the parentId if we are not on a subType - to make sure subTypes are not added to the wrong parent
+				if (artifact.hasSubType && !entry.isSubType) {
+					output.parentId = 0;
+				}
+				return output;
+			});*/
 	}
-	return output;
 }
 
 
@@ -1536,6 +1919,48 @@ function setRelativePosition (indentCount, lastIndentPosition) {
 
 
 
+// anaylses the response from posting an item to Spira, and handles updating the log and displaying any messages to the user
+function processSendToSpiraResponse(i, sentToSpira, entriesForExport, artifact, response, log) {
+	
+	response.details = sentToSpira;
+
+	// handle success and error cases
+	if (sentToSpira.error) {
+		log.errorCount++;
+		response.error = true;
+		response.message = sentToSpira.errorMessage;
+	
+		//Sets error HTML modals
+		if (artifact.hierarchical) {
+			// if there is an error on any hierarchical artifact row, break out of the loop to prevent entries being attached to wrong parent
+			popupShow('Error sending ' + (i + 1) + ' of ' + (entriesForExport.length) + ' - sending stopped to avoid indenting entries incorrectly', 'Progress')
+			log.entries.push(response);
+		} else { 
+			popupShow('Error sending ' + (i + 1) + ' of ' + (entriesForExport.length), 'Progress');
+		}
+
+	} else {
+		log.successCount++;
+		response.newId = sentToSpira.newId;
+
+		// if artifact is hierarchical save relevant information to work out how to indent
+		if (artifact.hierarchical) {
+			response.details.hierarchyInfo = {
+				id: sentToSpira.newId,
+				indent: entriesForExport[i].indentPosition
+			}
+		}
+		//modal that displays the status of each artifact sent
+		popupShow('Sent ' + (i + 1) + ' of ' + (entriesForExport.length) + '...', 'Progress');
+	}
+
+	// finally write out the response to the log and return
+	log.entries.push(response);
+	return log;
+
+}
+
+
 
 
 
@@ -1552,27 +1977,26 @@ function setRelativePosition (indentCount, lastIndentPosition) {
  *
  */
 
-// handles getting paginated artifacts from Spira and saving them as a single array
+// GOOGLE SPECIFIC VARIATION OF THIS FUNCTION handles getting paginated artifacts from Spira and saving them as a single array
 // @param: model: full model object from client
 // @param: enum of fieldTypes used
-function getFromSpira(model, fieldType) {
+function getFromSpiraGoogle(model, fieldType) {
   //var artifactCount = getArtifactCount(model.user, model.currentProject.id, model.currentArtifact.id);
 
   // 1. get from spira
   // note we don't do this by getting the count of each artifact first, because of a bug in getting the release count
-  var pageSize = GET_PAGINATION_SIZE;
   var currentPage = 0;
   var artifacts = [];
   var getNextPage = true;
   
   while (getNextPage && currentPage < 100) {
-    var startRow = (currentPage * pageSize) + 1;
+    var startRow = (currentPage * GET_PAGINATION_SIZE) + 1;
     var pageOfArtifacts = getArtifacts(
       model.user, 
       model.currentProject.id, 
       model.currentArtifact.id, 
       startRow, 
-      pageSize,
+      GET_PAGINATION_SIZE,
       null
     );
     // if we got a non empty array back then we have artifacts to process
@@ -1651,13 +2075,124 @@ function getFromSpira(model, fieldType) {
   
   // 6. add data to sheet
   var spreadSheet = SpreadsheetApp.getActiveSpreadsheet(),
-    sheet = spreadSheet.getActiveSheet(),
-    range = sheet.getRange(2,1, artifacts.length, model.fields.length);
+      sheet = spreadSheet.getActiveSheet(),
+      range = sheet.getRange(2,1, artifacts.length, model.fields.length);
   
   range.setValues(artifactsAsCells);
   return JSON.parse(JSON.stringify(artifactsAsCells));
-  //return JSON.parse(JSON.stringify(artifacts));
 }
+
+// EXCEL SPECIFIC VARIATION OF THIS FUNCTION handles getting paginated artifacts from Spira and saving them as a single array
+// @param: model: full model object from client
+// @param: enum of fieldTypes used
+/*async function getFromSpiraExcel(model, fieldType) {
+	// 1. get from spira
+	// note we don't do this by getting the count of each artifact first, because of a bug in getting the release count
+	var currentPage = 0;
+	var artifacts = [];
+	var getNextPage = true;
+
+	async function getArtifactsPage(startRow) {
+		await getArtifacts(
+			model.user, 
+			model.currentProject.id, 
+			model.currentArtifact.id, 
+			startRow, 
+			GET_PAGINATION_SIZE,
+			null
+		).then(function(response) {
+			// if we got a non empty array back then we have artifacts to process
+			if (response.data.length) {
+				artifacts = artifacts.concat(response.data);
+				// if we got less artifacts than the max we asked for, then we reached the end of the list in this request - and should stop
+				if (response.data.length < GET_PAGINATION_SIZE) {
+				getNextPage = false;
+				// if we got the full page size back then there may be more artifacts to get
+				} else {
+				currentPage++;
+				}
+			// if we got no artifacts back, stop now
+			} else {
+				getNextPage = false;
+			}
+		})
+	}
+	
+	while (getNextPage && currentPage < 100) {
+	  var startRow = (currentPage * GET_PAGINATION_SIZE) + 1;
+	  await getArtifactsPage(startRow);
+	  // if we got a non empty array back then we have artifacts to process
+	}
+	
+	// 2. if there were no artifacts at all break out now
+	if (!artifacts.length) return "no artifacts were returned";
+	
+	// 3. Make sure hierarchical artifacts are ordered correctly
+	if (model.currentArtifact.hierarchical) {
+	  artifacts.sort(function(a, b) {
+		return a.indentLevel < b.indentLevel ? -1 : 1;
+	  });
+	}
+	
+	
+	// 4. if artifact has subtype that needs to be retrieved separately, do so
+	if (model.currentArtifact.hasSubType) {
+	  // find the id field
+	  var idFieldNameArray = model.fields.filter(function(field) {
+		return field.type === fieldType.id;
+	  });
+	  // if we have an id field, then we can find the id number for each artifact in the array
+	  if (idFieldNameArray && idFieldNameArray[0].field) {
+		var idFieldName = idFieldNameArray[0].field;
+		var artifactsWithSubTypes = [];
+		artifacts.forEach(function(art) {
+		  artifactsWithSubTypes.push(art);
+		  var subTypeArtifacts = getArtifacts(
+			model.user, 
+			model.currentProject.id, 
+			model.currentArtifact.subTypeId, 
+			null, 
+			null,
+			art[idFieldName]
+		  );
+		  // take action if we got any sub types back - ie if they exist for the specific artifact
+		  if (subTypeArtifacts && subTypeArtifacts.length) { 
+			var subTypeArtifactsWithMeta = subTypeArtifacts.map(function(sub) {
+			  sub.isSubType = true;
+			  sub.parentId = art[idFieldName];
+			  return sub;
+			});
+			// now add the steps into the original object
+			artifactsWithSubTypes = artifactsWithSubTypes.concat(subTypeArtifactsWithMeta);
+		  }
+		})
+		// update the original array (I know that mutation is bad, but it makes things easy here)
+		artifacts = artifactsWithSubTypes;
+	  }
+	}
+  
+	// 5. create 2d array from data to put into sheet
+	var artifactsAsCells = matchArtifactsToFields(
+	  artifacts, 
+	  model.currentArtifact,
+	  model.fields, 
+	  fieldType, 
+	  model.projectUsers, 
+	  model.projectComponents, 
+	  model.projectReleases
+	);
+	
+	// 6. add data to sheet
+    return Excel.run({ delayForCellEdit: true }, function (context) {
+      var sheet = context.workbook.worksheets.getActiveWorksheet(),
+      range = sheet.getRangeByIndexes(1, 0, artifacts.length, model.fields.length);
+      range.values = artifactsAsCells;
+      return context.sync()
+        .then(function() {
+          return artifactsAsCells;
+        })
+    })
+}*/
 
 // matches data against the fields to be shown in the spreadsheet - not all data fields are shown
 // @param: array of the artifact objects we GOT from Spira
