@@ -1049,7 +1049,7 @@ function sendToSpira(model, fieldType) {
 			sheetData = sheetRange.getValues(),
 			entriesForExport = createExportEntries(sheetData, model, fieldType, fields, artifact, artifactIsHierarchical);
 		if (sheet.getName() == requiredSheetName) {
-			return sendExportEntriesGoogle(entriesForExport, sheetData, sheet, sheetRange, model, fieldType, fields, artifact, null);
+			return sendExportEntriesGoogle(entriesForExport, sheetData, sheet, sheetRange, model, fieldType, fields, artifact);
 		} else {
 			var log = {
 				status: STATUS_ENUM.wrongSheet 
@@ -1138,7 +1138,7 @@ function createExportEntries(sheetData, model, fieldType, fields, artifact, arti
 // 3. FOR GOOGLE ONLY: GET READY TO SEND DATA TO SPIRA + 4. ACTUALLY SEND THE DATA
 // check we have some entries and with no errors
 // Create and show a message to tell the user what is going on
-function sendExportEntriesGoogle(entriesForExport, sheetData, sheet, sheetRange, model, fieldType, fields, artifact, context) {
+function sendExportEntriesGoogle(entriesForExport, sheetData, sheet, sheetRange, model, fieldType, fields, artifact) {
 	if (!entriesForExport.length) {
 		popupShow('There are no entries to send to Spira', 'Check Sheet')
 		return "nothing to send";
@@ -1195,7 +1195,7 @@ function sendExportEntriesGoogle(entriesForExport, sheetData, sheet, sheetRange,
 		log.status = log.errorCount ? (log.errorCount == log.entriesLength ? STATUS_ENUM.allError : STATUS_ENUM.someError) : STATUS_ENUM.allSuccess;
 
 		// call the final function here - so we know that it is only called after the recursive function above (ie all posting) has ended
-		return updateSheetWithExportResults(log, sheetData, sheet, sheetRange, model, fieldType, fields, artifact, context);
+		return updateSheetWithExportResults(log, sheetData, sheet, sheetRange, model, fieldType, fields, artifact, null);
  	}
 }
 
@@ -1278,7 +1278,7 @@ function updateSheetWithExportResults(log, sheetData, sheet, sheetRange, model, 
 		notes = [],
 		values = [];
 	// first handle cell formatting
-	for (var row = 0; row < log.entries.length; row++) {
+	for (var row = 0; row < sheetData.length; row++) {
 		var rowBgColors = [],
 			rowNotes = [],
 			rowValues = [];
@@ -1287,13 +1287,17 @@ function updateSheetWithExportResults(log, sheetData, sheet, sheetRange, model, 
 				note = null,
 				value = sheetData[row][col];
 			
-				// first handle when we are dealing with data that has been sent to Spira
-			var isSubType = (log.entries[row].details &&  log.entries[row].details.entry && log.entries[row].details.entry.isSubType) ? log.entries[row].details.entry.isSubType : false;
-			
-			bgColor = setFeedbackBgColor(sheetData[row][col], log.entries[row].error, fields[col], fieldType, artifact, model.colors);
-			note = setFeedbackNote(sheetData[row][col], log.entries[row].error, fields[col], fieldType, log.entries[row].message);
-			value = setFeedbackValue(sheetData[row][col], log.entries[row].error, fields[col], fieldType, log.entries[row].newId || "", isSubType);
-
+          
+            // we may have more rows than entries - because the entries can be stopped early (eg when an error is found on a hierarchical artifact)
+            if (log.entries.length > row) {
+              // first handle when we are dealing with data that has been sent to Spira
+              var isSubType = (log.entries[row].details &&  log.entries[row].details.entry && log.entries[row].details.entry.isSubType) ? log.entries[row].details.entry.isSubType : false;
+              
+              bgColor = setFeedbackBgColor(sheetData[row][col], log.entries[row].error, fields[col], fieldType, artifact, model.colors);
+              note = setFeedbackNote(sheetData[row][col], log.entries[row].error, fields[col], fieldType, log.entries[row].message);
+              value = setFeedbackValue(sheetData[row][col], log.entries[row].error, fields[col], fieldType, log.entries[row].newId || "", isSubType);
+            }
+          
 			if (IS_GOOGLE) {
 				rowBgColors.push(bgColor);
 				rowNotes.push(note);
@@ -1335,6 +1339,7 @@ function updateSheetWithExportResults(log, sheetData, sheet, sheetRange, model, 
 	}	
 
 	if (IS_GOOGLE) {
+      //return {colors: bgColors, notes: notes, values: values};
 		sheetRange.setBackgrounds(bgColors).setNotes(notes).setValues(values);
 		return log;
 	} else {
