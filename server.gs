@@ -199,7 +199,9 @@ function clearAll() {
 		lastColumn = sheet.getMaxColumns(),
 		lastRow = sheet.getMaxRows();
 
-    sheet.clear()
+    // Reset sheet name
+    sheet.setName(new Date().getTime());
+    sheet.clear();
   
     // clears data validations and notes from the entire sheet
     var range = sheet.getRange(1, 1, lastRow, lastColumn);
@@ -213,9 +215,6 @@ function clearAll() {
          protection.remove();
        }
 	 }
-	 
-    // Reset sheet name
-    sheet.setName(new Date().getTime());
     
   } else {
     return Excel.run({ delayForCellEdit: true }, function (context) {
@@ -1981,8 +1980,6 @@ function processSendToSpiraResponse(i, sentToSpira, entriesForExport, artifact, 
 // @param: model: full model object from client
 // @param: enum of fieldTypes used
 function getFromSpiraGoogle(model, fieldType) {
-  //var artifactCount = getArtifactCount(model.user, model.currentProject.id, model.currentArtifact.id);
-
   // 1. get from spira
   // note we don't do this by getting the count of each artifact first, because of a bug in getting the release count
   var currentPage = 0;
